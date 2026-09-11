@@ -2093,7 +2093,11 @@ tr.row-rule th {
       ixic: readQuote(p.ixic),
       spx: readQuote(p.spx),
       qqq: readQuote(p.qqq),
-      spotlight: readQuote(p.spotlight)
+      spotlight: readQuote(p.spotlight),
+      /* the stock movers' quotes (spotlight.json version 2) */
+      picks: p.picks && typeof p.picks === 'object'
+        ? { mover: readQuote(p.picks.mover), loser: readQuote(p.picks.loser) }
+        : null
     };
   }
 
@@ -2109,10 +2113,53 @@ tr.row-rule th {
     };
   }
 
+  /* One ranked entry of a movers set: { symbol, name, id?, change, rank }. */
+  function readMoverEntry(e) {
+    if (!e || typeof e.symbol !== 'string' || !isFinite(toNum(e.change))) return null;
+    var out = { symbol: e.symbol, name: typeof e.name === 'string' ? e.name : e.symbol, change: toNum(e.change), rank: toNum(e.rank) };
+    if (typeof e.id === 'string') out.id = e.id;
+    return out;
+  }
+
+  function readMoverSet(m) {
+    var mover = m && readMoverEntry(m.mover);
+    if (!mover) return null;
+    function list(v) { return Array.isArray(v) ? v.map(readMoverEntry).filter(Boolean) : []; }
+    return {
+      weekOf: typeof m.weekOf === 'string' ? m.weekOf : null,
+      measuredTo: typeof m.measuredTo === 'string' ? m.measuredTo : null,
+      mover: mover,
+      loser: readMoverEntry(m.loser),
+      moverNext: readMoverEntry(m.moverNext),
+      loserNext: readMoverEntry(m.loserNext),
+      top: list(m.top),
+      bottom: list(m.bottom),
+      scanned: toNum(m.scanned),
+      skipped: toNum(m.skipped),
+      listed: toNum(m.listed),
+      rule: typeof m.rule === 'string' ? m.rule : ''
+    };
+  }
+
+  /* spotlight.json version 2: { movers: { stocks, crypto, history } }. */
+  function readMovers(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+    return {
+      stocks: readMoverSet(m.stocks),
+      crypto: readMoverSet(m.crypto),
+      history: Array.isArray(m.history) ? m.history.filter(function (h) {
+        return h && typeof h.weekOf === 'string' && (h.kind === 'stocks' || h.kind === 'crypto') && h.mover && typeof h.mover.symbol === 'string';
+      }) : []
+    };
+  }
+
   function normalizeSpotlightSnapshot(payload) {
     var p = parsePayload(payload);
     if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
     return {
+      version: toNum(p.version),
+      weekOf: typeof p.weekOf === 'string' ? p.weekOf : null,
+      movers: readMovers(p.movers),
       generatedAt: stampOf(p.generatedAt),
       current: p.current && p.current.symbol ? p.current : null,
       history: Array.isArray(p.history) ? p.history.filter(function (h) { return h && h.symbol; }) : [],

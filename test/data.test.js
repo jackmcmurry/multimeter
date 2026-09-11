@@ -542,17 +542,13 @@
     var r1 = await step(db, api, '2026-09-14T13:05:00Z');
     var s1 = r1.out.spotlight;
     t.ok('first run writes all three snapshots', s1 && r1.out.quotes && r1.out.history);
-    t.eq('scan picks the largest absolute move', s1.current.symbol, 'ADBE');
-    t.eq('pick is keyed to this week', s1.current.weekOf, '2026-09-14');
-    t.eq('runner-up recorded', s1.current.runnerUp.symbol, 'AMD');
-    t.eq('plan-denied symbol counted as skipped', s1.current.skipped, 1);
-    t.eq('scanned excludes the denial', s1.current.scanned, 14);
-    t.ok('denial surfaces as a warning', r1.warnings.some(function (w) { return w.indexOf('AVGO') === 0; }));
-    t.close('pick change reused from the scan', s1.change.d5, -9.34);
-    t.ok('pick series fetched', s1.series && s1.series.length > 50);
-    t.eq('history of picks starts with this week', s1.history[0].weekOf, '2026-09-14');
+    t.eq('spotlight.json is version 2', s1.version, 2);
+    t.eq('the file is keyed to this week', s1.weekOf, '2026-09-14');
+    t.ok('no stock movers before a complete pass', s1.movers.stocks === null);
+    t.ok('older pages see no stock of the week yet', s1.current === null);
+    t.eq('the history starts with this week', s1.movers.history[0].weekOf, '2026-09-14');
     t.close('index quote written', r1.out.quotes.ixic.price, 26081.7245);
-    t.eq('spotlight quote follows the pick', r1.out.quotes.spotlight.symbol, 'ADBE');
+    t.ok('no mover quotes before there are movers', r1.out.quotes.picks === null);
     t.close('QQQ quote from Alpha Vantage', r1.out.quotes.qqq.price, 708.69);
     t.eq('pre-market read is final for Friday', r1.out.quotes.finalFor, '2026-09-11');
     t.ok('index history covers the 252-session window', r1.out.history.ixic.length > 252);
@@ -560,12 +556,19 @@
     t.eq('QQQ history present', r1.out.history.qqq.length, 2);
     t.close('S&P quote written', r1.out.quotes.spx.price, 6512.34);
     t.ok('S&P history covers the 252-session window', r1.out.history.spx.length > 252);
-    t.eq('crypto scan picks the largest absolute 7d move', s1.crypto.symbol, 'SOL');
-    t.eq('crypto pick keeps its CoinGecko id', s1.crypto.id, 'solana');
-    t.eq('crypto pick is keyed to this week', s1.crypto.weekOf, '2026-09-14');
-    t.eq('crypto runner-up recorded', s1.crypto.runnerUp.symbol, 'DOGE');
-    t.eq('missing coin counted as skipped', s1.crypto.skipped, 1);
-    t.eq('crypto history starts with this week', s1.cryptoHistory[0].symbol, 'SOL');
+    var mc1 = s1.movers.crypto;
+    t.eq('the crypto mover is the largest seven-day gain', mc1.mover.symbol, 'SOL');
+    t.eq('the crypto loser is the largest seven-day drop', mc1.loser.symbol, 'DOGE');
+    t.eq('the crypto mover keeps its CoinGecko id', mc1.mover.id, 'solana');
+    t.eq('the crypto movers are keyed to this week', mc1.weekOf, '2026-09-14');
+    t.eq('the next highest coin is recorded', mc1.moverNext.symbol, 'UNI');
+    t.eq('the next lowest coin is recorded', mc1.loserNext.symbol, 'NEAR');
+    t.eq('a missing coin counts as skipped', mc1.skipped, 1);
+    t.eq('the crypto board holds five at each end', mc1.top.length + ':' + mc1.bottom.length, '5:5');
+    t.eq('older pages see the crypto mover as the crypto of the week', s1.crypto.symbol, 'SOL');
+    t.eq('older pages keep the crypto history', s1.cryptoHistory[0].symbol, 'SOL');
+    t.eq('the old normalizer still reads the new file', MP.sources.normalizeSpotlightSnapshot(s1).crypto.symbol, 'SOL');
+    t.eq('the new normalizer reads the movers', MP.sources.normalizeSpotlightSnapshot(s1).movers.crypto.loser.symbol, 'DOGE');
     t.ok('findings written with the history', !!r1.out.findings);
     t.eq('findings keyed to the completed session', r1.out.findings.forSession, '2026-09-11');
     t.eq('findings carry three coupling windows', r1.out.findings.pairs.ixic.coupling.length, 3);
@@ -573,7 +576,7 @@
     t.ok('findings regime shares are sane', (function (g) { return g.coupledShare >= 0 && g.coupledShare <= 1 && g.coupledShare + g.decoupledShare <= 1.0001; })(r1.out.findings.pairs.ixic.regimes));
     t.ok('findings regime is one of the three', ['coupled', 'middle', 'decoupled'].indexOf(r1.out.findings.pairs.ixic.regimes.current) >= 0);
     t.ok('findings include the S&P pair', !!r1.out.findings.pairs.spx);
-    t.eq('FMP calls: 15 scan + 1 series + 3 quotes + 3 history + one slice of members', r1.calls.fmp, 22 + PER);
+    t.eq('FMP calls: 3 history + one slice of members + 2 index quotes', r1.calls.fmp, 5 + PER);
     t.eq('the first slice stores every member it could price', stockKeys(r1.out).length, PER - 1);
     t.eq('the summary counts the priced members', r1.out.stocks.count.priced, PER - 1);
     t.eq('the summary counts the denial', r1.out.stocks.count.denied, 1);
@@ -626,8 +629,29 @@
     var r3 = await step(db, api, '2026-09-14T13:50:00Z');
     t.ok('open market refreshes quotes', !!r3.out.quotes);
     t.ok('open market leaves history alone', !r3.out.history);
-    t.ok('open market leaves the pick alone', !r3.out.spotlight);
-    t.eq('open market: three quotes and the last slice of members', r3.calls.fmp, 3 + N - 2 * PER);
+    t.eq('open market: two index quotes, two mover quotes and the last slice of members', r3.calls.fmp, 4 + N - 2 * PER);
+    var ms3 = r3.out.spotlight && r3.out.spotlight.movers.stocks;
+    t.ok('a complete pass names the movers of the week', !!ms3);
+    var ranked3 = U.LIST.map(function (s) {
+      var closes = U.readCloses(db.files['stocks/' + s.symbol]);
+      return { symbol: s.symbol, change: closes ? U.weekChange(closes) : NaN };
+    }).filter(function (r) { return typeof r.change === 'number' && isFinite(r.change); }).sort(function (a, b) {
+      return b.change - a.change || (a.symbol < b.symbol ? -1 : 1);
+    });
+    t.eq('the mover is the largest five-session gain', ms3 && ms3.mover.symbol, ranked3[0].symbol);
+    t.eq('the loser is the largest five-session drop', ms3 && ms3.loser.symbol, ranked3[ranked3.length - 1].symbol);
+    t.eq('the movers are measured to the last session before the week', ms3 && ms3.measuredTo, '2026-09-11');
+    t.eq('the movers rank every priced member', ms3 && ms3.scanned, N - 1);
+    t.eq('the board holds five at each end', ms3 && ms3.top.length + ':' + ms3.bottom.length, '5:5');
+    t.eq('the bottom of the board starts with the loser', ms3 && ms3.bottom[0].symbol, ms3 && ms3.loser.symbol);
+    t.eq('the movers are quoted', r3.out.quotes.picks && r3.out.quotes.picks.mover.symbol + ',' + r3.out.quotes.picks.loser.symbol,
+      ms3 && ms3.mover.symbol + ',' + ms3.loser.symbol);
+    t.eq('older pages see the mover as the stock of the week', r3.out.spotlight.current.symbol, ms3 && ms3.mover.symbol);
+    t.eq('older pages get its chart', r3.out.spotlight.series && r3.out.spotlight.series.length, 100);
+    t.eq('older pages get its quote', r3.out.quotes.spotlight && r3.out.quotes.spotlight.symbol, ms3 && ms3.mover.symbol);
+    t.ok('the week joins the history', r3.out.spotlight.movers.history.some(function (h) {
+      return h.kind === 'stocks' && h.weekOf === '2026-09-14' && h.rule === 'gain-drop';
+    }));
     t.eq('the pass prices every member but the denial', r3.out.stocks.count.priced, N - 1);
     t.ok('the pass is complete', r3.out.stocks.complete === true);
     t.eq('the summary lists every priced member', r3.out.stocks.rows.length, N - 1);
@@ -637,8 +661,11 @@
     /* 4. more than 55 minutes after the last QQQ read */
     var r4 = await step(db, api, '2026-09-14T14:10:00Z');
     t.eq('QQQ refreshes after the hour', r4.calls.av, 1);
-    t.eq('a finished pass asks for no more members', r4.calls.fmp, 3);
+    t.eq('the mover quotes skip a run', r4.calls.fmp, 2);
     t.ok('a finished pass rewrites nothing', !r4.out.stocks && !r4.out.job);
+    var r4b = await step(db, api, '2026-09-14T14:20:00Z');
+    t.eq('the mover quotes return on the next run', r4b.calls.fmp, 4);
+    t.ok('the movers are not recomputed within the week', !r4b.out.spotlight);
 
     /* 5. after the close: one final quote read, history waits for the bars */
     var r5 = await step(db, api, '2026-09-14T20:25:00Z');
@@ -651,7 +678,7 @@
     t.ok('findings recomputed with the history', !!r6.out.findings && r6.out.findings.forSession === '2026-09-14');
     t.eq('a new reading for the new session', r6.out.note && r6.out.note.forSession, '2026-09-14');
     t.ok('no further quote reads once final', !r6.out.quotes);
-    t.ok('pick detail refreshes with history', !!r6.out.spotlight);
+    t.ok('new history does not move the movers', !r6.out.spotlight);
     t.ok('members wait until the index has the new session', !r6.out.stocks && stockKeys(r6.out).length === 0);
 
     /* the canned bars stop on Friday, so Monday's bar is "late": retry spacing */
@@ -681,22 +708,51 @@
     /* the daily limit mid-pass */
     var capped = store(), cappedApi = mockApi({ fmpLimitAfter: 25 });
     var rCap = await step(capped, cappedApi, '2026-09-14T13:05:00Z');
-    t.eq('the step stops at the limit', rCap.calls.fmp, 26);
-    t.eq('members before the limit are kept', stockKeys(rCap.out).length, 3);
+    /* calls 1-3 history, 4-25 members (AVGO denied), 26 hits the limit, 27-28 the index quotes */
+    t.eq('the step stops at the limit', rCap.calls.fmp, 28);
+    t.eq('members before the limit are kept', stockKeys(rCap.out).length, 21);
     t.ok('the limit is recorded', !!rCap.out.job.universe.lastRun.stopped);
     t.ok('the limit is a warning', rCap.warnings.some(function (w) { return w.indexOf('daily limit') > 0; }));
-    t.ok('the member that hit the limit is not marked', !rCap.out.job.universe.symbols[U.LIST[3].symbol]);
+    t.ok('the member that hit the limit is not marked', !rCap.out.job.universe.symbols[U.LIST[22].symbol]);
 
     /* FORCE=universe: every member in one run */
     var forced = store();
     var rForce = await step(forced, mockApi(), '2026-09-14T13:05:00Z', Object.assign({}, KEYS, { FORCE: 'universe' }));
-    t.eq('force asks every member once', rForce.calls.fmp, 22 + N);
+    t.eq('force: 3 history, every member once, 2 index and 2 mover quotes', rForce.calls.fmp, N + 7);
+    t.ok('a forced pass names the movers in the same run', !!(rForce.out.spotlight && rForce.out.spotlight.movers.stocks));
     t.ok('a forced pass is complete', rForce.out.stocks.complete === true);
     t.eq('a forced pass prices all but the denial', rForce.out.stocks.count.priced, N - 1);
     t.ok('a forced pass logs its coverage', rForce.log.some(function (l) { return l.indexOf('complete') > 0; }));
     t.ok('no stock file name escapes the folder', Object.keys(forced.files).every(function (k) {
       return k.indexOf('stocks/') !== 0 || MP.sources.stockPath(k.slice(7)) !== null;
     }));
+
+    /* the spotlight.json in production today: version 1, one pick of each kind */
+    var legacy = store();
+    legacy.files.spotlight = {
+      generatedAt: '2026-09-11T01:48:37.000Z',
+      current: { weekOf: '2026-09-07', symbol: 'ADBE', name: 'Adobe Inc.', changePct5d: -9.34164, direction: 'down', scanned: 14, skipped: 1,
+        runnerUp: { symbol: 'AMD', changePct5d: 9.00433 }, rule: 'Largest absolute 5-session move across a fixed 15-name Nasdaq-100 universe.' },
+      history: [{ weekOf: '2026-09-07', symbol: 'ADBE', changePct5d: -9.34164 }],
+      change: { symbol: 'ADBE', d1: -2.366, d5: -9.34164, m1: -8.84012 }, series: null, detailFor: '2026-09-10',
+      scanTriedWeek: '2026-09-07', scanTriedAt: Date.parse('2026-09-08T13:05:00Z'),
+      crypto: { weekOf: '2026-09-07', id: 'solana', symbol: 'SOL', name: 'Solana', changePct7d: 12.1 },
+      cryptoHistory: [{ weekOf: '2026-09-07', id: 'solana', symbol: 'SOL', changePct7d: 12.1 }],
+      cryptoTriedWeek: '2026-09-07', cryptoTriedAt: Date.parse('2026-09-08T13:05:00Z')
+    };
+    var rLeg = await step(legacy, mockApi(), '2026-09-14T13:05:00Z');
+    var sLeg = rLeg.out.spotlight;
+    t.eq('an old spotlight file is rewritten as version 2', sLeg && sLeg.version, 2);
+    var oldStock = sLeg ? sLeg.movers.history.filter(function (h) { return h.kind === 'stocks' && h.rule === 'absolute'; })[0] : null;
+    t.ok('its stock pick joins the history under the old rule', !!oldStock && oldStock.mover.symbol === 'ADBE' && oldStock.weekOf === '2026-09-07');
+    t.ok('its crypto pick joins the history too', !!sLeg && sLeg.movers.history.some(function (h) {
+      return h.kind === 'crypto' && h.rule === 'absolute' && h.mover.symbol === 'SOL' && h.mover.id === 'solana';
+    }));
+    t.eq('the crypto movers for the new week are worked out afresh', sLeg && sLeg.movers.crypto.weekOf, '2026-09-14');
+    t.ok('older pages still list the old pick', !!sLeg && sLeg.history.some(function (h) { return h.symbol === 'ADBE'; }));
+    t.ok('a version 2 file reads back without migrating', !P.readSpotlight(sLeg).migrated);
+    t.ok('a file without a version migrates',
+      P.readSpotlight({ current: { symbol: 'ADBE' }, history: [] }).migrated === true);
 
     /* 6. no FMP key */
     var bare = store(), bareApi = mockApi();
@@ -708,13 +764,13 @@
     var down = store(), downApi = mockApi({ fmpDown: true });
     var r9 = await step(down, downApi, '2026-09-14T13:05:00Z');
     t.ok('every FMP call failed', r9.calls.fmp > 0 && r9.failed.fmp === r9.calls.fmp);
-    t.ok('failed scan keeps no pick', r9.out.spotlight && r9.out.spotlight.current === null);
+    t.ok('without members there are no stock movers', r9.out.spotlight && r9.out.spotlight.movers.stocks === null && r9.out.spotlight.current === null);
     t.ok('no findings without history', !r9.out.findings);
     t.ok('no reading without a final quote read', !r9.out.note);
     t.eq('failed read is not marked final', r9.out.quotes.finalFor, null);
     var r10 = await step(down, downApi, '2026-09-14T13:20:00Z');
-    t.eq('failed scan is not retried within three hours', r10.calls.fmp, 2);
-    t.ok('crypto pick survives FMP being down', r9.out.spotlight && r9.out.spotlight.crypto && r9.out.spotlight.crypto.symbol === 'SOL');
+    t.eq('a failed read retries only the two index quotes', r10.calls.fmp, 2);
+    t.ok('the crypto movers survive FMP being down', r9.out.spotlight && r9.out.spotlight.movers.crypto && r9.out.spotlight.movers.crypto.mover.symbol === 'SOL');
 
     /* 8. Alpha Vantage rate-limited */
     var lim = store();

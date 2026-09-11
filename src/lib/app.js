@@ -1269,8 +1269,12 @@
       if (inp.coupling && S.isNum(inp.coupling.corr90)) row('BTC vs Nasdaq, 90 sessions', 'corr ' + F.ratio(inp.coupling.corr90, 2) + (S.isNum(inp.coupling.beta90) ? ' · beta ' + F.ratio(inp.coupling.beta90, 2) : ''));
       if (inp.vol && S.isNum(inp.vol.btc)) row('30-session volatility', 'BTC ' + F.pct(inp.vol.btc, 0) + (S.isNum(inp.vol.index) ? ' · Nasdaq ' + F.pct(inp.vol.index, 0) : ''));
       if (inp.drawdown && S.isNum(inp.drawdown.btc)) row('Below running peak', 'BTC ' + F.signedPct(inp.drawdown.btc, 1) + (S.isNum(inp.drawdown.index) ? ' · Nasdaq ' + F.signedPct(inp.drawdown.index, 1) : ''));
-      if (inp.stock && S.isNum(inp.stock.changePct5d)) row('Stock of the week', inp.stock.symbol + ' ' + F.signedPctPoints(inp.stock.changePct5d, 1) + ' over 5 sessions');
-      if (inp.crypto && S.isNum(inp.crypto.changePct7d)) row('Crypto of the week', inp.crypto.symbol + ' ' + F.signedPctPoints(inp.crypto.changePct7d, 1) + ' over 7 days');
+      [['Nasdaq-100, five sessions', inp.stocks], ['Crypto, seven days', inp.crypto]].forEach(function (pair) {
+        var set = pair[1];
+        if (!set || !set.mover || !S.isNum(set.mover.change)) return;
+        row(pair[0], 'highest ' + set.mover.symbol + ' ' + F.signedPctPoints(set.mover.change, 1) +
+          (set.loser && S.isNum(set.loser.change) ? ' · lowest ' + set.loser.symbol + ' ' + F.signedPctPoints(set.loser.change, 1) : ''));
+      });
     }
     setHtml('noteInputs', rows.length ? '<table class="data note-inputs"><tbody>' + rows.join('') + '</tbody></table>' : '');
     setHtml('noteNotice', noticeHtml(state.note.notice));

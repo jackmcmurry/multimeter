@@ -12,7 +12,7 @@
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  var PROMPT_VERSION = 2;          /* 2: the house writing style */
+  var PROMPT_VERSION = 3;          /* 2: the house writing style; 3: the weekly movers */
   var MODEL = 'claude-opus-5';
   var MAX_TOKENS = 4096;           /* room for adaptive thinking at low effort */
   var RETRY_MS = 2 * 3600000;      /* a rejected reply is re-asked at most every 2h */
@@ -72,11 +72,20 @@
 
   /* ---- what ---------------------------------------------------------------- */
 
+  /* A movers set from spotlight.json -> the highest and lowest move only. */
+  function moversInput(m) {
+    if (!m || !m.mover || typeof m.mover.symbol !== 'string') return null;
+    function one(e) { return e && typeof e.symbol === 'string' ? { symbol: e.symbol, change: num(e.change) } : null; }
+    return { mover: one(m.mover), loser: one(m.loser), scanned: num(m.scanned) };
+  }
+
   /* st: { session, quotes (quotes.json), coins (coinsMarkets map), findings,
-   * spotlight (spotlight.json) } -> plain numbers, null where unavailable. */
+   * movers (spotlight.json's movers) } -> plain numbers, null where
+   * unavailable. */
   function inputs(st) {
     st = st || {};
-    var q = st.quotes || {}, c = st.coins || {}, f = st.findings, sp = st.spotlight || {};
+    var q = st.quotes || {}, c = st.coins || {}, f = st.findings;
+    var mv = st.movers || (st.spotlight && st.spotlight.movers) || {};
     var ix = f && f.pairs ? f.pairs.ixic : null;
     var c90 = windowAt(ix, 90);
     var dd = (f && f.drawdowns) || {};
@@ -90,8 +99,8 @@
       coupling: c90 ? { corr90: num(c90.correlation), beta90: num(c90.beta) } : null,
       vol: ix && ix.vol ? { btc: num(ix.vol.coin), index: num(ix.vol.index) } : null,
       drawdown: dd.btc || dd.ixic ? { btc: dd.btc ? num(dd.btc.now) : null, index: dd.ixic ? num(dd.ixic.now) : null } : null,
-      stock: sp.current && sp.current.symbol ? { symbol: String(sp.current.symbol), changePct5d: num(sp.current.changePct5d) } : null,
-      crypto: sp.crypto && sp.crypto.symbol ? { symbol: String(sp.crypto.symbol), changePct7d: num(sp.crypto.changePct7d) } : null
+      stocks: moversInput(mv.stocks),
+      crypto: moversInput(mv.crypto)
     };
   }
 
@@ -131,12 +140,15 @@
     if (inp.drawdown && isNum(inp.drawdown.btc) && isNum(inp.drawdown.index)) {
       lines.push('- Distance below the running peak: bitcoin ' + pctOf(-inp.drawdown.btc) + ', Nasdaq ' + pctOf(-inp.drawdown.index));
     }
-    if (inp.stock && isNum(inp.stock.changePct5d)) {
-      lines.push('- Stock of the week: ' + inp.stock.symbol + ', ' + signed(inp.stock.changePct5d, 1) + ' over five sessions');
+    function moversLine(set, among, horizon) {
+      if (!set || !set.mover || !isNum(set.mover.change)) return;
+      var line = '- Highest ' + horizon + ' move ' + among + ': ' + set.mover.symbol + ', ' + signed(set.mover.change, 1);
+      if (set.loser && isNum(set.loser.change)) line += '; lowest: ' + set.loser.symbol + ', ' + signed(set.loser.change, 1);
+      lines.push(line);
     }
-    if (inp.crypto && isNum(inp.crypto.changePct7d)) {
-      lines.push('- Crypto of the week: ' + inp.crypto.symbol + ', ' + signed(inp.crypto.changePct7d, 1) + ' over seven days');
-    }
+    var st = inp.stocks;
+    moversLine(st, 'among ' + (st && isNum(st.scanned) ? st.scanned + ' ' : '') + 'Nasdaq-100 members', 'five-session');
+    moversLine(inp.crypto, 'among 15 large coins other than bitcoin and ether', 'seven-day');
     lines.push('Write the reading.');
     return { system: SYSTEM, user: lines.join('\n') };
   }

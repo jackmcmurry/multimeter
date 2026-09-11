@@ -173,7 +173,7 @@
         scanned: 14,
         skipped: 1,
         runnerUp: { symbol: 'AMD', changePct5d: 9.0 },
-        rule: MP.spotlight.RULE
+        rule: MP.spotlight.STOCK_RULE
       };
       var lastSpot = spotSeries[spotSeries.length - 1].price;
       sv.quote = {

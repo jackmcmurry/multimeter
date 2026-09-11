@@ -17,27 +17,10 @@
   var MP = (root.MP = root.MP || {});
   var S = MP.stats, F = MP.fmt, G = MP.geom;
 
-  /* Fixed universe: large Nasdaq-100 constituents. A deliberate subset, not
-   * the whole index. The panel says so rather than implying full coverage. */
-  var UNIVERSE = [
-    { symbol: 'AAPL', name: 'Apple Inc.' },
-    { symbol: 'MSFT', name: 'Microsoft Corporation' },
-    { symbol: 'NVDA', name: 'NVIDIA Corporation' },
-    { symbol: 'AMZN', name: 'Amazon.com, Inc.' },
-    { symbol: 'GOOGL', name: 'Alphabet Inc. Class A' },
-    { symbol: 'META', name: 'Meta Platforms, Inc.' },
-    { symbol: 'AVGO', name: 'Broadcom Inc.' },
-    { symbol: 'TSLA', name: 'Tesla, Inc.' },
-    { symbol: 'COST', name: 'Costco Wholesale Corporation' },
-    { symbol: 'NFLX', name: 'Netflix, Inc.' },
-    { symbol: 'AMD', name: 'Advanced Micro Devices, Inc.' },
-    { symbol: 'ADBE', name: 'Adobe Inc.' },
-    { symbol: 'CSCO', name: 'Cisco Systems, Inc.' },
-    { symbol: 'PEP', name: 'PepsiCo, Inc.' },
-    { symbol: 'INTC', name: 'Intel Corporation' }
-  ];
-
-  var RULE = 'Largest absolute 5-session move across a fixed 15-name Nasdaq-100 universe.';
+  /* The stock movers rank every Nasdaq-100 member the data job priced (see
+   * universe.js); the crypto movers rank the fixed list below. */
+  var STOCK_RULE = 'Highest and lowest five-session move among the Nasdaq-100 members the data job could price.';
+  var BOARD_SIZE = 5;   /* names at each end of the leaderboard */
 
   /* The crypto of the week draws from the large caps beyond BTC and ETH, which
    * have dial stops of their own. CoinGecko ids, so the page and the data job
@@ -60,56 +43,50 @@
     { id: 'aptos', symbol: 'APT', name: 'Aptos' }
   ];
 
-  var CRYPTO_RULE = 'Largest absolute 7-day move across a fixed 15-name large-cap universe, BTC and ETH excluded.';
+  var CRYPTO_RULE = 'Highest and lowest seven-day move across a fixed 15-name large-cap universe, BTC and ETH excluded.';
 
   /* ---- pure selection ----------------------------------------------------- */
 
-  /* Ranks rows by the absolute value of `field`; entries with a non-finite
-   * value are treated as unavailable (a plan denial, a dead symbol) and
-   * skipped. Ties break on symbol so the same scan always yields the same
-   * winner. */
-  function rankMovers(rows, field) {
-    var usable = (rows || []).filter(function (r) {
+  /* rows: [{ symbol, name?, id?, <field> }], field a percentage-point move.
+   * Ranks highest first; ties break on symbol, so the same data always gives
+   * the same answer. Rows without a finite value (a plan denial, a coin
+   * missing from the response) are skipped and counted.
+   * -> { mover, loser, moverNext, loserNext, top, bottom, scanned, skipped },
+   * or null when nothing is priced. Each entry is { symbol, name, id?,
+   * change, rank }. The loser is null when only one row is priced. top holds
+   * the highest BOARD_SIZE and bottom the lowest, lowest first; the two
+   * never share a row. */
+  function selectMovers(rows, field) {
+    var all = rows || [];
+    var usable = all.filter(function (r) {
       return r && typeof r.symbol === 'string' && S.isNum(r[field]);
     });
     if (!usable.length) return null;
     var ranked = usable.slice().sort(function (a, b) {
-      var d = Math.abs(b[field]) - Math.abs(a[field]);
+      var d = b[field] - a[field];
       if (d !== 0) return d;
       return a.symbol < b.symbol ? -1 : a.symbol > b.symbol ? 1 : 0;
     });
-    return { win: ranked[0], next: ranked[1] || null, scanned: usable.length, skipped: (rows || []).length - usable.length };
-  }
-
-  /* rows: [{ symbol, changePct5d }] */
-  function selectSpotlight(rows) {
-    var r = rankMovers(rows, 'changePct5d');
-    if (!r) return null;
+    var n = ranked.length;
+    function entry(i) {
+      var r = ranked[i];
+      var e = { symbol: r.symbol, name: r.name || r.symbol, change: r[field], rank: i + 1 };
+      if (r.id) e.id = r.id;
+      return e;
+    }
+    var top = [], bottom = [];
+    var topN = Math.min(BOARD_SIZE, n);
+    for (var i = 0; i < topN; i++) top.push(entry(i));
+    for (var j = n - 1; j >= Math.max(topN, n - BOARD_SIZE); j--) bottom.push(entry(j));
     return {
-      symbol: r.win.symbol,
-      changePct5d: r.win.changePct5d,
-      direction: r.win.changePct5d >= 0 ? 'up' : 'down',
-      scanned: r.scanned,
-      skipped: r.skipped,
-      runnerUp: r.next ? { symbol: r.next.symbol, changePct5d: r.next.changePct5d } : null,
-      rule: RULE
-    };
-  }
-
-  /* rows: [{ id, symbol, name, changePct7d }] */
-  function selectCrypto(rows) {
-    var r = rankMovers(rows, 'changePct7d');
-    if (!r) return null;
-    return {
-      id: r.win.id,
-      symbol: r.win.symbol,
-      name: r.win.name || r.win.symbol,
-      changePct7d: r.win.changePct7d,
-      direction: r.win.changePct7d >= 0 ? 'up' : 'down',
-      scanned: r.scanned,
-      skipped: r.skipped,
-      runnerUp: r.next ? { id: r.next.id, symbol: r.next.symbol, changePct7d: r.next.changePct7d } : null,
-      rule: CRYPTO_RULE
+      mover: entry(0),
+      loser: n > 1 ? entry(n - 1) : null,
+      moverNext: n > 2 ? entry(1) : null,
+      loserNext: n > 2 ? entry(n - 2) : null,
+      top: top,
+      bottom: bottom,
+      scanned: n,
+      skipped: all.length - n
     };
   }
 
@@ -123,10 +100,8 @@
     return d.toISOString().slice(0, 10);
   }
 
+  /* Names arrive with the data now; the symbol stands in without one. */
   function nameFor(symbol, fallback) {
-    for (var i = 0; i < UNIVERSE.length; i++) {
-      if (UNIVERSE[i].symbol === symbol) return UNIVERSE[i].name;
-    }
     return fallback || symbol;
   }
 
@@ -366,12 +341,11 @@
   }
 
   MP.spotlight = {
-    UNIVERSE: UNIVERSE,
-    RULE: RULE,
+    STOCK_RULE: STOCK_RULE,
     CRYPTO_UNIVERSE: CRYPTO_UNIVERSE,
     CRYPTO_RULE: CRYPTO_RULE,
-    selectSpotlight: selectSpotlight,
-    selectCrypto: selectCrypto,
+    BOARD_SIZE: BOARD_SIZE,
+    selectMovers: selectMovers,
     weekOf: weekOf,
     nameFor: nameFor,
     applySnapshot: applySnapshot,

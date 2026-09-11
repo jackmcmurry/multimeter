@@ -162,44 +162,52 @@
       ok('spotlight module is loaded', false, 'MP.spotlight missing');
     } else {
       var scan = [
-        { symbol: 'AAA', changePct5d: 2.1 },
-        { symbol: 'BBB', changePct5d: -9.4 },
-        { symbol: 'CCC', changePct5d: 5.2 }
+        { symbol: 'AAA', name: 'Aaa Corp.', change5d: 2.1 },
+        { symbol: 'BBB', change5d: -9.4 },
+        { symbol: 'CCC', change5d: 5.2 },
+        { symbol: 'DDD', change5d: 12.0 },
+        { symbol: 'EEE', change5d: -0.5 },
+        { symbol: 'FFF', change5d: NaN }
       ];
-      var pickA = SP.selectSpotlight(scan);
-      eq('selects the largest ABSOLUTE move, not the largest gain', pickA.symbol, 'BBB');
-      eq('records the direction of the winner', pickA.direction, 'down');
-      eq('runner-up is the next largest absolute move', pickA.runnerUp.symbol, 'CCC');
-      eq('counts the names actually priced', pickA.scanned, 3);
-      eq('nothing skipped when every name priced', pickA.skipped, 0);
+      var mv = SP.selectMovers(scan, 'change5d');
+      eq('the mover is the largest gain, not the largest absolute move', mv.mover.symbol, 'DDD');
+      eq('the loser is the largest drop', mv.loser.symbol, 'BBB');
+      eq('the next highest follows the mover', mv.moverNext.symbol, 'CCC');
+      eq('the next lowest follows the loser', mv.loserNext.symbol, 'EEE');
+      eq('counts the names actually priced', mv.scanned, 5);
+      eq('an unpriced name is skipped and counted', mv.skipped, 1);
+      eq('ranks run from the top', mv.mover.rank + ',' + mv.loser.rank, '1,5');
+      eq('the board top runs highest first', mv.top.map(function (e) { return e.symbol; }).join(','), 'DDD,CCC,AAA,EEE,BBB');
+      eq('with five names the bottom repeats none of them', mv.bottom.length, 0);
+      eq('a row without a name is named by its symbol', mv.loser.name, 'BBB');
+      eq('a name is carried through', mv.top[2].name, 'Aaa Corp.');
+      close('the change is carried through', mv.mover.change, 12.0);
 
-      /* a plan denial arrives as a non-finite change and must not win */
-      var withDenial = SP.selectSpotlight([
-        { symbol: 'AVGO', changePct5d: NaN },
-        { symbol: 'INTC', changePct5d: 8.5 }
-      ]);
-      eq('unavailable symbols are skipped', withDenial.symbol, 'INTC');
-      eq('skipped count reflects denials', withDenial.skipped, 1);
-      eq('scanned count excludes denials', withDenial.scanned, 1);
+      var twelve = [];
+      for (var q12 = 0; q12 < 12; q12++) twelve.push({ symbol: 'S' + (q12 < 10 ? '0' : '') + q12, change5d: q12 });
+      var b12 = SP.selectMovers(twelve, 'change5d');
+      eq('twelve names fill both ends of the board', b12.top.length + ':' + b12.bottom.length, '5:5');
+      eq('the bottom starts with the lowest', b12.bottom[0].symbol, 'S00');
+      eq('the lowest ranks last', b12.bottom[0].rank, 12);
+      var seven = SP.selectMovers(twelve.slice(0, 7), 'change5d');
+      eq('seven names split five and two', seven.top.length + ':' + seven.bottom.length, '5:2');
 
-      ok('returns null when nothing is priced', SP.selectSpotlight([
-        { symbol: 'AAA', changePct5d: NaN }
-      ]) === null);
-      ok('returns null on an empty scan', SP.selectSpotlight([]) === null);
-
-      var tie = SP.selectSpotlight([
-        { symbol: 'ZZZ', changePct5d: 5 },
-        { symbol: 'AAA', changePct5d: -5 }
-      ]);
-      eq('equal magnitudes break on symbol for a stable result', tie.symbol, 'AAA');
+      var one = SP.selectMovers([{ symbol: 'ONE', change5d: -3 }], 'change5d');
+      ok('a single priced name has no loser', one.mover.symbol === 'ONE' && one.loser === null && one.moverNext === null);
+      ok('returns null when nothing is priced', SP.selectMovers([{ symbol: 'AAA', change5d: NaN }], 'change5d') === null);
+      ok('returns null on an empty scan', SP.selectMovers([], 'change5d') === null);
+      ok('a null move is skipped', SP.selectMovers([{ symbol: 'A', change5d: null }, { symbol: 'B', change5d: 1 }], 'change5d').skipped === 1);
+      var tie = SP.selectMovers([{ symbol: 'ZZZ', change5d: 5 }, { symbol: 'AAA', change5d: 5 }, { symbol: 'MMM', change5d: 1 }], 'change5d');
+      eq('equal moves break on symbol for a stable result', tie.mover.symbol, 'AAA');
+      var coinsMv = SP.selectMovers([{ id: 'solana', symbol: 'SOL', changePct7d: 18.4 }, { id: 'dogecoin', symbol: 'DOGE', changePct7d: -15.2 }], 'changePct7d');
+      eq('a coin keeps its id', coinsMv.mover.id + ',' + coinsMv.loser.id, 'solana,dogecoin');
 
       /* week identity: every day of a week resolves to the same Monday */
       eq('Thursday resolves to its Monday', SP.weekOf(new Date('2026-09-10T12:00:00Z')), '2026-09-07');
       eq('Monday resolves to itself', SP.weekOf(new Date('2026-09-07T00:00:00Z')), '2026-09-07');
       eq('Sunday resolves back, not forward', SP.weekOf(new Date('2026-09-13T23:00:00Z')), '2026-09-07');
       eq('week boundary crosses a month correctly', SP.weekOf(new Date('2026-10-01T12:00:00Z')), '2026-09-28');
-      eq('universe names resolve', SP.nameFor('ADBE'), 'Adobe Inc.');
-      eq('unknown symbols fall back to themselves', SP.nameFor('XYZ'), 'XYZ');
+      eq('a symbol without a name stands for itself', SP.nameFor('XYZ'), 'XYZ');
     }
 
     /* ---- routing ---------------------------------------------------------- */
@@ -343,12 +351,18 @@
         quotes: { ixic: { price: 26081.7245, changePct: -0.65369 }, spx: { price: 6512.34, changePct: -0.41 } },
         coins: { bitcoin: { price: 76908, changePct: -1.43882 } },
         findings: typeof fnd !== 'undefined' ? fnd : null,
-        spotlight: { current: { symbol: 'ADBE', changePct5d: -9.34 }, crypto: { symbol: 'SOL', changePct7d: 18.4 } }
+        movers: {
+          stocks: { mover: { symbol: 'NVDA', change: 12.3 }, loser: { symbol: 'ADBE', change: -9.34 }, scanned: 99 },
+          crypto: { mover: { symbol: 'SOL', change: 18.4 }, loser: { symbol: 'DOGE', change: -15.2 } }
+        }
       });
       var ask = NT.buildRequest(inp);
       ok('the request cites the index as given', ask.user.indexOf('26,081.72') >= 0);
       ok('the request labels horizons', ask.user.indexOf('over 24 hours') >= 0 && ask.user.indexOf('on the day') >= 0);
-      ok('the request names the weekly picks', ask.user.indexOf('ADBE') >= 0 && ask.user.indexOf('SOL') >= 0);
+      ok('the request names the highest and lowest movers', ['NVDA', 'ADBE', 'SOL', 'DOGE'].every(function (s) { return ask.user.indexOf(s) >= 0; }));
+      ok('the request says how many members were ranked', ask.user.indexOf('among 99 Nasdaq-100 members') >= 0);
+      ok('the request says highest and lowest', ask.user.indexOf('Highest five-session move') >= 0 && ask.user.indexOf('; lowest: ADBE, -9.3%') >= 0);
+      ok('the inputs read the movers from a spotlight file too', NT.inputs({ spotlight: { movers: { stocks: { mover: { symbol: 'NVDA', change: 1 } } } } }).stocks.mover.symbol === 'NVDA');
       ok('the system prompt forbids advice', ask.system.indexOf('not advice') >= 0);
       ok('missing figures are left out, not invented', ask.user.indexOf('Ether') < 0);
 
