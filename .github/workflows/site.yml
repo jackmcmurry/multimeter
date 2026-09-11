@@ -1,0 +1,82 @@
+name: Site
+
+# One workflow does both jobs the site needs:
+#   - refresh the market-data snapshots in docs/data (scripts/update-data.js)
+#   - publish docs/ to GitHub Pages
+# It runs on every push to main, on the schedule below, and on demand from the
+# Actions tab ("Run workflow").
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Every 15 minutes, 13:00–21:45 UTC, Monday–Friday. That spans the US
+    # session in both summer (13:30–20:00 UTC) and winter (14:30–21:00 UTC)
+    # plus the reads after the close. GitHub can start scheduled runs late.
+    - cron: '*/15 13-21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Refresh even if the schedule says nothing is due
+        type: choice
+        options: [none, all, quotes, history, spotlight]
+        default: all
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update market data
+        # A data failure is reported in the run summary but never blocks
+        # publishing the site.
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: node scripts/update-data.js
+
+      - name: Commit changed data
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data
+          if git diff --cached --quiet; then
+            echo "No data changes to commit."
+          else
+            git commit -m "data: refresh market snapshots"
+            git pull --rebase --autostash origin main
+            git push origin HEAD:main
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

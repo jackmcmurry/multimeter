@@ -1,0 +1,171 @@
+/* ============================================================================
+ * debug.js — build-verification scaffolding. NOT part of the release bundle.
+ *
+ * There is no local JS runtime on this machine, so layout and chart geometry
+ * are checked by serving the debug bundle over loopback and calling
+ * MP.debug.renderSynthetic() from the browser console. The series it makes are
+ * a seeded random walk — deliberately synthetic, never shown to a viewer of
+ * the published page, which only ever renders connector data.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  /* mulberry32 — small deterministic PRNG so runs are reproducible. */
+  function prng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function gauss(rand) {
+    var u = 0, v = 0;
+    while (u === 0) u = rand();
+    while (v === 0) v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function isoDay(d) { return d.toISOString().slice(0, 10); }
+
+  /* Builds two correlated walks: index gets the common factor at 1x, BTC at
+   * ~2x plus its own idiosyncratic noise, so beta lands near 2. */
+  function synthesize(seed, days) {
+    var rand = prng(seed || 7);
+    var start = new Date(Date.now() - days * 86400000);
+    var btc = [], ixic = [], qqq = [];
+    var btcPx = 68000, ixicPx = 24000, qqqPx = 640;
+
+    for (var i = 0; i < days; i++) {
+      var day = new Date(start.getTime() + i * 86400000);
+      var dow = day.getUTCDay();
+      var common = gauss(rand) * 0.009;
+      var idio = gauss(rand) * 0.021;
+
+      btcPx *= Math.exp(2.0 * common + idio + 0.0004);
+      btc.push({ date: isoDay(day), price: Math.round(btcPx * 100) / 100 });
+
+      if (dow !== 0 && dow !== 6) {
+        ixicPx *= Math.exp(common + gauss(rand) * 0.003 + 0.0003);
+        qqqPx *= Math.exp(common * 1.1 + gauss(rand) * 0.0032 + 0.0003);
+        ixic.push({ date: isoDay(day), price: Math.round(ixicPx * 100) / 100 });
+        qqq.push({ date: isoDay(day), price: Math.round(qqqPx * 100) / 100 });
+      }
+    }
+    return { btc: btc, ixic: ixic, qqq: qqq.slice(-100) };
+  }
+
+  /* Fills app state with synthetic data and runs the real render path. */
+  function renderSynthetic(seed, days) {
+    var app = MP.app;
+    if (!app) return { ok: false, error: 'MP.app is not loaded' };
+    var data = synthesize(seed || 7, days || 365);
+    var st = app.state;
+
+    st.history.btc = data.btc;
+    st.history.ixic = data.ixic;
+    st.history.qqq = data.qqq;
+    st.history.pending = false;
+    st.history.notice = null;
+
+    var lastBtc = data.btc[data.btc.length - 1].price;
+    var prevBtc = data.btc[data.btc.length - 2].price;
+    var lastIxic = data.ixic[data.ixic.length - 1].price;
+    var prevIxic = data.ixic[data.ixic.length - 2].price;
+    var lastQqq = data.qqq[data.qqq.length - 1].price;
+    var prevQqq = data.qqq[data.qqq.length - 2].price;
+
+    st.quotes.btc.data = {
+      price: lastBtc,
+      changePct: (lastBtc / prevBtc - 1) * 100,
+      marketCap: lastBtc * 19800000,
+      volume: 31e9,
+      supply: 19800000,
+      rank: 1,
+      sparkline: data.btc.slice(-48).map(function (p) { return p.price; })
+    };
+    st.quotes.btc.stamp = Date.now();
+
+    st.quotes.ixic.data = {
+      price: lastIxic,
+      changePct: (lastIxic / prevIxic - 1) * 100,
+      dayLow: lastIxic * 0.994, dayHigh: lastIxic * 1.006,
+      prevClose: prevIxic, volume: 6.1e9,
+      avg50: lastIxic * 0.99, avg200: lastIxic * 0.94
+    };
+    st.quotes.ixic.stamp = Date.now();
+
+    st.quotes.qqq.data = {
+      price: lastQqq,
+      changePct: (lastQqq / prevQqq - 1) * 100,
+      dayLow: lastQqq * 0.995, dayHigh: lastQqq * 1.005,
+      prevClose: prevQqq, volume: 3.1e7,
+      open: prevQqq, tradingDay: data.qqq[data.qqq.length - 1].date
+    };
+    st.quotes.qqq.stamp = Date.now();
+
+    st.session.data = {
+      equityStatus: 'open', equityOpen: '09:30', equityClose: '16:15',
+      exchanges: 'NASDAQ, NYSE, AMEX, BATS', cryptoStatus: 'open'
+    };
+
+    /* hero chart: 24h range, straight from the synthetic walk */
+    st.hero.days = 1;
+    st.hero.series = data.btc.slice(-48).map(function (p) { return p.price; });
+
+    st.analytics = app.computeAnalytics();
+    app.renderHero();
+    app.renderMarkets();
+    app.renderSession();
+    app.renderAnalytics();
+
+    /* pinned panel: same render path, synthetic pick */
+    if (MP.spotlight) {
+      var sv = MP.spotlight.view;
+      var spotSeries = data.qqq.map(function (p, i) {
+        return { date: p.date, price: Math.round((p.price * 0.42 + i * 0.1) * 100) / 100 };
+      });
+      sv.pick = {
+        weekOf: MP.spotlight.weekOf(new Date()),
+        symbol: 'ADBE',
+        name: 'Adobe Inc.',
+        changePct5d: -9.34,
+        direction: 'down',
+        scanned: 14,
+        skipped: 1,
+        runnerUp: { symbol: 'AMD', changePct5d: 9.0 },
+        rule: MP.spotlight.RULE
+      };
+      var lastSpot = spotSeries[spotSeries.length - 1].price;
+      sv.quote = {
+        symbol: 'ADBE', name: 'Adobe Inc.', price: lastSpot, changePct: -2.37,
+        dayLow: lastSpot * 0.99, dayHigh: lastSpot * 1.02,
+        prevClose: lastSpot * 1.024, marketCap: 98.9e9
+      };
+      sv.change = { d1: -2.37, d5: -9.34, m1: -8.84, m3: 6.62, ytd: -28.9 };
+      sv.series = spotSeries;
+      sv.history = [
+        { weekOf: '2026-08-31', symbol: 'INTC', changePct5d: 8.5 },
+        { weekOf: '2026-08-24', symbol: 'NFLX', changePct5d: -7.5 }
+      ];
+      MP.spotlight.render();
+    }
+
+    var a = st.analytics;
+    return {
+      ok: !!a,
+      commonSessions: a ? a.commonSessions : 0,
+      beta90: a ? a.coupling[1].beta : null,
+      corr90: a ? a.coupling[1].correlation : null,
+      btcVol: a ? a.currentBtcVol : null,
+      ixicVol: a ? a.currentIxicVol : null,
+      btcEpisodes: a ? a.btcEpisodes.length : 0,
+      ixicEpisodes: a ? a.ixicEpisodes.length : 0
+    };
+  }
+
+  MP.debug = { renderSynthetic: renderSynthetic, synthesize: synthesize };
+})(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,0 +1,2563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multimeter</title>
+<meta name="description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
+<meta name="theme-color" content="#0b1626">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Multimeter">
+<meta property="og:description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f4f7fb'/%3E%3Ctext x='32' y='44' font-family='Arial,Helvetica,sans-serif' font-size='34' font-weight='700' text-anchor='middle' fill='%230b1626'%3EM%3C/text%3E%3C/svg%3E">
+<style>
+[hidden] { display: none !important; }
+/* ============================================================================
+ * styles.css — Multimeter.
+ *
+ * Deliberately plain: a native system UI stack (no webfont request at all), a
+ * sidebar, one number per screen, and hairlines instead of boxes. Navy ground,
+ * white type, gold used only for the active nav item, the pinned strip and the
+ * regression line.
+ *
+ * SINGLE THEME BY CHOICE — the brief specifies navy with white text, so every
+ * colour is painted explicitly rather than swapped with the viewer's theme.
+ * ========================================================================== */
+
+:root {
+  --navy: #0b1626;
+  --side: #091220;
+  --cell: #101f36;
+  --hover: #16294a;
+  --rule: #1e3152;
+
+  --text: #f4f7fb;
+  --dim: #93a5c0;
+
+  --gold: #d8ae55;
+
+  --c-btc: #e0944c;
+  --c-idx: #6fb3dc;
+  --c-qqq: #8acfb4;
+
+  --pos: #4ec98a;
+  --neg: #f0776d;
+
+  /* Native stack: whatever the viewer's OS ships. No webfont, no download. */
+  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--navy); }
+
+body {
+  margin: 0;
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--f-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.muted { color: var(--dim); }
+
+/* ---- frame --------------------------------------------------------------- */
+.app {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.side {
+  background: var(--side);
+  padding: 22px 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.logo {
+  width: 30px; height: 30px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--text); color: var(--navy);
+  border-radius: 50%;
+  font-size: 18px; font-weight: 700; letter-spacing: -0.02em;
+}
+.brandname { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.navitem {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 9px;
+  color: var(--dim);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+.navitem:hover { background: var(--hover); color: var(--text); }
+.navitem.is-on { background: var(--cell); color: var(--gold); font-weight: 600; }
+.navitem:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.side-foot {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 8px;
+  font-size: 13px; color: var(--dim);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
+.dot.is-open { background: var(--pos); }
+.dot.is-closed { background: var(--dim); }
+
+.main { padding: 20px clamp(16px, 3vw, 36px) 48px; min-width: 0; }
+
+.topbar {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; padding-bottom: 18px; margin-bottom: 22px;
+  border-bottom: 1px solid var(--rule);
+}
+.topbar h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+.topbar .muted { font-size: 13px; }
+
+/* ---- pinned strip -------------------------------------------------------- */
+.pinstrip {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; margin-bottom: 26px;
+  background: var(--cell);
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+  color: var(--text); text-decoration: none;
+}
+.pinstrip:hover { background: var(--hover); }
+.pinstrip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pin-label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
+.pin-symbol { font-size: 15px; font-weight: 600; }
+.pin-go { margin-left: auto; color: var(--dim); font-size: 19px; line-height: 1; }
+
+/* ---- hero ---------------------------------------------------------------- */
+.hero { margin-bottom: 18px; }
+.hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.hero-asset { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
+.hero-top .muted { font-size: 13px; }
+
+.hero-price {
+  font-size: clamp(38px, 6vw, 56px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.hero-price.is-empty { color: var(--dim); }
+
+.hero-sub { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
+.hero-sub .muted { font-size: 13px; }
+
+.chg {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chg.is-up { color: var(--pos); }
+.chg.is-down { color: var(--neg); }
+.chg.is-flat { color: var(--dim); }
+
+/* ---- range pills --------------------------------------------------------- */
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.pill {
+  font-family: inherit;
+  font-size: 13px; font-weight: 600;
+  color: var(--dim);
+  background: none; border: 0;
+  padding: 7px 16px; border-radius: 999px;
+  cursor: pointer;
+}
+.pill:hover { background: var(--hover); color: var(--text); }
+.pill.is-on { background: var(--cell); color: var(--text); }
+.pill:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pill[disabled] { opacity: 0.45; cursor: default; }
+
+/* ---- chart shell --------------------------------------------------------- */
+.chartbox { margin: 4px 0 0; min-height: 40px; }
+.chart { display: block; width: 100%; height: auto; color: var(--dim); }
+.chart-empty { color: var(--dim); }
+
+.gx-grid { stroke: var(--rule); stroke-width: 0.6; }
+.gx-axis { stroke: var(--rule); stroke-width: 0.8; }
+.gx-zero { stroke: var(--dim); stroke-width: 0.7; stroke-dasharray: 3 3; }
+.gx-tick { font-size: 9.5px; fill: currentColor; font-variant-numeric: tabular-nums; }
+.gx-title { font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ---- market rows --------------------------------------------------------- */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 150px 90px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--rule);
+}
+.rows li:last-child { border-bottom: 0; }
+.row-name { min-width: 0; }
+.row-code { font-size: 15px; font-weight: 600; }
+.row-desc { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-px { font-size: 17px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.row-chg { text-align: right; }
+.row-spark { min-width: 0; }
+
+/* ---- stat strip ---------------------------------------------------------- */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 22px 30px;
+  margin-bottom: 24px;
+}
+.stat-label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
+.stat-value {
+  margin-top: 3px;
+  font-size: 26px; font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.foot { margin: 8px 0 26px; font-size: 13px; color: var(--dim); }
+
+/* ---- tables -------------------------------------------------------------- */
+.table-scroll, .table-host { overflow-x: auto; margin-top: 8px; }
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+table.data th, table.data td {
+  padding: 10px 12px 10px 0;
+  text-align: right;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+table.data thead th {
+  font-size: 12px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+table.data th[scope="row"], table.data thead th:first-child { text-align: left; }
+table.data tbody tr:last-child th, table.data tbody tr:last-child td { border-bottom: 0; }
+.dim { color: var(--dim); }
+.neg { color: var(--neg); }
+tr.row-rule th {
+  text-align: left; padding-top: 18px;
+  font-size: 12px; font-weight: 600; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.tag { font-size: 12px; color: var(--dim); }
+
+/* ---- notices ------------------------------------------------------------- */
+.notice {
+  margin: 14px 0;
+  padding: 10px 13px;
+  font-size: 13.5px;
+  background: var(--cell);
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+}
+.notice-bad { border-left-color: var(--neg); }
+.notice-quiet { border-left-color: var(--rule); color: var(--dim); }
+
+/* ---- about --------------------------------------------------------------- */
+.prose { max-width: 68ch; }
+.prose h2 {
+  margin: 30px 0 8px;
+  font-size: 13px; font-weight: 600; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.prose h2:first-child { margin-top: 0; }
+.prose p { margin: 0 0 12px; color: var(--dim); }
+.prose b { color: var(--text); font-weight: 600; }
+.prose a {
+  color: var(--text);
+  text-decoration-color: var(--gold);
+  text-underline-offset: 3px;
+}
+.prose a:hover { color: var(--gold); }
+.prose a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width: 820px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side {
+    flex-direction: row; align-items: center; gap: 14px;
+    padding: 12px 14px; overflow-x: auto;
+  }
+  .brand { padding: 0; }
+  .brandname { display: none; }
+  .nav { flex-direction: row; gap: 4px; }
+  .navitem { padding: 8px 12px; white-space: nowrap; }
+  .side-foot { margin-top: 0; margin-left: auto; white-space: nowrap; }
+  .rows li { grid-template-columns: minmax(0, 1fr) 110px; row-gap: 8px; }
+  .row-spark { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">M</span>
+      <span class="brandname">Multimeter</span>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a class="navitem" href="#home" data-view="home">Home</a>
+      <a class="navitem" href="#markets" data-view="markets">Markets</a>
+      <a class="navitem" href="#weekly" data-view="weekly">Weekly</a>
+      <a class="navitem" href="#coupling" data-view="coupling">Coupling</a>
+      <a class="navitem" href="#volatility" data-view="volatility">Volatility</a>
+      <a class="navitem" href="#drawdown" data-view="drawdown">Drawdown</a>
+      <a class="navitem" href="#about" data-view="about">About</a>
+    </nav>
+
+    <div class="side-foot">
+      <span class="dot" id="sessionDot" aria-hidden="true"></span>
+      <span id="sessionText">Market —</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1 id="viewTitle">Home</h1>
+      <span class="muted" id="quoteStamp">—</span>
+    </header>
+
+    <div id="pageNotice"></div>
+
+    <!-- ================= HOME ================= -->
+    <section class="view" data-view="home">
+      <a class="pinstrip" href="#weekly">
+        <span class="pin-label">Stock of the week</span>
+        <span class="pin-symbol" id="pinSymbol">—</span>
+        <span class="chg is-flat" id="pinMove">—</span>
+        <span class="pin-go" aria-hidden="true">›</span>
+      </a>
+
+      <div class="hero">
+        <div class="hero-top">
+          <span class="hero-asset">BTC / USD</span>
+        </div>
+        <div class="hero-price" id="heroPrice">—</div>
+        <div class="hero-sub">
+          <span class="chg is-flat" id="heroChange">—</span>
+          <span class="muted" id="heroRangeLabel">24H</span>
+        </div>
+      </div>
+
+      <div class="chartbox" id="heroChart"></div>
+
+      <div class="pills" id="heroPills" role="group" aria-label="Chart range">
+        <button type="button" class="pill is-on" data-days="1">24H</button>
+        <button type="button" class="pill" data-days="7">1W</button>
+        <button type="button" class="pill" data-days="30">1M</button>
+        <button type="button" class="pill" data-days="365">1Y</button>
+      </div>
+
+      <div id="heroNotice"></div>
+    </section>
+
+    <!-- ================= MARKETS ================= -->
+    <section class="view" data-view="markets" hidden>
+      <ul class="rows" id="marketRows"></ul>
+      <div id="marketNotice"></div>
+    </section>
+
+    <!-- ================= WEEKLY ================= -->
+    <section class="view" data-view="weekly" hidden>
+      <div class="hero">
+        <div class="hero-top">
+          <span class="hero-asset" id="spotSymbol">—</span>
+          <span class="muted" id="spotWeek">—</span>
+        </div>
+        <div class="hero-price" id="spotPx">—</div>
+        <div class="hero-sub">
+          <span class="chg is-flat" id="spotChg">—</span>
+          <span class="muted" id="spotName">—</span>
+        </div>
+      </div>
+
+      <div class="chartbox" id="spotSpark"></div>
+
+      <div class="strip" id="spotStrip"></div>
+      <p class="foot" id="spotRunner"></p>
+      <div id="spotNotice"></div>
+    </section>
+
+    <!-- ================= COUPLING ================= -->
+    <section class="view" data-view="coupling" hidden>
+      <div class="strip" id="couplingStrip"></div>
+      <div class="chartbox" id="chartScatter"></div>
+      <p class="foot" id="scatterCaption"></p>
+      <div class="chartbox" id="chartRollCorr"></div>
+      <p class="foot">Rolling 30-session correlation.</p>
+      <div class="table-host" id="couplingTable"></div>
+      <div id="notice-history"></div>
+    </section>
+
+    <!-- ================= VOLATILITY ================= -->
+    <section class="view" data-view="volatility" hidden>
+      <div class="strip" id="volStrip"></div>
+      <div class="chartbox" id="chartVol"></div>
+      <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+    </section>
+
+    <!-- ================= DRAWDOWN ================= -->
+    <section class="view" data-view="drawdown" hidden>
+      <div class="strip" id="ddStrip"></div>
+      <div class="chartbox" id="chartDdBtc"></div>
+      <p class="foot">BTC / USD below running peak.</p>
+      <div class="chartbox" id="chartDdIxic"></div>
+      <p class="foot">^IXIC below running peak.</p>
+      <div class="table-scroll" id="ddTable"></div>
+    </section>
+
+    <!-- ================= ABOUT ================= -->
+    <section class="view prose" data-view="about" hidden>
+      <h2>What this is</h2>
+      <p>A live tracker for bitcoin and the Nasdaq, with the statistics that make the comparison mean something. Bitcoin refreshes every 45&nbsp;seconds. Nasdaq figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+
+      <h2>Instruments</h2>
+      <p><b>BTC / USD</b> — spot bitcoin, volume-weighted across the exchanges CoinGecko tracks. Trades every calendar day.</p>
+      <p><b>^IXIC</b> — the Nasdaq Composite, roughly 3,000 listed securities. An index level, not a tradable price.</p>
+      <p><b>QQQ</b> — Invesco QQQ Trust, the ETF tracking the Nasdaq-100. It stands in for ^NDX, which the free data plan does not carry.</p>
+
+      <h2>Stock of the week</h2>
+      <p>A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move. The price beside it refreshes with the Nasdaq quotes.</p>
+      <p>Absolute rather than largest gain, deliberately. Ranking by best performer would read as a tip. This reports what moved, in either direction — it is not a recommendation.</p>
+
+      <h2>Method</h2>
+      <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
+      <p>Beta is BTC regressed on the index — the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
+      <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
+
+      <h2>Sources</h2>
+      <p>CoinGecko's public API for bitcoin spot and its chart, called directly from your browser. Financial Modeling Prep for the ^IXIC quote and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open indicator is computed in your browser from NYSE hours and holidays.</p>
+
+      <h2>Built by</h2>
+      <p>Jack McMurry, with Claude Code.</p>
+
+      <h2>Standing</h2>
+      <p>Market data for reference only. Nothing here is investment advice, a recommendation, or a solicitation to trade. Figures are as reported by the sources above and may be delayed, revised, or wrong.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ==== src/lib/stats.js ==================================================== */
+/* ============================================================================
+ * stats.js — return-series statistics. Pure functions: no DOM, no network.
+ *
+ * Conventions used throughout the app:
+ *   - A "series" is [{ date: 'YYYY-MM-DD', price: Number }], any order.
+ *   - Paired statistics (correlation, beta) are computed on returns taken
+ *     AFTER intersecting the two series on common dates, so both legs span
+ *     identical calendar intervals (e.g. a Friday->Monday gap is a
+ *     Friday->Monday gap for both). This matters when pairing a 7-day market
+ *     (BTC) with a 5-day one (equity indices).
+ *   - Returns are log returns; volatility is annualized with sqrt(252)
+ *     because the paired calendar is the US equity session calendar.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var TRADING_DAYS = 252;
+  var MS_PER_DAY = 86400000;
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  function mean(xs) {
+    var n = xs.length;
+    if (!n) return NaN;
+    var s = 0;
+    for (var i = 0; i < n; i++) s += xs[i];
+    return s / n;
+  }
+
+  /* Sample statistics by default (ddof = 1). */
+  function variance(xs, ddof) {
+    ddof = ddof === undefined ? 1 : ddof;
+    var n = xs.length;
+    if (n - ddof <= 0) return NaN;
+    var m = mean(xs), s = 0;
+    for (var i = 0; i < n; i++) { var d = xs[i] - m; s += d * d; }
+    return s / (n - ddof);
+  }
+
+  function stdev(xs, ddof) { return Math.sqrt(variance(xs, ddof)); }
+
+  function covariance(xs, ys, ddof) {
+    ddof = ddof === undefined ? 1 : ddof;
+    var n = Math.min(xs.length, ys.length);
+    if (n - ddof <= 0) return NaN;
+    var mx = mean(xs.slice(0, n)), my = mean(ys.slice(0, n)), s = 0;
+    for (var i = 0; i < n; i++) s += (xs[i] - mx) * (ys[i] - my);
+    return s / (n - ddof);
+  }
+
+  function pearson(xs, ys) {
+    var n = Math.min(xs.length, ys.length);
+    if (n < 2) return NaN;
+    var a = xs.slice(0, n), b = ys.slice(0, n);
+    var sx = stdev(a), sy = stdev(b);
+    if (!sx || !sy || !isNum(sx) || !isNum(sy)) return NaN;
+    return covariance(a, b) / (sx * sy);
+  }
+
+  /* Beta of `asset` against `bench`: cov(a,b) / var(b). */
+  function beta(asset, bench) {
+    var vb = variance(bench);
+    if (!vb || !isNum(vb)) return NaN;
+    return covariance(asset, bench) / vb;
+  }
+
+  /* Ordinary least squares fit of ys on xs. slope === beta when xs is the
+   * benchmark's return series. */
+  function regression(xs, ys) {
+    var n = Math.min(xs.length, ys.length);
+    if (n < 2) return { slope: NaN, intercept: NaN, r2: NaN, n: n };
+    var a = xs.slice(0, n), b = ys.slice(0, n);
+    var slope = beta(b, a);
+    var intercept = mean(b) - slope * mean(a);
+    var r = pearson(a, b);
+    return { slope: slope, intercept: intercept, r2: isNum(r) ? r * r : NaN, n: n };
+  }
+
+  /* Log returns: r[i] = ln(p[i] / p[i-1]). Length is prices.length - 1. */
+  function logReturns(prices) {
+    var out = [];
+    for (var i = 1; i < prices.length; i++) {
+      var prev = prices[i - 1], cur = prices[i];
+      out.push(isNum(prev) && isNum(cur) && prev > 0 && cur > 0 ? Math.log(cur / prev) : NaN);
+    }
+    return out;
+  }
+
+  /* Drop index pairs where either leg is not finite, keeping alignment. */
+  function pairwiseClean(xs, ys) {
+    var n = Math.min(xs.length, ys.length), a = [], b = [];
+    for (var i = 0; i < n; i++) {
+      if (isNum(xs[i]) && isNum(ys[i])) { a.push(xs[i]); b.push(ys[i]); }
+    }
+    return { a: a, b: b };
+  }
+
+  function annualizedVol(returns, periodsPerYear) {
+    var ppy = periodsPerYear || TRADING_DAYS;
+    var clean = returns.filter(isNum);
+    if (clean.length < 2) return NaN;
+    return stdev(clean) * Math.sqrt(ppy);
+  }
+
+  /* Rolling window over xs. Returns [{ index, value }] where index is the
+   * position of the window's LAST element. */
+  function rolling(xs, window, fn) {
+    var out = [];
+    if (window <= 0) return out;
+    for (var i = window - 1; i < xs.length; i++) {
+      out.push({ index: i, value: fn(xs.slice(i - window + 1, i + 1)) });
+    }
+    return out;
+  }
+
+  /* Rolling window over two aligned arrays. */
+  function rollingPair(xs, ys, window, fn) {
+    var out = [], n = Math.min(xs.length, ys.length);
+    if (window <= 0) return out;
+    for (var i = window - 1; i < n; i++) {
+      out.push({
+        index: i,
+        value: fn(xs.slice(i - window + 1, i + 1), ys.slice(i - window + 1, i + 1))
+      });
+    }
+    return out;
+  }
+
+  function byDateAsc(p, q) { return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }
+
+  function sortSeries(series) { return series.slice().sort(byDateAsc); }
+
+  /* Intersect two series on common dates. Returns ascending arrays. */
+  function alignByDate(seriesA, seriesB) {
+    var lookup = {};
+    for (var i = 0; i < seriesB.length; i++) lookup[seriesB[i].date] = seriesB[i].price;
+    var dates = [], a = [], b = [];
+    var sorted = sortSeries(seriesA);
+    for (var j = 0; j < sorted.length; j++) {
+      var d = sorted[j].date, pa = sorted[j].price, pb = lookup[d];
+      if (pb !== undefined && isNum(pa) && isNum(pb)) { dates.push(d); a.push(pa); b.push(pb); }
+    }
+    return { dates: dates, a: a, b: b };
+  }
+
+  function dayGap(fromDate, toDate) {
+    var a = Date.parse(fromDate + 'T00:00:00Z'), b = Date.parse(toDate + 'T00:00:00Z');
+    if (isNaN(a) || isNaN(b)) return null;
+    return Math.round((b - a) / MS_PER_DAY);
+  }
+
+  /* Percentage below the running peak, per observation. */
+  function drawdownSeries(prices) {
+    var peak = -Infinity, out = [];
+    for (var i = 0; i < prices.length; i++) {
+      if (isNum(prices[i]) && prices[i] > peak) peak = prices[i];
+      out.push(isNum(prices[i]) && peak > 0 ? prices[i] / peak - 1 : NaN);
+    }
+    return out;
+  }
+
+  function maxDrawdown(prices) {
+    var dd = drawdownSeries(prices).filter(isNum);
+    return dd.length ? Math.min.apply(null, dd) : NaN;
+  }
+
+  /* Peak-to-trough episodes, deepest first.
+   * An episode opens when price falls below the running peak and closes when
+   * price regains that peak; an unrecovered episode is marked `ongoing`. */
+  function drawdownEpisodes(dates, prices, opts) {
+    opts = opts || {};
+    var minDepth = Math.abs(opts.minDepth === undefined ? 0.05 : opts.minDepth);
+    var limit = opts.limit === undefined ? Infinity : opts.limit;
+
+    var episodes = [], cur = null;
+    var peak = prices[0], peakIdx = 0;
+
+    for (var i = 1; i < prices.length; i++) {
+      var p = prices[i];
+      if (!isNum(p)) continue;
+      if (p >= peak) {
+        if (cur) { cur.recoveryIndex = i; episodes.push(cur); cur = null; }
+        peak = p; peakIdx = i;
+      } else {
+        if (!cur) cur = { peakIndex: peakIdx, peak: peak, troughIndex: i, trough: p, recoveryIndex: null };
+        if (p < cur.trough) { cur.trough = p; cur.troughIndex = i; }
+      }
+    }
+    if (cur) episodes.push(cur);
+
+    return episodes.map(function (e) {
+      return {
+        peakDate: dates[e.peakIndex],
+        peakPrice: e.peak,
+        troughDate: dates[e.troughIndex],
+        troughPrice: e.trough,
+        depth: e.trough / e.peak - 1,
+        recoveryDate: e.recoveryIndex === null ? null : dates[e.recoveryIndex],
+        declineDays: dayGap(dates[e.peakIndex], dates[e.troughIndex]),
+        recoveryDays: e.recoveryIndex === null ? null : dayGap(dates[e.troughIndex], dates[e.recoveryIndex]),
+        ongoing: e.recoveryIndex === null
+      };
+    }).filter(function (e) {
+      return isNum(e.depth) && e.depth <= -minDepth;
+    }).sort(function (x, y) {
+      return x.depth - y.depth;
+    }).slice(0, limit);
+  }
+
+  /* Last `count` elements (or all of them). */
+  function tail(xs, count) {
+    return count >= xs.length ? xs.slice() : xs.slice(xs.length - count);
+  }
+
+  /* Correlation / beta / R-squared over a set of trailing window lengths. */
+  function couplingWindows(assetReturns, benchReturns, windows) {
+    return windows.map(function (w) {
+      var pair = pairwiseClean(tail(assetReturns, w), tail(benchReturns, w));
+      var n = pair.a.length;
+      return {
+        window: w,
+        n: n,
+        correlation: n >= 3 ? pearson(pair.a, pair.b) : NaN,
+        beta: n >= 3 ? beta(pair.a, pair.b) : NaN,
+        r2: n >= 3 ? Math.pow(pearson(pair.a, pair.b), 2) : NaN
+      };
+    });
+  }
+
+  MP.stats = {
+    TRADING_DAYS: TRADING_DAYS,
+    isNum: isNum,
+    mean: mean,
+    variance: variance,
+    stdev: stdev,
+    covariance: covariance,
+    pearson: pearson,
+    beta: beta,
+    regression: regression,
+    logReturns: logReturns,
+    pairwiseClean: pairwiseClean,
+    annualizedVol: annualizedVol,
+    rolling: rolling,
+    rollingPair: rollingPair,
+    sortSeries: sortSeries,
+    alignByDate: alignByDate,
+    dayGap: dayGap,
+    drawdownSeries: drawdownSeries,
+    maxDrawdown: maxDrawdown,
+    drawdownEpisodes: drawdownEpisodes,
+    tail: tail,
+    couplingWindows: couplingWindows
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/format.js =================================================== */
+/* ============================================================================
+ * format.js — display formatting. Pure functions, no DOM.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var DASH = '—';
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  function usd(n, dp) {
+    if (!isNum(n)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: 'USD',
+      minimumFractionDigits: dp, maximumFractionDigits: dp
+    }).format(n);
+  }
+
+  function num(n, dp) {
+    if (!isNum(n)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: dp, maximumFractionDigits: dp
+    }).format(n);
+  }
+
+  function compact(n) {
+    if (!isNum(n)) return DASH;
+    return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+  }
+
+  /* 0.0234 -> "2.34%" */
+  function pct(fraction, dp) {
+    if (!isNum(fraction)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return (fraction * 100).toFixed(dp) + '%';
+  }
+
+  /* 0.0234 -> "+2.34%", -0.0234 -> "-2.34%" */
+  function signedPct(fraction, dp) {
+    if (!isNum(fraction)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    var v = fraction * 100;
+    return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(dp) + '%';
+  }
+
+  /* Already-a-percentage inputs (APIs that hand back 1.06 for 1.06%). */
+  function signedPctPoints(points, dp) {
+    if (!isNum(points)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return (points >= 0 ? '+' : '−') + Math.abs(points).toFixed(dp) + '%';
+  }
+
+  function ratio(n, dp) {
+    if (!isNum(n)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return n.toFixed(dp);
+  }
+
+  /* '2026-09-10' -> '10 Sep 26' */
+  function shortDate(iso) {
+    if (!iso) return DASH;
+    var parts = String(iso).slice(0, 10).split('-');
+    if (parts.length !== 3) return String(iso);
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var mi = parseInt(parts[1], 10) - 1;
+    if (mi < 0 || mi > 11) return String(iso);
+    return parts[2] + ' ' + months[mi] + ' ' + parts[0].slice(2);
+  }
+
+  function clockTime(ts) {
+    if (!isNum(ts)) return DASH;
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function ago(ts) {
+    if (!isNum(ts)) return 'awaiting data';
+    var s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+    if (s < 5) return 'just now';
+    if (s < 60) return s + 's ago';
+    var m = Math.round(s / 60);
+    if (m < 60) return m + 'm ago';
+    return Math.round(m / 60) + 'h ago';
+  }
+
+  function days(n) {
+    if (n === null || n === undefined || !isNum(n)) return DASH;
+    return n + 'd';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  MP.fmt = {
+    DASH: DASH,
+    usd: usd,
+    num: num,
+    compact: compact,
+    pct: pct,
+    signedPct: signedPct,
+    signedPctPoints: signedPctPoints,
+    ratio: ratio,
+    shortDate: shortDate,
+    clockTime: clockTime,
+    ago: ago,
+    days: days,
+    escapeHtml: escapeHtml
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/geom.js ===================================================== */
+/* ============================================================================
+ * geom.js — SVG chart kit. Rectilinear only: stair-stepped paths, hard-edged
+ * columns, square point marks, diagonal hatching, tick-marked crosshair axes.
+ * No curves, no gradients, no rounded joins anywhere.
+ *
+ * Every renderer returns an SVG string sized in viewBox units. Text is drawn
+ * with fill="currentColor" so the caller's theme token decides its colour.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var isNum = function (x) { return typeof x === 'number' && isFinite(x); };
+
+  var uid = 0;
+  function nextId(prefix) { uid += 1; return prefix + uid; }
+
+  var PAD = { l: 46, r: 12, t: 12, b: 20 };
+
+  function scale(domain, range) {
+    var d0 = domain[0], span = (domain[1] - domain[0]) || 1;
+    var r0 = range[0], rSpan = range[1] - range[0];
+    return function (v) { return r0 + ((v - d0) / span) * rSpan; };
+  }
+
+  function extent(values) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < values.length; i++) {
+      if (!isNum(values[i])) continue;
+      if (values[i] < lo) lo = values[i];
+      if (values[i] > hi) hi = values[i];
+    }
+    if (lo === Infinity) return [0, 1];
+    if (lo === hi) return [lo - Math.abs(lo || 1) * 0.05, hi + Math.abs(hi || 1) * 0.05];
+    return [lo, hi];
+  }
+
+  function niceTicks(min, max, count) {
+    if (!isNum(min) || !isNum(max)) return [];
+    if (min === max) { min -= 0.5; max += 0.5; }
+    var span = max - min;
+    var raw = span / Math.max(1, count);
+    var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+    var err = raw / mag;
+    var step = mag * (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1);
+    var out = [];
+    var start = Math.ceil(min / step) * step;
+    for (var v = start; v <= max + step * 1e-9; v += step) {
+      out.push(Math.abs(v) < step * 1e-9 ? 0 : Math.round(v / step) * step);
+    }
+    return out;
+  }
+
+  function pad(over) {
+    return {
+      l: over && over.l !== undefined ? over.l : PAD.l,
+      r: over && over.r !== undefined ? over.r : PAD.r,
+      t: over && over.t !== undefined ? over.t : PAD.t,
+      b: over && over.b !== undefined ? over.b : PAD.b
+    };
+  }
+
+  /* Stair path through evenly spaced values: horizontal then vertical only. */
+  function stairPath(values, x, y) {
+    var d = '', started = false, prevY = null;
+    for (var i = 0; i < values.length; i++) {
+      if (!isNum(values[i])) continue;
+      var xi = x(i), yi = y(values[i]);
+      if (!started) { d += 'M' + xi.toFixed(2) + ',' + yi.toFixed(2); started = true; }
+      else { d += 'H' + xi.toFixed(2) + 'V' + yi.toFixed(2); }
+      prevY = yi;
+    }
+    return { d: d, started: started, lastY: prevY };
+  }
+
+  function axisText(x, yPos, text, anchor, cls) {
+    return '<text x="' + x.toFixed(2) + '" y="' + yPos.toFixed(2) + '" text-anchor="' + anchor +
+      '" class="' + (cls || 'gx-tick') + '" fill="currentColor">' + text + '</text>';
+  }
+
+  /* Y grid: hairline rules with left-hand labels. */
+  function yAxis(ticks, y, p, w, fmt) {
+    var s = '';
+    for (var i = 0; i < ticks.length; i++) {
+      var yy = y(ticks[i]);
+      s += '<line x1="' + p.l + '" y1="' + yy.toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + yy.toFixed(2) +
+        '" class="gx-grid"/>';
+      s += axisText(p.l - 5, yy + 3, fmt(ticks[i]), 'end');
+    }
+    return s;
+  }
+
+  /* X labels at first / middle / last index. */
+  function xLabels(labels, x, p, h) {
+    if (!labels || !labels.length) return '';
+    var yPos = h - p.b + 13;
+    var last = labels.length - 1;
+    var mid = Math.floor(last / 2);
+    var s = axisText(p.l, yPos, labels[0], 'start');
+    if (last > 1) s += axisText(x(mid), yPos, labels[mid], 'middle');
+    if (last > 0) s += axisText(x(last), yPos, labels[last], 'end');
+    return s;
+  }
+
+  function open(w, h, cls) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="chart ' + (cls || '') +
+      '" role="img" preserveAspectRatio="xMidYMid meet">';
+  }
+
+  /* -------------------------------------------------------------------------
+   * 1. sparkStep — axis-free stair line with a square end mark.
+   * ---------------------------------------------------------------------- */
+  function sparkStep(opts) {
+    var values = (opts.values || []).filter(isNum);
+    var w = opts.w || 300, h = opts.h || 56;
+    var color = opts.color || 'currentColor';
+    if (values.length < 2) {
+      return open(w, h, 'chart-empty') +
+        axisText(w / 2, h / 2 + 3, 'no series', 'middle') + '</svg>';
+    }
+    var p = { l: 2, r: 8, t: 6, b: 6 };
+    var dom = extent(values);
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var path = stairPath(values, x, y);
+    var lastX = x(values.length - 1), lastY = y(values[values.length - 1]);
+    var s = open(w, h);
+    /* Flat-opacity fill, no gradient — keeps the chart rectilinear. */
+    if (opts.area) {
+      s += '<path d="' + path.d + 'V' + (h - p.b).toFixed(2) + 'H' + x(0).toFixed(2) + 'Z" ' +
+        'fill="' + color + '" fill-opacity="0.12" stroke="none"/>';
+    }
+    s += '<path d="' + path.d + '" fill="none" stroke="' + color + '" stroke-width="' +
+      (opts.strokeWidth || 1.5) + '" stroke-linejoin="miter" stroke-linecap="butt" ' +
+      'vector-effect="non-scaling-stroke"/>';
+    s += '<rect x="' + (lastX - 2.5).toFixed(2) + '" y="' + (lastY - 2.5).toFixed(2) +
+      '" width="5" height="5" fill="' + color + '"/>';
+    return s + '</svg>';
+  }
+
+  /* -------------------------------------------------------------------------
+   * 2. stepChart — one or more stair series on a shared scale, optional zero
+   *    rule. Used for the rolling-correlation panel.
+   * ---------------------------------------------------------------------- */
+  function stepChart(opts) {
+    var series = opts.series || [];
+    var w = opts.w || 900, h = opts.h || 190;
+    var p = pad(opts.pad);
+    var fmt = opts.yFmt || function (v) { return String(v); };
+    var all = [];
+    series.forEach(function (s) { all = all.concat((s.values || []).filter(isNum)); });
+    if (all.length < 2) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+    }
+    var dom = opts.yDomain || extent(all);
+    var maxLen = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
+    var x = scale([0, Math.max(1, maxLen - 1)], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
+
+    var s = open(w, h);
+    s += yAxis(ticks, y, p, w, fmt);
+    /* plot frame: left and bottom rules only */
+    s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    s += '<line x1="' + p.l + '" y1="' + (h - p.b) + '" x2="' + (w - p.r) + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    if (opts.zeroLine && dom[0] < 0 && dom[1] > 0) {
+      s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) +
+        '" class="gx-zero"/>';
+    }
+    series.forEach(function (ser) {
+      var path = stairPath(ser.values || [], x, y);
+      if (!path.started) return;
+      s += '<path d="' + path.d + '" fill="none" stroke="' + (ser.color || 'currentColor') +
+        '" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
+      var li = (ser.values || []).length - 1;
+      if (isNum(ser.values[li])) {
+        s += '<rect x="' + (x(li) - 2.5).toFixed(2) + '" y="' + (y(ser.values[li]) - 2.5).toFixed(2) +
+          '" width="5" height="5" fill="' + (ser.color || 'currentColor') + '"/>';
+      }
+    });
+    s += xLabels(opts.xLabels, x, p, h);
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 3. columnChart — grouped hard-edged columns. Used for rolling volatility.
+   * ---------------------------------------------------------------------- */
+  function columnChart(opts) {
+    var series = opts.series || [];
+    var w = opts.w || 900, h = opts.h || 190;
+    var p = pad(opts.pad);
+    var fmt = opts.yFmt || function (v) { return String(v); };
+    var all = [];
+    series.forEach(function (s) { all = all.concat((s.values || []).filter(isNum)); });
+    if (!all.length) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+    }
+    var hi = Math.max.apply(null, all);
+    var dom = [0, hi * 1.08];
+    var maxLen = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
+    var plotW = (w - p.r) - p.l;
+    var slot = plotW / Math.max(1, maxLen);
+    var groupW = Math.max(1.2, Math.min(slot * 0.84, 14));
+    var barW = Math.max(0.8, groupW / Math.max(1, series.length));
+    var y = scale(dom, [h - p.b, p.t]);
+    var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
+
+    var s = open(w, h);
+    s += yAxis(ticks, y, p, w, fmt);
+    s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    s += '<line x1="' + p.l + '" y1="' + (h - p.b) + '" x2="' + (w - p.r) + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+
+    var base = h - p.b;
+    series.forEach(function (ser, si) {
+      var vals = ser.values || [];
+      for (var i = 0; i < vals.length; i++) {
+        if (!isNum(vals[i])) continue;
+        var cx = p.l + slot * (i + 0.5);
+        var x0 = cx - groupW / 2 + si * barW;
+        var yTop = y(vals[i]);
+        var barH = Math.max(0.6, base - yTop);
+        s += '<rect x="' + x0.toFixed(2) + '" y="' + yTop.toFixed(2) + '" width="' + barW.toFixed(2) +
+          '" height="' + barH.toFixed(2) + '" fill="' + (ser.color || 'currentColor') + '"/>';
+      }
+    });
+    s += xLabels(opts.xLabels, scale([0, Math.max(1, maxLen - 1)], [p.l + slot / 2, w - p.r - slot / 2]), p, h);
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 4. scatterFit — square marks with an OLS line and zero crosshairs. The
+   *    slope drawn here IS the beta reported in the table.
+   * ---------------------------------------------------------------------- */
+  function scatterFit(opts) {
+    var xs = opts.xs || [], ys = opts.ys || [];
+    var w = opts.w || 420, h = opts.h || 300;
+    var p = pad(opts.pad || { l: 44, r: 14, t: 14, b: 30 });
+    var fmt = opts.fmt || function (v) { return (v * 100).toFixed(0) + '%'; };
+    var n = Math.min(xs.length, ys.length);
+    if (n < 3) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting returns', 'middle') + '</svg>';
+    }
+    var xd = extent(xs), yd = extent(ys);
+    /* Each axis is scaled to its own spread, kept symmetric about zero so the
+     * crosshairs stay centred and the sign of a move stays readable. The axes
+     * are NOT squared to a common scale: bitcoin's returns run several times
+     * the index's, and forcing one scale collapses the cloud into a vertical
+     * sliver. The slope therefore reads as a shape, not a gradient, so the
+     * numeric beta is reported in the caption beside the chart. */
+    var xLim = Math.max(Math.abs(xd[0]), Math.abs(xd[1])) * 1.08 || 0.01;
+    var yLim = Math.max(Math.abs(yd[0]), Math.abs(yd[1])) * 1.08 || 0.01;
+    var x = scale([-xLim, xLim], [p.l, w - p.r]);
+    var y = scale([-yLim, yLim], [h - p.b, p.t]);
+    var yTicks = niceTicks(-yLim, yLim, 4);
+    var xTicks = niceTicks(-xLim, xLim, 4);
+
+    var s = open(w, h);
+    for (var t = 0; t < yTicks.length; t++) {
+      s += '<line x1="' + p.l + '" y1="' + y(yTicks[t]).toFixed(2) + '" x2="' + (w - p.r) +
+        '" y2="' + y(yTicks[t]).toFixed(2) + '" class="gx-grid"/>';
+      s += axisText(p.l - 5, y(yTicks[t]) + 3, fmt(yTicks[t]), 'end');
+    }
+    for (var xt = 0; xt < xTicks.length; xt++) {
+      if (xTicks[xt] === 0) continue;
+      s += axisText(x(xTicks[xt]), h - p.b + 13, fmt(xTicks[xt]), 'middle');
+    }
+    /* zero crosshair */
+    s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) + '" class="gx-zero"/>';
+    s += '<line x1="' + x(0).toFixed(2) + '" y1="' + p.t + '" x2="' + x(0).toFixed(2) + '" y2="' + (h - p.b) + '" class="gx-zero"/>';
+
+    /* OLS line, clipped to the square domain */
+    var fit = opts.fit;
+    if (fit && isNum(fit.slope) && isNum(fit.intercept)) {
+      var x1 = -xLim, x2 = xLim;
+      var y1 = fit.intercept + fit.slope * x1, y2 = fit.intercept + fit.slope * x2;
+      /* Clamp each endpoint to the y domain, solving back for x, so the line
+       * spans the plot without escaping the viewBox. */
+      if (fit.slope !== 0) {
+        if (y1 < -yLim) { y1 = -yLim; x1 = (y1 - fit.intercept) / fit.slope; }
+        else if (y1 > yLim) { y1 = yLim; x1 = (y1 - fit.intercept) / fit.slope; }
+        if (y2 < -yLim) { y2 = -yLim; x2 = (y2 - fit.intercept) / fit.slope; }
+        else if (y2 > yLim) { y2 = yLim; x2 = (y2 - fit.intercept) / fit.slope; }
+      }
+      s += '<line x1="' + x(x1).toFixed(2) + '" y1="' + y(y1).toFixed(2) + '" x2="' + x(x2).toFixed(2) +
+        '" y2="' + y(y2).toFixed(2) + '" stroke="' + (opts.fitColor || 'currentColor') +
+        '" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
+    }
+
+    /* square marks */
+    var mark = opts.markSize || 3.2;
+    for (var i = 0; i < n; i++) {
+      if (!isNum(xs[i]) || !isNum(ys[i])) continue;
+      s += '<rect x="' + (x(xs[i]) - mark / 2).toFixed(2) + '" y="' + (y(ys[i]) - mark / 2).toFixed(2) +
+        '" width="' + mark + '" height="' + mark + '" fill="' + (opts.pointColor || 'currentColor') +
+        '" fill-opacity="0.72"/>';
+    }
+
+    if (opts.xTitle) s += axisText(w - p.r, h - 4, opts.xTitle, 'end', 'gx-title');
+    if (opts.yTitle) {
+      s += '<text x="' + (p.l - 34) + '" y="' + (p.t + 4) + '" class="gx-title" fill="currentColor" ' +
+        'transform="rotate(-90 ' + (p.l - 34) + ' ' + (p.t + 4) + ')" text-anchor="end">' + opts.yTitle + '</text>';
+    }
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 5. underwaterChart — drawdown depth as a hatched region hanging from 0.
+   * ---------------------------------------------------------------------- */
+  function underwaterChart(opts) {
+    var values = opts.values || [];
+    var w = opts.w || 900, h = opts.h || 150;
+    var p = pad(opts.pad);
+    var color = opts.color || 'currentColor';
+    var fmt = opts.yFmt || function (v) { return (v * 100).toFixed(0) + '%'; };
+    var finite = values.filter(isNum);
+    if (finite.length < 2) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+    }
+    var lo = Math.min.apply(null, finite);
+    var dom = [Math.min(lo * 1.1, -0.02), 0];
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var ticks = niceTicks(dom[0], dom[1], 3);
+    var hatchId = nextId('hatch');
+
+    var s = open(w, h);
+    s += '<defs><pattern id="' + hatchId + '" patternUnits="userSpaceOnUse" width="5" height="5">' +
+      '<path d="M0,5 L5,0" stroke="' + color + '" stroke-width="0.9" fill="none"/></pattern></defs>';
+    s += yAxis(ticks, y, p, w, fmt);
+
+    /* stair outline, then close it back along the zero line to make the region */
+    var path = stairPath(values, x, y);
+    if (path.started) {
+      var lastIdx = values.length - 1;
+      var area = path.d + 'V' + y(0).toFixed(2) + 'H' + x(0).toFixed(2) + 'Z';
+      s += '<path d="' + area + '" fill="url(#' + hatchId + ')" stroke="none" fill-opacity="0.85"/>';
+      s += '<path d="' + path.d + '" fill="none" stroke="' + color + '" stroke-width="1.4" ' +
+        'stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
+      if (isNum(values[lastIdx])) {
+        s += '<rect x="' + (x(lastIdx) - 2.5).toFixed(2) + '" y="' + (y(values[lastIdx]) - 2.5).toFixed(2) +
+          '" width="5" height="5" fill="' + color + '"/>';
+      }
+    }
+    /* zero rule sits on top of the hatching */
+    s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) +
+      '" class="gx-axis"/>';
+    s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    s += xLabels(opts.xLabels, x, p, h);
+    s += '</svg>';
+    return s;
+  }
+
+  MP.geom = {
+    sparkStep: sparkStep,
+    stepChart: stepChart,
+    columnChart: columnChart,
+    scatterFit: scatterFit,
+    underwaterChart: underwaterChart,
+    niceTicks: niceTicks,
+    extent: extent
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/sources.js ================================================== */
+/* ============================================================================
+ * sources.js — where every number comes from, and the normalizers that turn
+ * each upstream payload into the app's own shapes.
+ *
+ * Two kinds of source:
+ *   - CoinGecko's public REST API, fetched straight from the visitor's
+ *     browser. No key, CORS-enabled, so bitcoin stays live.
+ *   - Snapshot files under data/, written by the scheduled GitHub Action
+ *     (scripts/update-data.js) from Financial Modeling Prep and Alpha
+ *     Vantage. Those APIs need keys, and a key must never ship in a public
+ *     page, so the job holds them as repository secrets and publishes only
+ *     the results.
+ *
+ * The FMP and Alpha Vantage normalizers live here too, so the page's tests and
+ * the data job share one reading of every payload. Each was written against a
+ * response observed from the live API; see test/data.test.js for the fixtures.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var COINGECKO = 'https://api.coingecko.com/api/v3';
+
+  /* Relative to the page, so the site works under any GitHub Pages path. */
+  var SNAPSHOT = {
+    quotes: 'data/quotes.json',
+    history: 'data/history.json',
+    spotlight: 'data/spotlight.json'
+  };
+
+  function parsePayload(payload) {
+    if (typeof payload === 'string') {
+      try { return JSON.parse(payload); } catch (e) { return null; }
+    }
+    return payload;
+  }
+
+  function toNum(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : NaN;
+    if (typeof v !== 'string') return NaN;
+    var n = parseFloat(v.replace(/[%,$\s]/g, ''));
+    return isFinite(n) ? n : NaN;
+  }
+
+  function ascendingByDate(rows) {
+    return rows.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+  }
+
+  function isoDay(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  /* ---- CoinGecko (browser) ------------------------------------------------ */
+
+  /* GET /coins/markets?vs_currency=usd&ids=bitcoin&sparkline=true
+   * -> [ { current_price, price_change_percentage_24h, market_cap,
+   *        total_volume, circulating_supply, max_supply, market_cap_rank,
+   *        last_updated, sparkline_in_7d: { price: [...] } } ]              */
+  var btcSpot = {
+    url: COINGECKO + '/coins/markets?vs_currency=usd&ids=bitcoin&sparkline=true',
+    normalize: function (payload) {
+      var p = parsePayload(payload);
+      var coin = Array.isArray(p) ? p[0] : null;
+      if (!coin || !isFinite(toNum(coin.current_price))) return null;
+      return {
+        price: toNum(coin.current_price),
+        changePct: toNum(coin.price_change_percentage_24h),   /* percentage points */
+        marketCap: toNum(coin.market_cap),
+        volume: toNum(coin.total_volume),
+        supply: toNum(coin.circulating_supply),
+        maxSupply: toNum(coin.max_supply),
+        rank: toNum(coin.market_cap_rank),
+        sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
+        updatedAt: Date.parse(coin.last_updated) || null
+      };
+    }
+  };
+
+  /* GET /coins/bitcoin/market_chart?vs_currency=usd&days=N
+   * -> { prices: [[ms, price], ...], market_caps: [...], total_volumes: [...] }
+   * CoinGecko picks the granularity: ~5-minute for 1 day, hourly up to 90
+   * days, daily beyond. */
+  function btcChart(days) {
+    return {
+      url: COINGECKO + '/coins/bitcoin/market_chart?vs_currency=usd&days=' + encodeURIComponent(days),
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!p || !Array.isArray(p.prices)) return null;
+        var prices = [], stamps = [];
+        for (var i = 0; i < p.prices.length; i++) {
+          var row = p.prices[i];
+          var v = toNum(row && row[1]);
+          if (isFinite(v)) { prices.push(v); stamps.push(toNum(row[0])); }
+        }
+        if (prices.length < 2) return null;
+        return { prices: prices, startTs: stamps[0], endTs: stamps[stamps.length - 1] };
+      }
+    };
+  }
+
+  /* ---- Financial Modeling Prep (data job) --------------------------------- */
+
+  /* /stable/quote?symbol=
+   * -> [ { symbol, name, price, changePercentage, change, volume, dayLow,
+   *        dayHigh, yearHigh, yearLow, marketCap, priceAvg50, priceAvg200,
+   *        exchange, open, previousClose, timestamp } ]
+   * The same shape for an index (^IXIC) and a stock. `timestamp` is seconds. */
+  function normalizeFmpQuote(payload) {
+    var p = parsePayload(payload);
+    var q = Array.isArray(p) ? p[0] : p;
+    if (!q || !q.symbol || !isFinite(toNum(q.price))) return null;
+    var ts = toNum(q.timestamp);
+    return {
+      symbol: q.symbol,
+      name: q.name || null,
+      price: toNum(q.price),
+      changePct: toNum(q.changePercentage),        /* percentage points */
+      change: toNum(q.change),
+      dayLow: toNum(q.dayLow),
+      dayHigh: toNum(q.dayHigh),
+      prevClose: toNum(q.previousClose),
+      open: toNum(q.open),
+      volume: toNum(q.volume),
+      marketCap: toNum(q.marketCap),
+      yearHigh: toNum(q.yearHigh),
+      yearLow: toNum(q.yearLow),
+      avg50: toNum(q.priceAvg50),
+      avg200: toNum(q.priceAvg200),
+      exchange: q.exchange || null,
+      timestamp: isFinite(ts) ? ts * 1000 : null
+    };
+  }
+
+  /* /stable/historical-price-eod/light?symbol=&from=&to=
+   * -> [ { symbol, date: 'YYYY-MM-DD', price, volume } ] (newest first).
+   * Serves indexes (^IXIC), crypto pairs (BTCUSD) and stocks alike. */
+  function normalizeEodLight(payload) {
+    var p = parsePayload(payload);
+    if (!Array.isArray(p)) return null;
+    var rows = [];
+    for (var i = 0; i < p.length; i++) {
+      var d = p[i] && p[i].date ? String(p[i].date).slice(0, 10) : null;
+      var v = toNum(p[i] && p[i].price);
+      if (d && isFinite(v)) rows.push({ date: d, price: v });
+    }
+    return rows.length ? ascendingByDate(rows) : null;
+  }
+
+  /* /stable/stock-price-change?symbol=
+   * -> [ { symbol, '1D', '5D', '1M', '3M', '6M', ytd, '1Y', ... } ]
+   * All values are percentage points. '5D' is the spotlight's selection basis. */
+  function normalizeQuoteChange(payload) {
+    var p = parsePayload(payload);
+    var q = Array.isArray(p) ? p[0] : p;
+    if (!q || !q.symbol) return null;
+    return {
+      symbol: q.symbol,
+      d1: toNum(q['1D']),
+      d5: toNum(q['5D']),
+      m1: toNum(q['1M']),
+      m3: toNum(q['3M']),
+      m6: toNum(q['6M']),
+      ytd: toNum(q.ytd),
+      y1: toNum(q['1Y'])
+    };
+  }
+
+  /* ---- Alpha Vantage (data job) ------------------------------------------- */
+
+  /* function=GLOBAL_QUOTE
+   * -> { 'Global Quote': { '01. symbol', '05. price', '08. previous close',
+   *      '10. change percent': '-1.0638%', ... } }                           */
+  function normalizeAvQuote(payload) {
+    var p = parsePayload(payload);
+    var q = p && p['Global Quote'];
+    if (!q || !isFinite(toNum(q['05. price']))) return null;
+    return {
+      symbol: q['01. symbol'] || null,
+      price: toNum(q['05. price']),
+      changePct: toNum(q['10. change percent']),    /* percentage points */
+      change: toNum(q['09. change']),
+      dayLow: toNum(q['04. low']),
+      dayHigh: toNum(q['03. high']),
+      open: toNum(q['02. open']),
+      prevClose: toNum(q['08. previous close']),
+      volume: toNum(q['06. volume']),
+      tradingDay: q['07. latest trading day'] || null
+    };
+  }
+
+  /* function=TIME_SERIES_DAILY, outputsize=compact (100 sessions)
+   * -> { 'Time Series (Daily)': { 'YYYY-MM-DD': { '4. close': '708.6900' } } } */
+  function normalizeAvDaily(payload) {
+    var p = parsePayload(payload);
+    var table = p && p['Time Series (Daily)'];
+    if (!table) return null;
+    var rows = [];
+    Object.keys(table).forEach(function (day) {
+      var close = toNum(table[day]['4. close']);
+      if (isFinite(close)) rows.push({ date: String(day).slice(0, 10), price: close });
+    });
+    return rows.length ? ascendingByDate(rows) : null;
+  }
+
+  /* ---- snapshot files (browser) ------------------------------------------- */
+  /* The job has already normalized everything, so the page only re-checks
+   * shapes: a hand-edited or half-written file degrades to "no data". */
+
+  function readSeries(rows) {
+    if (!Array.isArray(rows)) return null;
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r && typeof r.date === 'string' && isFinite(toNum(r.price))) {
+        out.push({ date: r.date.slice(0, 10), price: toNum(r.price) });
+      }
+    }
+    return out.length ? ascendingByDate(out) : null;
+  }
+
+  function readQuote(q) {
+    return q && typeof q === 'object' && isFinite(toNum(q.price)) ? q : null;
+  }
+
+  function stampOf(iso) {
+    var t = Date.parse(iso);
+    return isFinite(t) ? t : null;
+  }
+
+  function normalizeQuotesSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      ixic: readQuote(p.ixic),
+      qqq: readQuote(p.qqq),
+      spotlight: readQuote(p.spotlight)
+    };
+  }
+
+  function normalizeHistorySnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      btc: readSeries(p.btc),
+      ixic: readSeries(p.ixic),
+      qqq: readSeries(p.qqq)
+    };
+  }
+
+  function normalizeSpotlightSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      current: p.current && p.current.symbol ? p.current : null,
+      history: Array.isArray(p.history) ? p.history.filter(function (h) { return h && h.symbol; }) : [],
+      change: p.change && typeof p.change === 'object' ? p.change : null,
+      series: readSeries(p.series)
+    };
+  }
+
+  MP.sources = {
+    COINGECKO: COINGECKO,
+    SNAPSHOT: SNAPSHOT,
+    btcSpot: btcSpot,
+    btcChart: btcChart,
+    normalizeFmpQuote: normalizeFmpQuote,
+    normalizeEodLight: normalizeEodLight,
+    normalizeQuoteChange: normalizeQuoteChange,
+    normalizeAvQuote: normalizeAvQuote,
+    normalizeAvDaily: normalizeAvDaily,
+    normalizeQuotesSnapshot: normalizeQuotesSnapshot,
+    normalizeHistorySnapshot: normalizeHistorySnapshot,
+    normalizeSpotlightSnapshot: normalizeSpotlightSnapshot,
+    isoDay: isoDay,
+    parsePayload: parsePayload,
+    toNum: toNum
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/session.js ================================================== */
+/* ============================================================================
+ * session.js — the US equity session clock, computed locally.
+ *
+ * Replaces the Alpha Vantage MARKET_STATUS call: regular NYSE / Nasdaq hours
+ * are 09:30–16:00 America/New_York on weekdays that are not exchange
+ * holidays, with 13:00 early closes on a few half days. Pure functions over a
+ * timestamp, so the page and the data job agree on what "open" means.
+ *
+ * The holiday table is explicit and runs through 2027. Past its end every
+ * weekday counts as a session, which errs toward "open" on an unlisted
+ * holiday rather than hiding a real session. Extend HOLIDAYS each year.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var TZ = 'America/New_York';
+  var OPEN_MIN = 9 * 60 + 30;
+  var CLOSE_MIN = 16 * 60;
+  var EARLY_CLOSE_MIN = 13 * 60;
+
+  /* NYSE full-day closures (observed dates). */
+  var HOLIDAYS = {
+    '2026-01-01': 1, '2026-01-19': 1, '2026-02-16': 1, '2026-04-03': 1,
+    '2026-05-25': 1, '2026-06-19': 1, '2026-07-03': 1, '2026-09-07': 1,
+    '2026-11-26': 1, '2026-12-25': 1,
+    '2027-01-01': 1, '2027-01-18': 1, '2027-02-15': 1, '2027-03-26': 1,
+    '2027-05-31': 1, '2027-06-18': 1, '2027-07-05': 1, '2027-09-06': 1,
+    '2027-11-25': 1, '2027-12-24': 1
+  };
+
+  /* 13:00 ET closes. */
+  var EARLY_CLOSES = { '2026-11-27': 1, '2026-12-24': 1, '2027-11-26': 1 };
+
+  var WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  var formatter = null;
+  function nyFormatter() {
+    if (!formatter) {
+      formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23'
+      });
+    }
+    return formatter;
+  }
+
+  /* New York wall-clock parts for a timestamp. */
+  function nyParts(ts) {
+    var out = {};
+    nyFormatter().formatToParts(new Date(ts)).forEach(function (p) { out[p.type] = p.value; });
+    var hour = parseInt(out.hour, 10) % 24;   /* some engines render midnight as 24 */
+    return {
+      date: out.year + '-' + out.month + '-' + out.day,
+      weekday: out.weekday,
+      minutes: hour * 60 + parseInt(out.minute, 10)
+    };
+  }
+
+  function weekdayOf(date) {
+    return WEEKDAYS[new Date(date + 'T12:00:00Z').getUTCDay()];
+  }
+
+  function prevDate(date) {
+    var d = new Date(date + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function isWeekend(weekday) { return weekday === 'Sat' || weekday === 'Sun'; }
+
+  function isSessionDay(date) { return !isWeekend(weekdayOf(date)) && !HOLIDAYS[date]; }
+
+  function closeMinutes(date) { return EARLY_CLOSES[date] ? EARLY_CLOSE_MIN : CLOSE_MIN; }
+
+  /* { open, phase: 'open' | 'pre' | 'post' | 'weekend' | 'holiday', date } */
+  function status(ts) {
+    var p = nyParts(ts);
+    if (isWeekend(p.weekday)) return { open: false, phase: 'weekend', date: p.date };
+    if (HOLIDAYS[p.date]) return { open: false, phase: 'holiday', date: p.date };
+    var close = closeMinutes(p.date);
+    if (p.minutes < OPEN_MIN) return { open: false, phase: 'pre', date: p.date };
+    if (p.minutes >= close) return { open: false, phase: 'post', date: p.date };
+    return { open: true, phase: 'open', date: p.date };
+  }
+
+  /* Most recent session whose close is at least `graceMin` minutes past, as
+   * YYYY-MM-DD. The data job uses it to know which daily close should exist
+   * by now, and whether a stored quote is already that session's final one. */
+  function lastCompletedSession(ts, graceMin) {
+    var p = nyParts(ts);
+    var date = p.date;
+    if (!(isSessionDay(date) && p.minutes >= closeMinutes(date) + (graceMin || 0))) {
+      date = prevDate(date);
+    }
+    for (var i = 0; i < 14; i++) {
+      if (isSessionDay(date)) return date;
+      date = prevDate(date);
+    }
+    return date;
+  }
+
+  MP.session = {
+    TZ: TZ,
+    HOLIDAYS: HOLIDAYS,
+    EARLY_CLOSES: EARLY_CLOSES,
+    nyParts: nyParts,
+    weekdayOf: weekdayOf,
+    isSessionDay: isSessionDay,
+    status: status,
+    lastCompletedSession: lastCompletedSession
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/router.js =================================================== */
+/* ============================================================================
+ * router.js — hash routing between sections.
+ *
+ * The page is one document with several views; only one is ever shown. Charts
+ * render into hidden views quite happily because every SVG carries a viewBox
+ * and sizes from CSS, so nothing needs re-rendering on reveal.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var VIEWS = ['home', 'markets', 'weekly', 'coupling', 'volatility', 'drawdown', 'about'];
+
+  var TITLES = {
+    home: 'Home',
+    markets: 'Markets',
+    weekly: 'Stock of the week',
+    coupling: 'Coupling',
+    volatility: 'Volatility',
+    drawdown: 'Drawdown',
+    about: 'About'
+  };
+
+  var DEFAULT_VIEW = 'home';
+
+  /* Pure: '#coupling' -> 'coupling'; anything unrecognised -> the default. */
+  function parseHash(hash) {
+    var raw = String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+    return VIEWS.indexOf(raw) >= 0 ? raw : DEFAULT_VIEW;
+  }
+
+  var current = null;
+  var listeners = [];
+
+  function show(view) {
+    var target = VIEWS.indexOf(view) >= 0 ? view : DEFAULT_VIEW;
+    if (current === target) return target;
+    current = target;
+
+    var sections = document.querySelectorAll('.view[data-view]');
+    for (var i = 0; i < sections.length; i++) {
+      sections[i].hidden = sections[i].getAttribute('data-view') !== target;
+    }
+
+    var items = document.querySelectorAll('.navitem[data-view]');
+    for (var j = 0; j < items.length; j++) {
+      var on = items[j].getAttribute('data-view') === target;
+      items[j].classList.toggle('is-on', on);
+      if (on) items[j].setAttribute('aria-current', 'page');
+      else items[j].removeAttribute('aria-current');
+    }
+
+    var title = document.getElementById('viewTitle');
+    if (title) title.textContent = TITLES[target] || TITLES[DEFAULT_VIEW];
+
+    for (var k = 0; k < listeners.length; k++) {
+      try { listeners[k](target); } catch (e) { /* a listener must not break navigation */ }
+    }
+    return target;
+  }
+
+  function onChange(fn) { if (typeof fn === 'function') listeners.push(fn); }
+
+  function start() {
+    show(parseHash(root.location && root.location.hash));
+    if (root.addEventListener) {
+      root.addEventListener('hashchange', function () {
+        show(parseHash(root.location.hash));
+        if (root.scrollTo) root.scrollTo(0, 0);
+      });
+    }
+  }
+
+  MP.router = {
+    VIEWS: VIEWS,
+    TITLES: TITLES,
+    DEFAULT_VIEW: DEFAULT_VIEW,
+    parseHash: parseHash,
+    show: show,
+    onChange: onChange,
+    start: start,
+    currentView: function () { return current; }
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/spotlight.js ================================================ */
+/* ============================================================================
+ * spotlight.js — "Stock of the Week": the pinned panel at the top of the page.
+ *
+ * Selection is mechanical and descriptive, never advisory: the largest
+ * ABSOLUTE 5-session move across a fixed Nasdaq-100 universe. Absolute rather
+ * than largest gain, so the panel reports what actually moved instead of
+ * reading like a tip.
+ *
+ * The data job (src/lib/pipeline.js) runs the scan once a week with this
+ * module's selectSpotlight() and publishes the pick, its daily closes and its
+ * multi-horizon change in data/spotlight.json. The pick's quote refreshes with
+ * the Nasdaq quotes in data/quotes.json, so the price is never as stale as
+ * the pick.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var S = MP.stats, F = MP.fmt, G = MP.geom;
+
+  /* Fixed universe: large Nasdaq-100 constituents. A deliberate subset, not
+   * the whole index — the panel says so rather than implying full coverage. */
+  var UNIVERSE = [
+    { symbol: 'AAPL', name: 'Apple Inc.' },
+    { symbol: 'MSFT', name: 'Microsoft Corporation' },
+    { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+    { symbol: 'AMZN', name: 'Amazon.com, Inc.' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc. Class A' },
+    { symbol: 'META', name: 'Meta Platforms, Inc.' },
+    { symbol: 'AVGO', name: 'Broadcom Inc.' },
+    { symbol: 'TSLA', name: 'Tesla, Inc.' },
+    { symbol: 'COST', name: 'Costco Wholesale Corporation' },
+    { symbol: 'NFLX', name: 'Netflix, Inc.' },
+    { symbol: 'AMD', name: 'Advanced Micro Devices, Inc.' },
+    { symbol: 'ADBE', name: 'Adobe Inc.' },
+    { symbol: 'CSCO', name: 'Cisco Systems, Inc.' },
+    { symbol: 'PEP', name: 'PepsiCo, Inc.' },
+    { symbol: 'INTC', name: 'Intel Corporation' }
+  ];
+
+  var RULE = 'Largest absolute 5-session move across a fixed 15-name Nasdaq-100 universe.';
+
+  /* ---- pure selection ----------------------------------------------------- */
+
+  /* rows: [{ symbol, changePct5d }] — entries with a non-finite change are
+   * treated as unavailable (a plan denial, a dead symbol) and skipped.
+   * Ties break on symbol so the same scan always yields the same winner. */
+  function selectSpotlight(rows) {
+    var usable = (rows || []).filter(function (r) {
+      return r && typeof r.symbol === 'string' && S.isNum(r.changePct5d);
+    });
+    if (!usable.length) return null;
+
+    var ranked = usable.slice().sort(function (a, b) {
+      var d = Math.abs(b.changePct5d) - Math.abs(a.changePct5d);
+      if (d !== 0) return d;
+      return a.symbol < b.symbol ? -1 : a.symbol > b.symbol ? 1 : 0;
+    });
+
+    var win = ranked[0];
+    var next = ranked[1] || null;
+    return {
+      symbol: win.symbol,
+      changePct5d: win.changePct5d,
+      direction: win.changePct5d >= 0 ? 'up' : 'down',
+      scanned: usable.length,
+      skipped: (rows || []).length - usable.length,
+      runnerUp: next ? { symbol: next.symbol, changePct5d: next.changePct5d } : null,
+      rule: RULE
+    };
+  }
+
+  /* Monday (UTC) of the week containing `date`, as YYYY-MM-DD. Used as the
+   * week identifier and the history key. */
+  function weekOf(date) {
+    var d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    var dow = d.getUTCDay();                 /* 0 = Sunday */
+    var back = dow === 0 ? 6 : dow - 1;      /* rewind to Monday */
+    d.setUTCDate(d.getUTCDate() - back);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function nameFor(symbol, fallback) {
+    for (var i = 0; i < UNIVERSE.length; i++) {
+      if (UNIVERSE[i].symbol === symbol) return UNIVERSE[i].name;
+    }
+    return fallback || symbol;
+  }
+
+  /* ---- rendering ---------------------------------------------------------- */
+  var view = {
+    pick: null,      /* the week's pick */
+    quote: null,     /* latest quote for the pick's symbol */
+    change: null,    /* multi-horizon change for the pick's symbol */
+    series: null,    /* daily closes for the sparkline */
+    history: [],     /* previous weeks */
+    notice: null
+  };
+
+  function el(id) { return document.getElementById(id); }
+  function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
+  function setHtml(id, html) { var n = el(id); if (n) n.innerHTML = html; }
+
+  function statStrip(items) {
+    return items.map(function (it) {
+      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
+        '<div class="stat-value">' + F.escapeHtml(it[1]) + '</div></div>';
+    }).join('');
+  }
+
+  function noticeHtml() {
+    return view.notice
+      ? '<p class="notice notice-' + view.notice.level + '">' + F.escapeHtml(view.notice.text) + '</p>'
+      : '';
+  }
+
+  function render() {
+    var pick = view.pick, q = view.quote, ch = view.change;
+
+    /* the one-line strip on Home */
+    setText('pinSymbol', pick ? pick.symbol : '—');
+    var pin = el('pinMove');
+    if (pin) {
+      if (pick && S.isNum(pick.changePct5d)) {
+        pin.textContent = F.signedPctPoints(pick.changePct5d, 1);
+        pin.className = 'chg ' + (pick.changePct5d >= 0 ? 'is-up' : 'is-down');
+      } else {
+        pin.textContent = F.DASH;
+        pin.className = 'chg is-flat';
+      }
+    }
+
+    if (!pick) {
+      setText('spotSymbol', '—');
+      setText('spotWeek', '');
+      setText('spotName', 'No pick yet');
+      setText('spotRunner', '');
+      setHtml('spotStrip', '');
+      setHtml('spotNotice', noticeHtml());
+      return;
+    }
+
+    setText('spotSymbol', pick.symbol);
+    setText('spotWeek', 'Week of ' + F.shortDate(pick.weekOf));
+    setText('spotName', (q && q.name) || pick.name || nameFor(pick.symbol));
+
+    var px = el('spotPx');
+    if (px) {
+      px.textContent = q && S.isNum(q.price) ? F.usd(q.price, 2) : F.DASH;
+      px.classList.toggle('is-empty', !(q && S.isNum(q.price)));
+    }
+    var chg = el('spotChg');
+    if (chg) {
+      if (q && S.isNum(q.changePct)) {
+        chg.textContent = F.signedPctPoints(q.changePct);
+        chg.className = 'chg ' + (q.changePct >= 0 ? 'is-up' : 'is-down');
+      } else {
+        chg.textContent = F.DASH;
+        chg.className = 'chg is-flat';
+      }
+    }
+
+    if (view.series && view.series.length > 2) {
+      setHtml('spotSpark', G.sparkStep({
+        values: S.tail(view.series, 60).map(function (p) { return p.price; }),
+        w: 900, h: 200, color: 'var(--gold)', area: true, strokeWidth: 1.8
+      }));
+    } else {
+      setHtml('spotSpark', '');
+    }
+
+    setHtml('spotStrip', statStrip([
+      ['5d move', F.signedPctPoints(pick.changePct5d, 1)],
+      ['1 month', ch && S.isNum(ch.m1) ? F.signedPctPoints(ch.m1, 1) : F.DASH],
+      ['Market cap', q && S.isNum(q.marketCap) && q.marketCap > 0 ? F.compact(q.marketCap) : F.DASH]
+    ]));
+
+    var bits = [];
+    if (pick.runnerUp) {
+      bits.push('Runner-up ' + pick.runnerUp.symbol + ' ' + F.signedPctPoints(pick.runnerUp.changePct5d, 1));
+    }
+    if (view.history.length) {
+      bits.push('before: ' + view.history.map(function (h) { return h.symbol; }).join(', '));
+    }
+    setText('spotRunner', bits.join(' · '));
+    setHtml('spotNotice', noticeHtml());
+  }
+
+  /* ---- data in ------------------------------------------------------------ */
+
+  /* snap: MP.sources.normalizeSpotlightSnapshot output. */
+  function applySnapshot(snap) {
+    if (!snap) return;
+    var pick = snap.current;
+    view.pick = pick;
+    view.change = pick && snap.change && snap.change.symbol === pick.symbol ? snap.change : null;
+    view.series = pick ? snap.series : null;
+    if (view.quote && (!pick || view.quote.symbol !== pick.symbol)) view.quote = null;
+    view.history = (snap.history || []).filter(function (h) {
+      return !pick || h.weekOf !== pick.weekOf;
+    }).slice(0, 4);
+    view.notice = pick ? null : { level: 'quiet', text: 'This week’s pick appears after the Monday scan runs.' };
+    render();
+  }
+
+  /* q: a normalized quote from data/quotes.json. Kept only if it is for the
+   * current pick; before the pick has loaded, kept provisionally. */
+  function setQuote(q) {
+    view.quote = q && (!view.pick || q.symbol === view.pick.symbol) ? q : null;
+    render();
+  }
+
+  function setNotice(notice) {
+    view.notice = notice || null;
+    render();
+  }
+
+  MP.spotlight = {
+    UNIVERSE: UNIVERSE,
+    RULE: RULE,
+    selectSpotlight: selectSpotlight,
+    weekOf: weekOf,
+    nameFor: nameFor,
+    applySnapshot: applySnapshot,
+    setQuote: setQuote,
+    setNotice: setNotice,
+    view: view,
+    render: render
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/app.js ====================================================== */
+/* ============================================================================
+ * app.js — state, data wiring, analytics assembly, rendering.
+ *
+ * One number per screen. Bitcoin comes straight from CoinGecko's public API
+ * on a 45s poll. The Nasdaq quotes, daily history and the stock of the week
+ * come from snapshot files under data/ that a scheduled GitHub Action rewrites
+ * (scripts/update-data.js). Daily history drives the coupling, volatility and
+ * drawdown views; the hero chart fetches per range, on demand, and caches.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
+
+  /* ---- configuration ------------------------------------------------------ */
+  var BTC_REFRESH_MS = 45000;
+  var SNAPSHOT_REFRESH_MS = 60000;
+  var DAILY_REFRESH_MS = 30 * 60000;
+  var HERO_REFRESH_MS = 5 * 60000;
+  var SESSION_TICK_MS = 30000;
+  var FETCH_TIMEOUT_MS = 12000;
+  var MAX_BACKOFF_MS = 10 * 60000;
+  var STALE_SNAPSHOT_MS = 4 * 86400000;   /* longer than any market weekend */
+  var VOL_WINDOW = 30;
+  var CORR_WINDOW = 30;
+  var SCATTER_SESSIONS = 90;
+  var COUPLING_WINDOWS = [30, 90, 252];
+  var VOL_CHART_POINTS = 120;
+  var CORR_CHART_POINTS = 180;
+  var ANNUALIZE = S.TRADING_DAYS;
+
+  var RANGE_LABELS = { 1: '24H', 7: '1W', 30: '1M', 365: '1Y' };
+
+  var INSTRUMENTS = {
+    btc: { code: 'BTC / USD', desc: 'Bitcoin spot', dp: 0, color: 'var(--c-btc)' },
+    ixic: { code: '^IXIC', desc: 'Nasdaq Composite', dp: 2, color: 'var(--c-idx)' },
+    qqq: { code: 'QQQ', desc: 'Invesco QQQ Trust', dp: 2, color: 'var(--c-qqq)' }
+  };
+
+  var state = {
+    quotes: {
+      btc: { data: null, stamp: null, notice: null },
+      ixic: { data: null, stamp: null, notice: null },
+      qqq: { data: null, stamp: null, notice: null }
+    },
+    snapshot: { generatedAt: null, notice: null },
+    session: { data: null },
+    history: { btc: null, ixic: null, qqq: null, notice: null, pending: true },
+    analytics: null,
+    hero: { days: 1, series: null, notice: null, loading: false, cache: {} },
+    teardown: []
+  };
+
+  function el(id) { return document.getElementById(id); }
+  function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
+  function setHtml(id, html) { var n = el(id); if (n) n.innerHTML = html; }
+
+  /* ---- fetching ----------------------------------------------------------- */
+  function fetchJson(url) {
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS) : null;
+    function done() { if (timer) clearTimeout(timer); }
+    return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (res) {
+        if (!res.ok) {
+          var err = new Error('HTTP ' + res.status);
+          err.status = res.status;
+          throw err;
+        }
+        return res.json();
+      })
+      .then(function (body) { done(); return body; }, function (err) { done(); throw err; });
+  }
+
+  /* GitHub Pages caches files for ten minutes; a per-minute query string keeps
+   * snapshot reads current without defeating the cache entirely. */
+  function snapshotUrl(path) {
+    return path + '?t=' + Math.floor(Date.now() / 60000);
+  }
+
+  function emptyError() {
+    var err = new Error('no usable data');
+    err.empty = true;
+    return err;
+  }
+
+  /* Runs `task` now and then every `baseMs`, doubling the wait after a 429 up
+   * to MAX_BACKOFF_MS. A background tab makes no requests at all; a tick that
+   * was skipped while hidden runs the moment the tab is shown again. */
+  function poll(task, baseMs) {
+    var delay = baseMs, timer = null, stopped = false, skipped = false;
+    function schedule() { if (!stopped) timer = setTimeout(tick, delay); }
+    function tick() {
+      if (stopped) return;
+      if (root.document && root.document.hidden) { skipped = true; schedule(); return; }
+      skipped = false;
+      Promise.resolve().then(task).then(function () {
+        delay = baseMs;
+      }, function (err) {
+        delay = err && err.status === 429 ? Math.min(delay * 2, MAX_BACKOFF_MS) : baseMs;
+      }).then(schedule);
+    }
+    function onShow() {
+      if (skipped && !(root.document && root.document.hidden)) { clearTimeout(timer); tick(); }
+    }
+    if (root.document && root.document.addEventListener) {
+      root.document.addEventListener('visibilitychange', onShow);
+    }
+    tick();
+    state.teardown.push(function () {
+      stopped = true;
+      clearTimeout(timer);
+      if (root.document && root.document.removeEventListener) {
+        root.document.removeEventListener('visibilitychange', onShow);
+      }
+    });
+  }
+
+  function every(fn, ms) {
+    var id = setInterval(fn, ms);
+    state.teardown.push(function () { clearInterval(id); });
+  }
+
+  /* ---- notice copy -------------------------------------------------------- */
+  function liveNotice(source, err) {
+    if (err && err.status === 429) {
+      return { level: 'warn', text: source + ' is rate limiting this browser. Retrying with a longer wait.' };
+    }
+    if (err && err.name === 'AbortError') {
+      return { level: 'warn', text: source + ' took too long to answer. Retrying shortly.' };
+    }
+    if (err && err.empty) {
+      return { level: 'warn', text: source + ' returned no usable data. Retrying shortly.' };
+    }
+    return { level: 'warn', text: 'Could not reach ' + source + '. Retrying shortly.' };
+  }
+
+  function snapshotNotice(err, what) {
+    if (err && err.status === 404) {
+      return { level: 'quiet', text: what + ' appears after the first scheduled update.' };
+    }
+    return { level: 'warn', text: 'Could not load the latest ' + what.toLowerCase() + '. Retrying shortly.' };
+  }
+
+  function staleNotice(generatedAt) {
+    if (!S.isNum(generatedAt) || Date.now() - generatedAt < STALE_SNAPSHOT_MS) return null;
+    return {
+      level: 'quiet',
+      text: 'Nasdaq figures were last refreshed ' + F.shortDate(new Date(generatedAt).toISOString()) + '.'
+    };
+  }
+
+  function noticeHtml(notice) {
+    if (!notice) return '';
+    return '<p class="notice notice-' + notice.level + '">' + F.escapeHtml(notice.text) + '</p>';
+  }
+
+  function changeClass(v) {
+    return !S.isNum(v) ? 'chg is-flat' : (v >= 0 ? 'chg is-up' : 'chg is-down');
+  }
+
+  /* ---- hero (home) -------------------------------------------------------- */
+  function seriesFor(key) {
+    if (key === 'btc') {
+      if (state.hero.series) return state.hero.series;
+      var spot = state.quotes.btc.data;
+      return spot && spot.sparkline && spot.sparkline.length > 2 ? spot.sparkline : null;
+    }
+    var hist = state.history[key];
+    return hist && hist.length > 2 ? S.tail(hist, 60).map(function (p) { return p.price; }) : null;
+  }
+
+  function renderHero() {
+    var spot = state.quotes.btc.data;
+    var price = el('heroPrice');
+    if (price) {
+      price.textContent = spot && S.isNum(spot.price) ? F.usd(spot.price, 0) : F.DASH;
+      price.classList.toggle('is-empty', !(spot && S.isNum(spot.price)));
+    }
+
+    /* Change is measured over the selected range, from the range's own series;
+     * the price above it is the live spot. */
+    var series = state.hero.series;
+    var pct = NaN;
+    if (series && series.length > 1 && series[0] > 0) {
+      pct = (series[series.length - 1] / series[0] - 1) * 100;
+    } else if (state.hero.days === 1 && spot && S.isNum(spot.changePct)) {
+      pct = spot.changePct;
+    }
+    var chg = el('heroChange');
+    if (chg) {
+      chg.textContent = S.isNum(pct) ? F.signedPctPoints(pct) : F.DASH;
+      chg.className = changeClass(pct);
+    }
+    setText('heroRangeLabel', RANGE_LABELS[state.hero.days] || '');
+
+    var host = el('heroChart');
+    if (host) {
+      host.innerHTML = series && series.length > 1
+        ? G.sparkStep({ values: series, w: 900, h: 230, color: 'var(--c-btc)', area: true, strokeWidth: 1.8 })
+        : '';
+    }
+    setHtml('heroNotice', noticeHtml(state.hero.notice || state.quotes.btc.notice));
+  }
+
+  function loadHeroRange(days, refresh) {
+    state.hero.days = days;
+    var cached = state.hero.cache[days];
+    if (cached && !refresh) {
+      state.hero.series = cached;
+      state.hero.notice = null;
+      renderHero();
+      return;
+    }
+    if (!cached) state.hero.series = null;
+    state.hero.loading = true;
+    renderHero();
+
+    var spec = SRC.btcChart(days);
+    fetchJson(spec.url).then(function (payload) {
+      var parsed = spec.normalize(payload);
+      if (!parsed) throw emptyError();
+      state.hero.cache[days] = parsed.prices;
+      if (state.hero.days === days) {
+        state.hero.series = parsed.prices;
+        state.hero.notice = null;
+      }
+    }).catch(function (err) {
+      if (state.hero.days === days) state.hero.notice = liveNotice('CoinGecko', err);
+    }).then(function () {
+      state.hero.loading = false;
+      renderHero();
+    });
+  }
+
+  function wirePills() {
+    var group = el('heroPills');
+    if (!group) return;
+    group.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('.pill') : null;
+      if (!btn || !group.contains(btn)) return;
+      var days = parseInt(btn.getAttribute('data-days'), 10);
+      if (!days) return;
+      var pills = group.querySelectorAll('.pill');
+      for (var i = 0; i < pills.length; i++) pills[i].classList.toggle('is-on', pills[i] === btn);
+      loadHeroRange(days);
+    });
+  }
+
+  /* ---- markets ------------------------------------------------------------ */
+
+  /* QQQ is optional upstream (it needs a second API key), so its row appears
+   * only once there is something to show. */
+  function marketKeys() {
+    var keys = ['btc', 'ixic'];
+    if (state.quotes.qqq.data || state.history.qqq) keys.push('qqq');
+    return keys;
+  }
+
+  function asOfLabel(key) {
+    if (key === 'btc') return state.quotes.btc.data ? 'live' : '';
+    var ts = state.quotes[key].stamp;
+    if (!S.isNum(ts)) return '';
+    return new Date(ts).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  }
+
+  function renderMarkets() {
+    var host = el('marketRows');
+    if (!host) return;
+    host.innerHTML = marketKeys().map(function (key) {
+      var meta = INSTRUMENTS[key], d = state.quotes[key].data;
+      var series = seriesFor(key);
+      var spark = series
+        ? G.sparkStep({ values: S.tail(series, 60), w: 150, h: 34, color: meta.color })
+        : '';
+      var label = asOfLabel(key);
+      return '<li>' +
+        '<div class="row-name"><div class="row-code">' + F.escapeHtml(meta.code) + '</div>' +
+        '<div class="row-desc">' + F.escapeHtml(meta.desc + (label ? ' · ' + label : '')) + '</div></div>' +
+        '<div class="row-spark">' + spark + '</div>' +
+        '<div class="row-px">' + (d && S.isNum(d.price) ? F.num(d.price, meta.dp) : F.DASH) + '</div>' +
+        '<div class="row-chg"><span class="' + changeClass(d && d.changePct) + '">' +
+        (d && S.isNum(d.changePct) ? F.signedPctPoints(d.changePct) : F.DASH) + '</span></div>' +
+        '</li>';
+    }).join('');
+
+    setHtml('marketNotice', noticeHtml(state.quotes.btc.notice || state.snapshot.notice));
+  }
+
+  /* The stamp tracks bitcoin, the one instrument that is actually live; the
+   * snapshot instruments carry their own as-of time in the Markets rows. */
+  function renderStamp() {
+    var ts = state.quotes.btc.stamp;
+    setText('quoteStamp', S.isNum(ts) ? F.ago(ts) : '—');
+  }
+
+  function loadBtc() {
+    return fetchJson(SRC.btcSpot.url).then(function (payload) {
+      var parsed = SRC.btcSpot.normalize(payload);
+      if (!parsed) throw emptyError();
+      var slot = state.quotes.btc;
+      slot.data = parsed;
+      slot.stamp = Date.now();
+      slot.notice = null;
+    }).catch(function (err) {
+      state.quotes.btc.notice = liveNotice('CoinGecko', err);
+      throw err;
+    }).then(function () {
+      renderHero(); renderMarkets(); renderStamp();
+    }, function (err) {
+      renderHero(); renderMarkets();
+      throw err;
+    });
+  }
+
+  function applySnapshotQuote(key, q) {
+    var slot = state.quotes[key];
+    slot.data = q || null;
+    slot.stamp = !q ? null : S.isNum(q.timestamp) ? q.timestamp : S.isNum(q.fetchedAt) ? q.fetchedAt : null;
+  }
+
+  function loadQuotes() {
+    return fetchJson(snapshotUrl(SRC.SNAPSHOT.quotes)).then(function (payload) {
+      var snap = SRC.normalizeQuotesSnapshot(payload);
+      if (!snap) throw emptyError();
+      applySnapshotQuote('ixic', snap.ixic);
+      applySnapshotQuote('qqq', snap.qqq);
+      state.snapshot.generatedAt = snap.generatedAt;
+      state.snapshot.notice = staleNotice(snap.generatedAt);
+      if (MP.spotlight) MP.spotlight.setQuote(snap.spotlight);
+    }).catch(function (err) {
+      state.snapshot.notice = snapshotNotice(err, 'Nasdaq data');
+      throw err;
+    }).then(renderMarkets, function (err) {
+      renderMarkets();
+      throw err;
+    });
+  }
+
+  /* ---- session ------------------------------------------------------------ */
+  function renderSession() {
+    var d = state.session.data;
+    var dot = el('sessionDot');
+    var open = d && d.equityStatus === 'open';
+    if (dot) {
+      dot.classList.toggle('is-open', !!open);
+      dot.classList.toggle('is-closed', !!(d && !open));
+    }
+    setText('sessionText', d && d.equityStatus ? (open ? 'Market open' : 'Market closed') : 'Market —');
+  }
+
+  function tickSession() {
+    var st = SES.status(Date.now());
+    state.session.data = { equityStatus: st.open ? 'open' : 'closed', phase: st.phase };
+    renderSession();
+  }
+
+  /* ---- analytics ---------------------------------------------------------- */
+  function computeAnalytics() {
+    var btc = state.history.btc, ixic = state.history.ixic, qqq = state.history.qqq;
+    if (!btc || !ixic) return null;
+
+    var pair = S.alignByDate(btc, ixic);
+    if (pair.dates.length < VOL_WINDOW + 2) return null;
+
+    var btcR = S.logReturns(pair.a);
+    var ixicR = S.logReturns(pair.b);
+    var retDates = pair.dates.slice(1);
+
+    var scatterPair = S.pairwiseClean(S.tail(ixicR, SCATTER_SESSIONS), S.tail(btcR, SCATTER_SESSIONS));
+    var volFn = function (w) { return S.annualizedVol(w, ANNUALIZE); };
+    var btcVol = S.rolling(btcR, VOL_WINDOW, volFn);
+    var ixicVol = S.rolling(ixicR, VOL_WINDOW, volFn);
+
+    var btcSorted = S.sortSeries(btc), ixicSorted = S.sortSeries(ixic);
+    var btcPrices = btcSorted.map(function (p) { return p.price; });
+    var ixicPrices = ixicSorted.map(function (p) { return p.price; });
+    var btcDates = btcSorted.map(function (p) { return p.date; });
+    var ixicDates = ixicSorted.map(function (p) { return p.date; });
+
+    var qqqCoupling = null;
+    if (qqq && qqq.length > 40) {
+      var qPair = S.alignByDate(btc, qqq);
+      if (qPair.dates.length > 40) {
+        qqqCoupling = S.couplingWindows(S.logReturns(qPair.a), S.logReturns(qPair.b), [30, 90]);
+      }
+    }
+
+    var btcDd = S.drawdownSeries(btcPrices);
+    var ixicDd = S.drawdownSeries(ixicPrices);
+
+    return {
+      dates: retDates,
+      commonSessions: pair.dates.length,
+      windowFrom: pair.dates[0],
+      windowTo: pair.dates[pair.dates.length - 1],
+      coupling: S.couplingWindows(btcR, ixicR, COUPLING_WINDOWS),
+      qqqCoupling: qqqCoupling,
+      scatter: { xs: scatterPair.a, ys: scatterPair.b, fit: S.regression(scatterPair.a, scatterPair.b) },
+      rollCorr: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.pearson),
+      btcVol: btcVol,
+      ixicVol: ixicVol,
+      currentBtcVol: btcVol.length ? btcVol[btcVol.length - 1].value : NaN,
+      currentIxicVol: ixicVol.length ? ixicVol[ixicVol.length - 1].value : NaN,
+      btcDd: { dates: btcDates, series: btcDd, now: btcDd[btcDd.length - 1], max: S.maxDrawdown(btcPrices) },
+      ixicDd: { dates: ixicDates, series: ixicDd, now: ixicDd[ixicDd.length - 1], max: S.maxDrawdown(ixicPrices) },
+      btcEpisodes: S.drawdownEpisodes(btcDates, btcPrices, { minDepth: 0.05, limit: 4 }),
+      ixicEpisodes: S.drawdownEpisodes(ixicDates, ixicPrices, { minDepth: 0.03, limit: 4 })
+    };
+  }
+
+  function strip(items) {
+    return items.map(function (it) {
+      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
+        '<div class="stat-value' + (it[2] ? ' ' + it[2] : '') + '">' + F.escapeHtml(it[1]) + '</div></div>';
+    }).join('');
+  }
+
+  function datesForRolling(entries, dates, count) {
+    return S.tail(entries, count).map(function (e) { return dates[e.index] || ''; });
+  }
+
+  function renderAnalytics() {
+    var a = state.analytics;
+    setHtml('notice-history', noticeHtml(state.history.notice));
+
+    if (!a) {
+      var waiting = state.history.pending ? '—' : F.DASH;
+      setHtml('couplingStrip', strip([['Corr 90d', waiting], ['Beta 90d', waiting], ['R² 90d', waiting]]));
+      setHtml('volStrip', strip([['BTC 30d', waiting], ['^IXIC 30d', waiting], ['Ratio', waiting]]));
+      setHtml('ddStrip', strip([['BTC now', waiting], ['BTC worst', waiting], ['^IXIC worst', waiting]]));
+      return;
+    }
+
+    /* coupling */
+    var c90 = a.coupling[1] || a.coupling[0];
+    setHtml('couplingStrip', strip([
+      ['Corr 90d', F.ratio(c90.correlation, 2)],
+      ['Beta 90d', F.ratio(c90.beta, 2)],
+      ['R² 90d', F.ratio(c90.r2, 2)]
+    ]));
+
+    var rows = a.coupling.map(function (c) {
+      return '<tr><th scope="row">' + c.window + 'd</th><td>' + F.ratio(c.correlation, 3) +
+        '</td><td>' + F.ratio(c.beta, 3) + '</td><td>' + F.ratio(c.r2, 3) +
+        '</td><td class="dim">' + c.n + '</td></tr>';
+    }).join('');
+    if (a.qqqCoupling) {
+      rows += '<tr class="row-rule"><th scope="row" colspan="5">vs QQQ</th></tr>';
+      rows += a.qqqCoupling.map(function (c) {
+        return '<tr><th scope="row">' + c.window + 'd</th><td>' + F.ratio(c.correlation, 3) +
+          '</td><td>' + F.ratio(c.beta, 3) + '</td><td>' + F.ratio(c.r2, 3) +
+          '</td><td class="dim">' + c.n + '</td></tr>';
+      }).join('');
+    }
+    setHtml('couplingTable',
+      '<table class="data"><thead><tr><th scope="col">Window</th><th scope="col">Corr</th>' +
+      '<th scope="col">Beta</th><th scope="col">R²</th><th scope="col">n</th></tr></thead><tbody>' +
+      rows + '</tbody></table>');
+
+    setHtml('chartScatter', G.scatterFit({
+      xs: a.scatter.xs, ys: a.scatter.ys, fit: a.scatter.fit,
+      w: 560, h: 320,
+      pointColor: 'var(--c-btc)', fitColor: 'var(--gold)',
+      xTitle: '^IXIC', yTitle: 'BTC'
+    }));
+    setText('scatterCaption', 'Daily log returns, ' + a.scatter.fit.n + ' sessions. Slope β=' +
+      F.ratio(a.scatter.fit.slope, 2) + ', axes scaled independently.');
+
+    setHtml('chartRollCorr', G.stepChart({
+      series: [{ values: S.tail(a.rollCorr, CORR_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }],
+      w: 900, h: 170, yDomain: [-1, 1], zeroLine: true, tickCount: 4,
+      yFmt: function (v) { return v.toFixed(1); },
+      xLabels: datesForRolling(a.rollCorr, a.dates, CORR_CHART_POINTS).map(F.shortDate)
+    }));
+
+    /* volatility */
+    var volRatio = S.isNum(a.currentBtcVol) && S.isNum(a.currentIxicVol) && a.currentIxicVol
+      ? a.currentBtcVol / a.currentIxicVol : NaN;
+    setHtml('volStrip', strip([
+      ['BTC 30d', F.pct(a.currentBtcVol, 0)],
+      ['^IXIC 30d', F.pct(a.currentIxicVol, 0)],
+      ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
+    ]));
+    setHtml('chartVol', G.columnChart({
+      series: [
+        { values: S.tail(a.btcVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-btc)' },
+        { values: S.tail(a.ixicVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }
+      ],
+      w: 900, h: 190,
+      yFmt: function (v) { return (v * 100).toFixed(0) + '%'; },
+      xLabels: datesForRolling(a.btcVol, a.dates, VOL_CHART_POINTS).map(F.shortDate)
+    }));
+
+    /* drawdown */
+    setHtml('ddStrip', strip([
+      ['BTC now', F.signedPct(a.btcDd.now, 1), 'neg'],
+      ['BTC worst', F.signedPct(a.btcDd.max, 1), 'neg'],
+      ['^IXIC worst', F.signedPct(a.ixicDd.max, 1), 'neg']
+    ]));
+    setHtml('chartDdBtc', G.underwaterChart({
+      values: a.btcDd.series, w: 900, h: 150, color: 'var(--c-btc)',
+      xLabels: a.btcDd.dates.map(F.shortDate)
+    }));
+    setHtml('chartDdIxic', G.underwaterChart({
+      values: a.ixicDd.series, w: 900, h: 150, color: 'var(--c-idx)',
+      xLabels: a.ixicDd.dates.map(F.shortDate)
+    }));
+
+    var episodes = a.btcEpisodes.map(function (e) { return { code: 'BTC', e: e }; })
+      .concat(a.ixicEpisodes.map(function (e) { return { code: '^IXIC', e: e }; }))
+      .sort(function (p, q) { return p.e.depth - q.e.depth; });
+
+    setHtml('ddTable', episodes.length
+      ? '<table class="data"><thead><tr><th scope="col">Asset</th><th scope="col">Depth</th>' +
+        '<th scope="col">Peak</th><th scope="col">Trough</th><th scope="col">Recovered</th>' +
+        '</tr></thead><tbody>' + episodes.map(function (r) {
+          return '<tr><th scope="row">' + F.escapeHtml(r.code) + '</th>' +
+            '<td class="neg">' + F.signedPct(r.e.depth, 1) + '</td>' +
+            '<td class="dim">' + F.shortDate(r.e.peakDate) + '</td>' +
+            '<td class="dim">' + F.shortDate(r.e.troughDate) + '</td>' +
+            '<td>' + (r.e.ongoing ? '<span class="tag">not yet</span>' : F.shortDate(r.e.recoveryDate)) + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '');
+  }
+
+  /* ---- history ------------------------------------------------------------ */
+  function loadHistory() {
+    function finish() {
+      state.history.pending = false;
+      state.analytics = computeAnalytics();
+      renderAnalytics();
+      renderMarkets();
+    }
+
+    return fetchJson(snapshotUrl(SRC.SNAPSHOT.history)).then(function (payload) {
+      var snap = SRC.normalizeHistorySnapshot(payload);
+      if (snap && snap.btc && snap.ixic) {
+        state.history.btc = snap.btc;
+        state.history.ixic = snap.ixic;
+        state.history.qqq = snap.qqq;
+        state.history.notice = null;
+      } else if (!state.history.btc) {
+        state.history.notice = { level: 'quiet', text: 'Daily history appears after the first scheduled update.' };
+      }
+    }).catch(function (err) {
+      if (!state.history.btc) state.history.notice = snapshotNotice(err, 'Daily history');
+      throw err;
+    }).then(finish, function (err) {
+      finish();
+      throw err;
+    });
+  }
+
+  function loadSpotlight() {
+    if (!MP.spotlight) return Promise.resolve();
+    return fetchJson(snapshotUrl(SRC.SNAPSHOT.spotlight)).then(function (payload) {
+      var snap = SRC.normalizeSpotlightSnapshot(payload);
+      if (!snap) throw emptyError();
+      MP.spotlight.applySnapshot(snap);
+    }).catch(function (err) {
+      MP.spotlight.setNotice(snapshotNotice(err, 'This week’s pick'));
+      throw err;
+    });
+  }
+
+  /* ---- offline ------------------------------------------------------------ */
+  function renderOffline(reason) {
+    state.history.pending = false;
+    setHtml('pageNotice', '<p class="notice">' + F.escapeHtml(reason) + '</p>');
+    renderHero();
+    renderMarkets();
+    renderAnalytics();
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  function start() {
+    if (MP.router) MP.router.start();
+    tickSession();
+    renderHero();
+    renderMarkets();
+    renderAnalytics();
+    if (MP.spotlight) MP.spotlight.render();
+    wirePills();
+    every(renderStamp, 1000);
+    every(tickSession, SESSION_TICK_MS);
+
+    if (typeof root.fetch !== 'function') {
+      renderOffline('This browser cannot load live data. Try a current version of Chrome, Safari, Firefox or Edge.');
+      return;
+    }
+
+    poll(loadBtc, BTC_REFRESH_MS);
+    poll(loadQuotes, SNAPSHOT_REFRESH_MS);
+    poll(loadHistory, DAILY_REFRESH_MS);
+    poll(loadSpotlight, DAILY_REFRESH_MS);
+    poll(function () { loadHeroRange(state.hero.days, true); }, HERO_REFRESH_MS);
+  }
+
+  /* Stops every poll and timer. The debug bundle calls it before rendering
+   * synthetic data so live responses do not overwrite it. */
+  function stop() {
+    state.teardown.splice(0).forEach(function (fn) {
+      try { fn(); } catch (e) { /* already stopped */ }
+    });
+  }
+
+  MP.app = {
+    start: start,
+    stop: stop,
+    state: state,
+    computeAnalytics: computeAnalytics,
+    renderAnalytics: renderAnalytics,
+    renderHero: renderHero,
+    renderMarkets: renderMarkets,
+    renderSession: renderSession,
+    loadHeroRange: loadHeroRange,
+    INSTRUMENTS: INSTRUMENTS,
+    config: {
+      BTC_REFRESH_MS: BTC_REFRESH_MS,
+      SNAPSHOT_REFRESH_MS: SNAPSHOT_REFRESH_MS,
+      VOL_WINDOW: VOL_WINDOW,
+      CORR_WINDOW: CORR_WINDOW,
+      COUPLING_WINDOWS: COUPLING_WINDOWS,
+      ANNUALIZE: ANNUALIZE
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+</body>
+</html>

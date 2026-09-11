@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multimeter</title>
+<meta name="description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
+<meta name="theme-color" content="#0b1626">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Multimeter">
+<meta property="og:description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f4f7fb'/%3E%3Ctext x='32' y='44' font-family='Arial,Helvetica,sans-serif' font-size='34' font-weight='700' text-anchor='middle' fill='%230b1626'%3EM%3C/text%3E%3C/svg%3E">
+<style>
+[hidden] { display: none !important; }
+/* @inject styles.css */
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">M</span>
+      <span class="brandname">Multimeter</span>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a class="navitem" href="#home" data-view="home">Home</a>
+      <a class="navitem" href="#markets" data-view="markets">Markets</a>
+      <a class="navitem" href="#weekly" data-view="weekly">Weekly</a>
+      <a class="navitem" href="#coupling" data-view="coupling">Coupling</a>
+      <a class="navitem" href="#volatility" data-view="volatility">Volatility</a>
+      <a class="navitem" href="#drawdown" data-view="drawdown">Drawdown</a>
+      <a class="navitem" href="#about" data-view="about">About</a>
+    </nav>
+
+    <div class="side-foot">
+      <span class="dot" id="sessionDot" aria-hidden="true"></span>
+      <span id="sessionText">Market —</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1 id="viewTitle">Home</h1>
+      <span class="muted" id="quoteStamp">—</span>
+    </header>
+
+    <div id="pageNotice"></div>
+
+    <!-- ================= HOME ================= -->
+    <section class="view" data-view="home">
+      <a class="pinstrip" href="#weekly">
+        <span class="pin-label">Stock of the week</span>
+        <span class="pin-symbol" id="pinSymbol">—</span>
+        <span class="chg is-flat" id="pinMove">—</span>
+        <span class="pin-go" aria-hidden="true">›</span>
+      </a>
+
+      <div class="hero">
+        <div class="hero-top">
+          <span class="hero-asset">BTC / USD</span>
+        </div>
+        <div class="hero-price" id="heroPrice">—</div>
+        <div class="hero-sub">
+          <span class="chg is-flat" id="heroChange">—</span>
+          <span class="muted" id="heroRangeLabel">24H</span>
+        </div>
+      </div>
+
+      <div class="chartbox" id="heroChart"></div>
+
+      <div class="pills" id="heroPills" role="group" aria-label="Chart range">
+        <button type="button" class="pill is-on" data-days="1">24H</button>
+        <button type="button" class="pill" data-days="7">1W</button>
+        <button type="button" class="pill" data-days="30">1M</button>
+        <button type="button" class="pill" data-days="365">1Y</button>
+      </div>
+
+      <div id="heroNotice"></div>
+    </section>
+
+    <!-- ================= MARKETS ================= -->
+    <section class="view" data-view="markets" hidden>
+      <ul class="rows" id="marketRows"></ul>
+      <div id="marketNotice"></div>
+    </section>
+
+    <!-- ================= WEEKLY ================= -->
+    <section class="view" data-view="weekly" hidden>
+      <div class="hero">
+        <div class="hero-top">
+          <span class="hero-asset" id="spotSymbol">—</span>
+          <span class="muted" id="spotWeek">—</span>
+        </div>
+        <div class="hero-price" id="spotPx">—</div>
+        <div class="hero-sub">
+          <span class="chg is-flat" id="spotChg">—</span>
+          <span class="muted" id="spotName">—</span>
+        </div>
+      </div>
+
+      <div class="chartbox" id="spotSpark"></div>
+
+      <div class="strip" id="spotStrip"></div>
+      <p class="foot" id="spotRunner"></p>
+      <div id="spotNotice"></div>
+    </section>
+
+    <!-- ================= COUPLING ================= -->
+    <section class="view" data-view="coupling" hidden>
+      <div class="strip" id="couplingStrip"></div>
+      <div class="chartbox" id="chartScatter"></div>
+      <p class="foot" id="scatterCaption"></p>
+      <div class="chartbox" id="chartRollCorr"></div>
+      <p class="foot">Rolling 30-session correlation.</p>
+      <div class="table-host" id="couplingTable"></div>
+      <div id="notice-history"></div>
+    </section>
+
+    <!-- ================= VOLATILITY ================= -->
+    <section class="view" data-view="volatility" hidden>
+      <div class="strip" id="volStrip"></div>
+      <div class="chartbox" id="chartVol"></div>
+      <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+    </section>
+
+    <!-- ================= DRAWDOWN ================= -->
+    <section class="view" data-view="drawdown" hidden>
+      <div class="strip" id="ddStrip"></div>
+      <div class="chartbox" id="chartDdBtc"></div>
+      <p class="foot">BTC / USD below running peak.</p>
+      <div class="chartbox" id="chartDdIxic"></div>
+      <p class="foot">^IXIC below running peak.</p>
+      <div class="table-scroll" id="ddTable"></div>
+    </section>
+
+    <!-- ================= ABOUT ================= -->
+    <section class="view prose" data-view="about" hidden>
+      <h2>What this is</h2>
+      <p>A live tracker for bitcoin and the Nasdaq, with the statistics that make the comparison mean something. Bitcoin refreshes every 45&nbsp;seconds. Nasdaq figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+
+      <h2>Instruments</h2>
+      <p><b>BTC / USD</b> — spot bitcoin, volume-weighted across the exchanges CoinGecko tracks. Trades every calendar day.</p>
+      <p><b>^IXIC</b> — the Nasdaq Composite, roughly 3,000 listed securities. An index level, not a tradable price.</p>
+      <p><b>QQQ</b> — Invesco QQQ Trust, the ETF tracking the Nasdaq-100. It stands in for ^NDX, which the free data plan does not carry.</p>
+
+      <h2>Stock of the week</h2>
+      <p>A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move. The price beside it refreshes with the Nasdaq quotes.</p>
+      <p>Absolute rather than largest gain, deliberately. Ranking by best performer would read as a tip. This reports what moved, in either direction — it is not a recommendation.</p>
+
+      <h2>Method</h2>
+      <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
+      <p>Beta is BTC regressed on the index — the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
+      <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
+
+      <h2>Sources</h2>
+      <p>CoinGecko's public API for bitcoin spot and its chart, called directly from your browser. Financial Modeling Prep for the ^IXIC quote and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open indicator is computed in your browser from NYSE hours and holidays.</p>
+
+      <h2>Built by</h2>
+      <p>Jack McMurry, with Claude Code.</p>
+
+      <h2>Standing</h2>
+      <p>Market data for reference only. Nothing here is investment advice, a recommendation, or a solicitation to trade. Figures are as reported by the sources above and may be delayed, revised, or wrong.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* @inject lib */
+</script>
+</body>
+</html>
