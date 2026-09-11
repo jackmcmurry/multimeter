@@ -15,7 +15,7 @@
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'corr', 'vol', 'dd'];
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -42,6 +42,7 @@
     spx: 'markets',
     stock: 'weekly',
     crypto: 'crypto',
+    probe: 'probe',
     corr: 'coupling',
     vol: 'volatility',
     dd: 'drawdown'
@@ -55,6 +56,7 @@
     spx: 'S&P 500',
     stock: 'Stock of the week',
     crypto: 'Crypto of the week',
+    probe: 'Probe',
     corr: 'Correlation',
     vol: 'Volatility',
     dd: 'Drawdown'

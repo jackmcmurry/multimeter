@@ -82,7 +82,7 @@
         </div>
 
         <div class="dial" id="dial">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="9" aria-valuenow="1"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="10" aria-valuenow="1"></div>
         </div>
 
         <div class="jacks">
@@ -167,8 +167,19 @@
       <div id="cryptoNotice"></div>
     </section>
 
+    <!-- PROBE -->
+    <section class="view" data-panel="probe" hidden>
+      <div class="hero" id="probeCurrent"></div>
+      <input class="probe-search" id="probeSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search a coin by name or symbol" aria-label="Search a coin">
+      <ul class="rows picks" id="probeResults"></ul>
+      <div class="chartbox" id="probeChart"></div>
+      <p class="foot">Any coin CoinGecko tracks. The choice is stored in this browser, joins the live poll and the range tabs, and can stand in for BTC in the statistics.</p>
+      <div id="probeNotice"></div>
+    </section>
+
     <!-- CORR -->
     <section class="view" data-panel="coupling" hidden>
+      <div class="stats-picker" id="pickCoupling"></div>
       <div class="strip" id="couplingStrip"></div>
       <div class="chartbox" id="chartScatter"></div>
       <p class="foot" id="scatterCaption"></p>
@@ -180,18 +191,20 @@
 
     <!-- VOL -->
     <section class="view" data-panel="volatility" hidden>
+      <div class="stats-picker" id="pickVolatility"></div>
       <div class="strip" id="volStrip"></div>
       <div class="chartbox" id="chartVol"></div>
-      <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+      <p class="foot" id="volFoot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
     </section>
 
     <!-- DD -->
     <section class="view" data-panel="drawdown" hidden>
+      <div class="stats-picker" id="pickDrawdown"></div>
       <div class="strip" id="ddStrip"></div>
       <div class="chartbox" id="chartDdBtc"></div>
-      <p class="foot">BTC / USD below running peak.</p>
+      <p class="foot" id="ddFootCoin">BTC / USD below running peak.</p>
       <div class="chartbox" id="chartDdIxic"></div>
-      <p class="foot">^IXIC below running peak.</p>
+      <p class="foot" id="ddFootIndex">^IXIC below running peak.</p>
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
@@ -212,7 +225,8 @@
       <p><b>STOCK</b> — the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move.</p>
       <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
       <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
-      <p><b>CORR</b> — bitcoin against the Nasdaq Composite over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — bitcoin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far bitcoin sits below its running peak.</p>
+      <p><b>PROBE</b> — a coin of your own. Open DATA on that stop, search any coin CoinGecko tracks, and it takes the stop, wearing its symbol on the dial. The choice stays in this browser.</p>
+      <p><b>CORR</b> — the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — that coin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far it sits below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels; any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>

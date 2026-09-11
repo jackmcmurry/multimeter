@@ -31,6 +31,7 @@
     { id: 'spx', label: 'S&P' },
     { id: 'stock', label: 'STOCK' },
     { id: 'crypto', label: 'CRYPTO' },
+    { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
     { id: 'corr', label: 'CORR' },
     { id: 'vol', label: 'VOL' },
     { id: 'dd', label: 'DD' }
@@ -135,6 +136,14 @@
       var title = MP.router && MP.router.TITLES ? MP.router.TITLES[STOPS[index].id] : STOPS[index].label;
       knob.setAttribute('aria-valuetext', title);
     }
+  }
+
+  /* The probe stop wears the chosen coin's symbol. */
+  function setStopLabel(id, text) {
+    var label = String(text || '').toUpperCase().replace(/[^A-Z0-9&$.]/g, '').slice(0, 5) || 'PROBE';
+    for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) STOPS[i].label = label;
+    var node = document.querySelector('.dial-stop[data-stop="' + id + '"] .dial-lab');
+    if (node) node.textContent = label;
   }
 
   function markLabel(id) {
@@ -549,8 +558,8 @@
 
     var chg = el('lcdChange');
     if (chg) {
-      chg.textContent = off ? '' : changeText(r.change, r.unit);
-      chg.className = 'lcd-chg' + (dir && !off ? ' is-' + dir : '');
+      chg.textContent = off ? '' : (r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
+      chg.className = 'lcd-chg' + (dir && !off && !(r.empty && r.hint) ? ' is-' + dir : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
 
@@ -650,6 +659,7 @@
     stopAt: stopAt,
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
+    setStopLabel: setStopLabel,
     init: init,
     refresh: refresh,
     changeText: changeText,

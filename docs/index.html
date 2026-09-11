@@ -80,6 +80,7 @@
   --c-idx: #5eb1ff;
   --c-spx: #ff9f43;
   --c-qqq: #34d399;
+  --c-probe: #c084fc;
 
   --pos: #2ee59d;
   --neg: #ff6b6b;
@@ -550,6 +551,32 @@ body {
 .row-chg .chg { font-size: 13px; }
 .row-spark { min-width: 0; }
 .rows.alerts li { grid-template-columns: minmax(0, 1fr) auto 36px; }
+
+/* the probe jack's search and results */
+.probe-search {
+  display: block; width: 100%;
+  font-family: var(--f-ui); font-size: 15px; font-weight: 500;
+  color: var(--text); background: var(--cell);
+  border: 1px solid var(--rule); border-radius: 10px;
+  padding: 12px 14px; margin: 4px 0 6px;
+}
+.probe-search:focus-visible { outline: 2px solid var(--holster); outline-offset: 1px; }
+.rows.picks li { grid-template-columns: minmax(0, 1fr); padding: 0; }
+.pick {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 12px 6px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  border-radius: 8px;
+}
+.pick:hover { background: var(--hover); }
+.pick:focus-visible { outline: 2px solid var(--holster); outline-offset: -2px; }
+
+/* the statistics pair selector */
+.stats-picker { margin-bottom: 14px; }
+.picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.picker .pills { margin-top: 0; }
+.picker-label { font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.stats-picker .foot { margin: 10px 0 0; }
 .rows.alerts li.is-fired .row-code { color: var(--dim); text-decoration: line-through; }
 .rows.alerts .pill { padding: 4px 10px; }
 
@@ -719,7 +746,7 @@ tr.row-rule th {
         </div>
 
         <div class="dial" id="dial">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="9" aria-valuenow="1"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="10" aria-valuenow="1"></div>
         </div>
 
         <div class="jacks">
@@ -804,8 +831,19 @@ tr.row-rule th {
       <div id="cryptoNotice"></div>
     </section>
 
+    <!-- PROBE -->
+    <section class="view" data-panel="probe" hidden>
+      <div class="hero" id="probeCurrent"></div>
+      <input class="probe-search" id="probeSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search a coin by name or symbol" aria-label="Search a coin">
+      <ul class="rows picks" id="probeResults"></ul>
+      <div class="chartbox" id="probeChart"></div>
+      <p class="foot">Any coin CoinGecko tracks. The choice is stored in this browser, joins the live poll and the range tabs, and can stand in for BTC in the statistics.</p>
+      <div id="probeNotice"></div>
+    </section>
+
     <!-- CORR -->
     <section class="view" data-panel="coupling" hidden>
+      <div class="stats-picker" id="pickCoupling"></div>
       <div class="strip" id="couplingStrip"></div>
       <div class="chartbox" id="chartScatter"></div>
       <p class="foot" id="scatterCaption"></p>
@@ -817,18 +855,20 @@ tr.row-rule th {
 
     <!-- VOL -->
     <section class="view" data-panel="volatility" hidden>
+      <div class="stats-picker" id="pickVolatility"></div>
       <div class="strip" id="volStrip"></div>
       <div class="chartbox" id="chartVol"></div>
-      <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+      <p class="foot" id="volFoot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
     </section>
 
     <!-- DD -->
     <section class="view" data-panel="drawdown" hidden>
+      <div class="stats-picker" id="pickDrawdown"></div>
       <div class="strip" id="ddStrip"></div>
       <div class="chartbox" id="chartDdBtc"></div>
-      <p class="foot">BTC / USD below running peak.</p>
+      <p class="foot" id="ddFootCoin">BTC / USD below running peak.</p>
       <div class="chartbox" id="chartDdIxic"></div>
-      <p class="foot">^IXIC below running peak.</p>
+      <p class="foot" id="ddFootIndex">^IXIC below running peak.</p>
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
@@ -849,7 +889,8 @@ tr.row-rule th {
       <p><b>STOCK</b> — the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move.</p>
       <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
       <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
-      <p><b>CORR</b> — bitcoin against the Nasdaq Composite over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — bitcoin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far bitcoin sits below its running peak.</p>
+      <p><b>PROBE</b> — a coin of your own. Open DATA on that stop, search any coin CoinGecko tracks, and it takes the stop, wearing its symbol on the dial. The choice stays in this browser.</p>
+      <p><b>CORR</b> — the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — that coin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far it sits below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels; any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
@@ -1868,6 +1909,50 @@ tr.row-rule th {
     };
   }
 
+  /* GET /search?query=sol -> { coins: [{ id, name, api_symbol, symbol,
+   * market_cap_rank, thumb, large }], exchanges, ... } sorted by market cap.
+   * Keyless. The probe jack offers the first eight. */
+  function coinSearch(query) {
+    return {
+      url: COINGECKO + '/search?query=' + encodeURIComponent(String(query || '').trim()),
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!p || !Array.isArray(p.coins)) return null;
+        var out = [];
+        for (var i = 0; i < p.coins.length && out.length < 8; i++) {
+          var c = p.coins[i];
+          if (!c || !c.id || !c.symbol) continue;
+          out.push({
+            id: String(c.id),
+            symbol: String(c.symbol).toUpperCase(),
+            name: c.name || String(c.symbol).toUpperCase(),
+            rank: toNum(c.market_cap_rank)
+          });
+        }
+        return out;
+      }
+    };
+  }
+
+  /* A coinChart result over 365 days arrives as one point per day, stamped
+   * 00:00 UTC — which is the close of the PREVIOUS day, the way FMP dates its
+   * daily bars. Shifting each stamp back one millisecond dates midnight
+   * points to the day they close and leaves an intra-day "now" point on its
+   * own day; the last point per day wins. */
+  function dailySeries(entry) {
+    if (!entry || !Array.isArray(entry.prices) || !Array.isArray(entry.stamps)) return null;
+    var byDay = {}, order = [];
+    for (var i = 0; i < entry.prices.length; i++) {
+      var ts = toNum(entry.stamps[i]), v = toNum(entry.prices[i]);
+      if (!isFinite(ts) || !isFinite(v)) continue;
+      var day = isoDay(new Date(ts - 1));
+      if (!byDay.hasOwnProperty(day)) order.push(day);
+      byDay[day] = v;
+    }
+    if (!order.length) return null;
+    return ascendingByDate(order.map(function (d) { return { date: d, price: byDay[d] }; }));
+  }
+
   /* ---- Coinbase Exchange WebSocket (browser) ------------------------------ */
 
   /* wss://ws-feed.exchange.coinbase.com, channels ticker + heartbeat.
@@ -2103,6 +2188,8 @@ tr.row-rule th {
     coinsMarkets: coinsMarkets,
     btcChart: btcChart,
     coinChart: coinChart,
+    coinSearch: coinSearch,
+    dailySeries: dailySeries,
     normalizeFmpQuote: normalizeFmpQuote,
     normalizeEodLight: normalizeEodLight,
     normalizeQuoteChange: normalizeQuoteChange,
@@ -2252,7 +2339,7 @@ tr.row-rule th {
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'corr', 'vol', 'dd'];
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -2279,6 +2366,7 @@ tr.row-rule th {
     spx: 'markets',
     stock: 'weekly',
     crypto: 'crypto',
+    probe: 'probe',
     corr: 'coupling',
     vol: 'volatility',
     dd: 'drawdown'
@@ -2292,6 +2380,7 @@ tr.row-rule th {
     spx: 'S&P 500',
     stock: 'Stock of the week',
     crypto: 'Crypto of the week',
+    probe: 'Probe',
     corr: 'Correlation',
     vol: 'Volatility',
     dd: 'Drawdown'
@@ -2617,6 +2706,7 @@ tr.row-rule th {
     { id: 'spx', label: 'S&P' },
     { id: 'stock', label: 'STOCK' },
     { id: 'crypto', label: 'CRYPTO' },
+    { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
     { id: 'corr', label: 'CORR' },
     { id: 'vol', label: 'VOL' },
     { id: 'dd', label: 'DD' }
@@ -2721,6 +2811,14 @@ tr.row-rule th {
       var title = MP.router && MP.router.TITLES ? MP.router.TITLES[STOPS[index].id] : STOPS[index].label;
       knob.setAttribute('aria-valuetext', title);
     }
+  }
+
+  /* The probe stop wears the chosen coin's symbol. */
+  function setStopLabel(id, text) {
+    var label = String(text || '').toUpperCase().replace(/[^A-Z0-9&$.]/g, '').slice(0, 5) || 'PROBE';
+    for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) STOPS[i].label = label;
+    var node = document.querySelector('.dial-stop[data-stop="' + id + '"] .dial-lab');
+    if (node) node.textContent = label;
   }
 
   function markLabel(id) {
@@ -3135,8 +3233,8 @@ tr.row-rule th {
 
     var chg = el('lcdChange');
     if (chg) {
-      chg.textContent = off ? '' : changeText(r.change, r.unit);
-      chg.className = 'lcd-chg' + (dir && !off ? ' is-' + dir : '');
+      chg.textContent = off ? '' : (r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
+      chg.className = 'lcd-chg' + (dir && !off && !(r.empty && r.hint) ? ' is-' + dir : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
 
@@ -3236,6 +3334,7 @@ tr.row-rule th {
     stopAt: stopAt,
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
+    setStopLabel: setStopLabel,
     init: init,
     refresh: refresh,
     changeText: changeText,
@@ -3960,18 +4059,43 @@ tr.row-rule th {
     qqq: { code: 'QQQ', desc: 'Invesco QQQ Trust', dp: 2, color: 'var(--c-qqq)' }
   };
 
-  /* CoinGecko ids for the live coins; the crypto of the week joins them once
-   * its pick is known. */
+  /* CoinGecko ids for the live coins; the probe (a coin the viewer chose) and
+   * the crypto of the week join them once known. */
   var COINS = { btc: 'bitcoin', eth: 'ethereum' };
+
+  var STAT_COINS = ['btc', 'eth', 'crypto', 'probe'];
+  var STAT_INDEXES = ['ixic', 'spx'];
+  var INDEX_META = {
+    ixic: { key: 'ixic', code: '^IXIC', short: 'NDQ', name: 'Nasdaq' },
+    spx: { key: 'spx', code: '^GSPC', short: 'SPX', name: 'S&P 500' }
+  };
+
+  function readProbe(v) {
+    return v && typeof v === 'object' && typeof v.id === 'string' && typeof v.symbol === 'string'
+      ? { id: v.id, symbol: String(v.symbol).toUpperCase().slice(0, 12), name: typeof v.name === 'string' ? v.name : v.symbol }
+      : null;
+  }
+
+  function readStats(v) {
+    var out = { coin: 'btc', index: 'ixic' };
+    if (v && STAT_COINS.indexOf(v.coin) >= 0) out.coin = v.coin;
+    if (v && STAT_INDEXES.indexOf(v.index) >= 0) out.index = v.index;
+    return out;
+  }
 
   var state = {
     quotes: {
       btc: { data: null, stamp: null, notice: null },
       eth: { data: null, stamp: null, notice: null },
+      probe: { data: null, stamp: null, notice: null },
       ixic: { data: null, stamp: null, notice: null },
       spx: { data: null, stamp: null, notice: null },
       qqq: { data: null, stamp: null, notice: null }
     },
+    /* the viewer's own coin, and the pair the statistics measure */
+    probe: readProbe(MP.store ? MP.store.get('probe', null) : null),
+    stats: readStats(MP.store ? MP.store.get('stats', null) : null),
+    search: { query: '', results: null, pending: false, notice: null },
     snapshot: { generatedAt: null, notice: null },
     session: { data: null },
     history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
@@ -4067,7 +4191,9 @@ tr.row-rule th {
     if (err && err.empty) {
       return { level: 'warn', text: source + ' returned no usable data. Retrying shortly.' };
     }
-    return { level: 'warn', text: 'Could not reach ' + source + '. Retrying shortly.' };
+    /* A CORS-less 429 reaches the page as a plain network failure, so this
+     * is as often a rate limit as an outage. */
+    return { level: 'warn', text: 'Could not reach ' + source + ' (or it is rate limiting this browser). Retrying shortly.' };
   }
 
   function snapshotNotice(err, what) {
@@ -4248,6 +4374,15 @@ tr.row-rule th {
     return pickReading(MP.spotlight && MP.spotlight.reading ? MP.spotlight.reading() : null, 'STOCK');
   }
 
+  function probeReading() {
+    if (!state.probe) {
+      var r = noReading('USD', 'PROBE', '24H');
+      r.hint = 'Press DATA to choose a coin';
+      return r;
+    }
+    return applyLive(withRange(quoteReading('probe', 'USD', state.probe.symbol + ' / USD', '24H'), state.probe.id), 'probe');
+  }
+
   function cryptoReading() {
     var r = pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
     return withRange(r, coinForStop('crypto'));
@@ -4265,25 +4400,33 @@ tr.row-rule th {
     return S.isNum(a) && S.isNum(b) ? a - b : NaN;
   }
 
-  var ANALYTICS_MODE = { corr: 'CORR BTC·NDQ 90D', beta: 'BETA 90D', vol: 'VOL BTC 30D', dd: 'DRAWDOWN BTC' };
   var ANALYTICS_UNIT = { corr: '', beta: '×', vol: '%', dd: '%' };
+
+  /* The screen's mode line names the pair the statistics measure. */
+  function analyticsMode(stop) {
+    var l = statsLabels();
+    if (stop === 'corr') return 'CORR ' + l.coin + '·' + l.indexShort + ' 90D';
+    if (stop === 'beta') return 'BETA ' + l.coin + '·' + l.indexShort + ' 90D';
+    if (stop === 'vol') return 'VOL ' + l.coin + ' 30D';
+    return 'DRAWDOWN ' + l.coin;
+  }
 
   function analyticsReading(stop) {
     var a = state.analytics;
-    if (!a) return noReading(ANALYTICS_UNIT[stop], ANALYTICS_MODE[stop], '30S');
+    if (!a) return noReading(ANALYTICS_UNIT[stop], analyticsMode(stop), '30S');
     var c90 = a.coupling[1] || a.coupling[0];
     var value, series, dp, scale = 1, suffix = '';
     if (stop === 'corr') { value = c90.correlation; series = entryValues(a.rollCorr); dp = 2; }
     else if (stop === 'beta') { value = c90.beta; series = entryValues(a.rollBeta); dp = 2; }
-    else if (stop === 'vol') { value = a.currentBtcVol; series = entryValues(a.btcVol); dp = 1; scale = 100; suffix = '%'; }
-    else { value = a.btcDd.now; series = a.btcDd.series; dp = 1; scale = 100; suffix = '%'; }
+    else if (stop === 'vol') { value = a.currentCoinVol; series = entryValues(a.coinVol); dp = 1; scale = 100; suffix = '%'; }
+    else { value = a.coinDd.now; series = a.coinDd.series; dp = 1; scale = 100; suffix = '%'; }
     var shown = S.isNum(value) ? value * scale : NaN;
     var text = !S.isNum(shown) ? F.DASH
       : stop === 'corr' || stop === 'beta' ? F.ratio(shown, dp)
       : stop === 'dd' ? F.signedPct(value, dp)
       : F.pct(value, dp);
     return {
-      text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: analyticsMode(stop),
       change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: '30S', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
       empty: !S.isNum(value), ranges: false, coin: null
@@ -4299,6 +4442,7 @@ tr.row-rule th {
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
       case 'stock': return stockReading();
       case 'crypto': return applyLive(cryptoReading(), stop);
+      case 'probe': return probeReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
       default: return noReading('', '', '');
     }
@@ -4381,10 +4525,22 @@ tr.row-rule th {
 
   /* ---- ranges: the screen's tabs ------------------------------------------ */
 
+  /* The CoinGecko id behind a quote key, when it is a coin. */
+  function liveCoinId(key) {
+    if (COINS[key]) return COINS[key];
+    if (key === 'probe') return state.probe ? state.probe.id : null;
+    return null;
+  }
+
+  function coinKeys() {
+    return state.probe ? ['btc', 'eth', 'probe'] : ['btc', 'eth'];
+  }
+
   /* The coin a stop measures, when it has range tabs; null otherwise. */
   function coinForStop(stop) {
     if (stop === 'btc') return COINS.btc;
     if (stop === 'eth') return COINS.eth;
+    if (stop === 'probe') return state.probe ? state.probe.id : null;
     if (stop === 'crypto') return MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
     return null;
   }
@@ -4407,8 +4563,9 @@ tr.row-rule th {
   }
 
   function seriesFor(key) {
-    if (COINS[key]) {
-      var ranged = rangeSeries(COINS[key]);
+    var coinId = liveCoinId(key);
+    if (coinId) {
+      var ranged = rangeSeries(coinId);
       if (ranged) return ranged;
     }
     var spot = state.quotes[key] && state.quotes[key].data;
@@ -4460,6 +4617,8 @@ tr.row-rule th {
       if (!parsed) throw emptyError();
       state.hero.cache[key] = parsed;
       state.hero.notice = null;
+      /* a year of daily closes is also a statistics leg */
+      if (days === 365 && statsCoinId(state.stats.coin) === coinId) recomputeAnalytics();
     }).catch(function (err) {
       state.hero.notice = liveNotice('CoinGecko', err);
       throw err;
@@ -4492,13 +4651,23 @@ tr.row-rule th {
   /* QQQ is optional upstream (it needs a second API key), so its row appears
    * only once there is something to show. */
   function marketKeys() {
-    var keys = ['btc', 'eth', 'ixic', 'spx'];
+    var keys = coinKeys().concat(['ixic', 'spx']);
     if (state.quotes.qqq.data || state.history.qqq) keys.push('qqq');
     return keys;
   }
 
+  /* The probe's row is described by whatever coin the viewer chose. */
+  function instrument(key) {
+    if (key === 'probe') {
+      return state.probe
+        ? { code: state.probe.symbol + ' / USD', desc: state.probe.name, dp: 2, color: 'var(--c-probe)' }
+        : { code: 'PROBE', desc: 'No coin chosen', dp: 2, color: 'var(--c-probe)' };
+    }
+    return INSTRUMENTS[key];
+  }
+
   function asOfLabel(key) {
-    if (COINS[key]) return state.quotes[key].data ? 'live' : '';
+    if (liveCoinId(key)) return state.quotes[key].data ? 'live' : '';
     var ts = state.quotes[key].stamp;
     if (!S.isNum(ts)) return '';
     return new Date(ts).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
@@ -4508,7 +4677,7 @@ tr.row-rule th {
     var host = el('marketRows');
     if (!host) return;
     host.innerHTML = marketKeys().map(function (key) {
-      var meta = INSTRUMENTS[key], d = state.quotes[key].data;
+      var meta = instrument(key), d = state.quotes[key].data;
       var series = seriesFor(key);
       var spark = series
         ? G.sparkStep({ values: S.tail(series, 60), w: 150, h: 34, color: meta.color })
@@ -4536,21 +4705,21 @@ tr.row-rule th {
   }
 
   function coinIds() {
-    var ids = [COINS.btc, COINS.eth];
+    var ids = coinKeys().map(liveCoinId);
     var pick = MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
     if (pick && ids.indexOf(pick) < 0) ids.push(pick);
     return ids;
   }
 
-  /* One CoinGecko call covers bitcoin, ether and the crypto of the week. */
+  /* One CoinGecko call covers bitcoin, ether, the probe and the crypto of the week. */
   function loadCoins() {
     var spec = SRC.coinsMarkets(coinIds());
     return fetchJson(spec.url).then(function (payload) {
       var coins = spec.normalize(payload);
       if (!coins || !coins[COINS.btc]) throw emptyError();
       var now = Date.now();
-      Object.keys(COINS).forEach(function (key) {
-        var c = coins[COINS[key]];
+      coinKeys().forEach(function (key) {
+        var c = coins[liveCoinId(key)];
         if (!c) return;
         var slot = state.quotes[key];
         slot.data = c;
@@ -4616,58 +4785,284 @@ tr.row-rule th {
   }
 
   /* ---- analytics ---------------------------------------------------------- */
-  function computeAnalytics() {
-    var btc = state.history.btc, ixic = state.history.ixic, qqq = state.history.qqq;
-    if (!btc || !ixic) return null;
 
-    var pair = S.alignByDate(btc, ixic);
+  /* Which coin and index the statistics measure, as the labels the panels
+   * print: coin symbol, index code (^IXIC) and its short form (NDQ). */
+  function statsCoinId(coinKey) {
+    if (coinKey === 'btc') return COINS.btc;
+    if (coinKey === 'eth') return COINS.eth;
+    if (coinKey === 'crypto') return MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    if (coinKey === 'probe') return state.probe ? state.probe.id : null;
+    return null;
+  }
+
+  function statsCoinSymbol(coinKey) {
+    if (coinKey === 'btc') return 'BTC';
+    if (coinKey === 'eth') return 'ETH';
+    if (coinKey === 'crypto') {
+      var pick = MP.spotlight && MP.spotlight.view ? MP.spotlight.view.crypto : null;
+      return pick ? pick.symbol : null;
+    }
+    if (coinKey === 'probe') return state.probe ? state.probe.symbol : null;
+    return null;
+  }
+
+  function statsLabels() {
+    var idx = INDEX_META[state.stats.index] || INDEX_META.ixic;
+    return {
+      coinKey: state.stats.coin,
+      coin: statsCoinSymbol(state.stats.coin) || 'BTC',
+      indexKey: idx.key,
+      index: idx.code,
+      indexShort: idx.short,
+      indexName: idx.name
+    };
+  }
+
+  /* Daily closes for the coin under measurement. Bitcoin's come from the
+   * data job (FMP); any other coin's from its cached one-year CoinGecko
+   * chart, which the 1Y range tab shares, dated as closes. */
+  var dailyMemo = { entry: null, series: null };
+
+  function coinHistory(coinKey) {
+    if (coinKey === 'btc') return state.history.btc;
+    var id = statsCoinId(coinKey);
+    var entry = id ? rangeEntry(id, 365) : null;
+    if (!entry) return null;
+    if (dailyMemo.entry !== entry) {
+      dailyMemo.entry = entry;
+      dailyMemo.series = SRC.dailySeries(entry);
+    }
+    return dailyMemo.series;
+  }
+
+  function ensureCoinHistory() {
+    var coinKey = state.stats.coin;
+    if (coinKey === 'btc') return;
+    var id = statsCoinId(coinKey);
+    if (id && !rangeEntry(id, 365)) loadRange(id, 365).catch(function () { /* shown as a notice */ });
+  }
+
+  function recomputeAnalytics() {
+    state.analytics = computeAnalytics();
+    renderAnalytics();
+  }
+
+  function computeAnalytics() {
+    var labels = statsLabels();
+    return analyticsFor(coinHistory(state.stats.coin), state.history[labels.indexKey], state.history.qqq, labels);
+  }
+
+  /* coin, index, qqq: [{ date, price }] series. Null until both legs have
+   * at least VOL_WINDOW + 2 sessions in common. */
+  function analyticsFor(coin, index, qqq, labels) {
+    if (!coin || !index) return null;
+
+    var pair = S.alignByDate(coin, index);
     if (pair.dates.length < VOL_WINDOW + 2) return null;
 
-    var btcR = S.logReturns(pair.a);
-    var ixicR = S.logReturns(pair.b);
+    var coinR = S.logReturns(pair.a);
+    var indexR = S.logReturns(pair.b);
     var retDates = pair.dates.slice(1);
 
-    var scatterPair = S.pairwiseClean(S.tail(ixicR, SCATTER_SESSIONS), S.tail(btcR, SCATTER_SESSIONS));
+    var scatterPair = S.pairwiseClean(S.tail(indexR, SCATTER_SESSIONS), S.tail(coinR, SCATTER_SESSIONS));
     var volFn = function (w) { return S.annualizedVol(w, ANNUALIZE); };
-    var btcVol = S.rolling(btcR, VOL_WINDOW, volFn);
-    var ixicVol = S.rolling(ixicR, VOL_WINDOW, volFn);
+    var coinVol = S.rolling(coinR, VOL_WINDOW, volFn);
+    var indexVol = S.rolling(indexR, VOL_WINDOW, volFn);
 
-    var btcSorted = S.sortSeries(btc), ixicSorted = S.sortSeries(ixic);
-    var btcPrices = btcSorted.map(function (p) { return p.price; });
-    var ixicPrices = ixicSorted.map(function (p) { return p.price; });
-    var btcDates = btcSorted.map(function (p) { return p.date; });
-    var ixicDates = ixicSorted.map(function (p) { return p.date; });
+    var coinSorted = S.sortSeries(coin), indexSorted = S.sortSeries(index);
+    var coinPrices = coinSorted.map(function (p) { return p.price; });
+    var indexPrices = indexSorted.map(function (p) { return p.price; });
+    var coinDates = coinSorted.map(function (p) { return p.date; });
+    var indexDates = indexSorted.map(function (p) { return p.date; });
 
     var qqqCoupling = null;
     if (qqq && qqq.length > 40) {
-      var qPair = S.alignByDate(btc, qqq);
+      var qPair = S.alignByDate(coin, qqq);
       if (qPair.dates.length > 40) {
         qqqCoupling = S.couplingWindows(S.logReturns(qPair.a), S.logReturns(qPair.b), [30, 90]);
       }
     }
 
-    var btcDd = S.drawdownSeries(btcPrices);
-    var ixicDd = S.drawdownSeries(ixicPrices);
+    var coinDd = S.drawdownSeries(coinPrices);
+    var indexDd = S.drawdownSeries(indexPrices);
 
     return {
+      labels: labels || { coin: 'BTC', index: '^IXIC', indexShort: 'NDQ' },
       dates: retDates,
       commonSessions: pair.dates.length,
       windowFrom: pair.dates[0],
       windowTo: pair.dates[pair.dates.length - 1],
-      coupling: S.couplingWindows(btcR, ixicR, COUPLING_WINDOWS),
+      coupling: S.couplingWindows(coinR, indexR, COUPLING_WINDOWS),
       qqqCoupling: qqqCoupling,
       scatter: { xs: scatterPair.a, ys: scatterPair.b, fit: S.regression(scatterPair.a, scatterPair.b) },
-      rollCorr: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.pearson),
-      rollBeta: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.beta),
-      btcVol: btcVol,
-      ixicVol: ixicVol,
-      currentBtcVol: btcVol.length ? btcVol[btcVol.length - 1].value : NaN,
-      currentIxicVol: ixicVol.length ? ixicVol[ixicVol.length - 1].value : NaN,
-      btcDd: { dates: btcDates, series: btcDd, now: btcDd[btcDd.length - 1], max: S.maxDrawdown(btcPrices) },
-      ixicDd: { dates: ixicDates, series: ixicDd, now: ixicDd[ixicDd.length - 1], max: S.maxDrawdown(ixicPrices) },
-      btcEpisodes: S.drawdownEpisodes(btcDates, btcPrices, { minDepth: 0.05, limit: 4 }),
-      ixicEpisodes: S.drawdownEpisodes(ixicDates, ixicPrices, { minDepth: 0.03, limit: 4 })
+      rollCorr: S.rollingPair(coinR, indexR, CORR_WINDOW, S.pearson),
+      rollBeta: S.rollingPair(coinR, indexR, CORR_WINDOW, S.beta),
+      coinVol: coinVol,
+      indexVol: indexVol,
+      currentCoinVol: coinVol.length ? coinVol[coinVol.length - 1].value : NaN,
+      currentIndexVol: indexVol.length ? indexVol[indexVol.length - 1].value : NaN,
+      coinDd: { dates: coinDates, series: coinDd, now: coinDd[coinDd.length - 1], max: S.maxDrawdown(coinPrices) },
+      indexDd: { dates: indexDates, series: indexDd, now: indexDd[indexDd.length - 1], max: S.maxDrawdown(indexPrices) },
+      coinEpisodes: S.drawdownEpisodes(coinDates, coinPrices, { minDepth: 0.05, limit: 4 }),
+      indexEpisodes: S.drawdownEpisodes(indexDates, indexPrices, { minDepth: 0.03, limit: 4 })
     };
+  }
+
+  /* The pair selector printed at the top of the three statistics panels. */
+  function renderStatsPicker() {
+    var hosts = document.querySelectorAll('.stats-picker');
+    if (!hosts.length) return;
+    var coinPills = STAT_COINS.map(function (key) {
+      var sym = statsCoinSymbol(key);
+      var label = key === 'crypto' ? (sym ? sym + ' · week' : 'CRYPTO') : key === 'probe' ? (sym ? sym + ' · probe' : 'PROBE') : sym;
+      return '<button type="button" class="pill' + (state.stats.coin === key ? ' is-on' : '') + '" data-stat-coin="' + key + '"' +
+        (sym ? '' : ' disabled') + '>' + F.escapeHtml(label) + '</button>';
+    }).join('');
+    var indexPills = STAT_INDEXES.map(function (key) {
+      return '<button type="button" class="pill' + (state.stats.index === key ? ' is-on' : '') + '" data-stat-index="' + key + '">' +
+        F.escapeHtml(INDEX_META[key].name) + '</button>';
+    }).join('');
+    var status = '';
+    if (!state.analytics) {
+      var L = statsLabels(), id = statsCoinId(L.coinKey);
+      var coinLeg = coinHistory(L.coinKey), indexLeg = state.history[L.indexKey];
+      if (!indexLeg && !state.history.pending) status = L.index + ' daily history appears after the first scheduled update.';
+      else if (L.coinKey !== 'btc' && id && !rangeEntry(id, 365)) status = 'Loading ' + L.coin + ' daily history…';
+      else if (L.coinKey === 'btc' && !coinLeg && !state.history.pending) status = 'BTC daily history appears after the first scheduled update.';
+      else if (coinLeg && indexLeg) status = 'Not enough overlapping sessions yet.';
+    }
+    var html = '<div class="picker"><span class="picker-label">Coin</span><div class="pills">' + coinPills + '</div>' +
+      '<span class="picker-label">vs</span><div class="pills">' + indexPills + '</div></div>' +
+      (status ? '<p class="foot">' + F.escapeHtml(status) + '</p>' : '');
+    for (var i = 0; i < hosts.length; i++) hosts[i].innerHTML = html;
+  }
+
+  function setStats(patch) {
+    state.stats = readStats(Object.assign({}, state.stats, patch || {}));
+    if (MP.store) MP.store.set('stats', state.stats);
+    ensureCoinHistory();
+    recomputeAnalytics();
+    renderStatsPicker();
+    repaint();
+  }
+
+  /* ---- the probe jack ----------------------------------------------------- */
+  var searchTimer = null;
+
+  function setProbe(coin) {
+    state.probe = readProbe(coin);
+    if (MP.store) { if (state.probe) MP.store.set('probe', state.probe); else MP.store.remove('probe'); }
+    state.quotes.probe.data = null;
+    state.quotes.probe.stamp = null;
+    state.search.results = null;
+    state.search.query = '';
+    var input = el('probeSearch');
+    if (input) input.value = '';
+    if (MP.meter && MP.meter.setStopLabel) MP.meter.setStopLabel('probe', state.probe ? state.probe.symbol : 'PROBE');
+    syncLive();
+    if (state.probe) {
+      loadCoins().catch(function () { /* shown as a notice */ });
+      ensureRange('probe');
+    }
+    if (state.stats.coin === 'probe' && !state.probe) state.stats = readStats({ coin: 'btc', index: state.stats.index });
+    ensureCoinHistory();
+    recomputeAnalytics();
+    renderStatsPicker();
+    renderProbe();
+    renderMarkets();
+    repaint();
+  }
+
+  /* Debounced, minimum two characters, and a late answer for an older query
+   * is dropped. */
+  function searchCoins(q) {
+    q = String(q || '').trim();
+    state.search.query = q;
+    clearTimeout(searchTimer);
+    if (q.length < 2) {
+      state.search.results = null;
+      state.search.notice = null;
+      state.search.pending = false;
+      renderProbe();
+      return;
+    }
+    searchTimer = setTimeout(function () {
+      var spec = SRC.coinSearch(q);
+      state.search.pending = true;
+      renderProbe();
+      fetchJson(spec.url).then(function (payload) {
+        if (state.search.query !== q) return;
+        state.search.results = spec.normalize(payload) || [];
+        state.search.notice = state.search.results.length ? null : { level: 'quiet', text: 'No coins match "' + q + '".' };
+      }).catch(function (err) {
+        if (state.search.query === q) state.search.notice = liveNotice('CoinGecko', err);
+      }).then(function () {
+        if (state.search.query === q) state.search.pending = false;
+        renderProbe();
+      });
+    }, 400);
+  }
+
+  function renderProbe() {
+    var current = el('probeCurrent');
+    if (!current) return;
+    var p = state.probe;
+    current.innerHTML = p
+      ? '<div class="hero-top"><span class="hero-asset">' + F.escapeHtml(p.symbol) + '</span>' +
+        '<span class="muted">' + F.escapeHtml(p.name) + '</span></div>' +
+        '<div class="hero-sub"><span class="muted">On the dial as ' + F.escapeHtml(p.symbol.slice(0, 5)) + '.</span>' +
+        '<button type="button" class="pill" id="probeClear">Clear</button></div>'
+      : '<p class="row-desc">No coin on the probe yet. Search below; the pick stays in this browser.</p>';
+
+    var results = el('probeResults');
+    if (results) {
+      var list = state.search.results;
+      results.innerHTML = list && list.length ? list.map(function (c) {
+        return '<li><button type="button" class="pick" data-pick-id="' + F.escapeHtml(c.id) + '" data-pick-symbol="' + F.escapeHtml(c.symbol) +
+          '" data-pick-name="' + F.escapeHtml(c.name) + '"><span class="row-code">' + F.escapeHtml(c.symbol) + '</span>' +
+          '<span class="row-desc">' + F.escapeHtml(c.name + (S.isNum(c.rank) ? ' · #' + c.rank : '')) + '</span></button></li>';
+      }).join('') : (state.search.pending ? '<li class="row-desc">Searching…</li>' : '');
+    }
+
+    var chart = el('probeChart');
+    if (chart) {
+      var series = p ? seriesFor('probe') : null;
+      chart.innerHTML = series && series.length > 1
+        ? G.sparkStep({ values: series, w: 900, h: 200, color: 'var(--c-probe)', area: true, strokeWidth: 1.8 })
+        : '';
+    }
+    setHtml('probeNotice', noticeHtml(state.search.notice || (p ? state.quotes.probe.notice : null)));
+  }
+
+  function wireProbe() {
+    var input = el('probeSearch');
+    if (input) {
+      input.addEventListener('input', function () { searchCoins(input.value); });
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          var first = document.querySelector('#probeResults .pick');
+          if (first) first.click();
+        }
+      });
+    }
+    var drawer = el('drawer');
+    if (!drawer) return;
+    drawer.addEventListener('click', function (ev) {
+      var t = ev.target.closest ? ev.target : null;
+      if (!t) return;
+      var pick = t.closest('.pick[data-pick-id]');
+      if (pick) {
+        setProbe({ id: pick.getAttribute('data-pick-id'), symbol: pick.getAttribute('data-pick-symbol'), name: pick.getAttribute('data-pick-name') });
+        return;
+      }
+      if (t.closest('#probeClear')) { setProbe(null); return; }
+      var coinPill = t.closest('[data-stat-coin]');
+      if (coinPill && !coinPill.disabled) { setStats({ coin: coinPill.getAttribute('data-stat-coin') }); return; }
+      var indexPill = t.closest('[data-stat-index]');
+      if (indexPill) setStats({ index: indexPill.getAttribute('data-stat-index') });
+    });
   }
 
   function strip(items) {
@@ -4683,13 +5078,20 @@ tr.row-rule th {
 
   function renderAnalytics() {
     var a = state.analytics;
+    var L = a ? a.labels : statsLabels();
     setHtml('notice-history', noticeHtml(state.history.notice));
+    setText('volFoot', '30-session realized volatility, annualized. ' + L.coin + ' left, ' + L.index + ' right.');
+    setText('ddFootCoin', L.coin + ' / USD below running peak.');
+    setText('ddFootIndex', L.index + ' below running peak.');
+    renderStatsPicker();
 
     if (!a) {
       var waiting = state.history.pending ? '—' : F.DASH;
       setHtml('couplingStrip', strip([['Corr 90d', waiting], ['Beta 90d', waiting], ['R² 90d', waiting]]));
-      setHtml('volStrip', strip([['BTC 30d', waiting], ['^IXIC 30d', waiting], ['Ratio', waiting]]));
-      setHtml('ddStrip', strip([['BTC now', waiting], ['BTC worst', waiting], ['^IXIC worst', waiting]]));
+      setHtml('volStrip', strip([[L.coin + ' 30d', waiting], [L.index + ' 30d', waiting], ['Ratio', waiting]]));
+      setHtml('ddStrip', strip([[L.coin + ' now', waiting], [L.coin + ' worst', waiting], [L.index + ' worst', waiting]]));
+      setHtml('chartScatter', ''); setText('scatterCaption', ''); setHtml('chartRollCorr', ''); setHtml('couplingTable', '');
+      setHtml('chartVol', ''); setHtml('chartDdBtc', ''); setHtml('chartDdIxic', ''); setHtml('ddTable', '');
       repaint();
       return;
     }
@@ -4724,7 +5126,7 @@ tr.row-rule th {
       xs: a.scatter.xs, ys: a.scatter.ys, fit: a.scatter.fit,
       w: 560, h: 320,
       pointColor: 'var(--c-btc)', fitColor: 'var(--gold)',
-      xTitle: '^IXIC', yTitle: 'BTC'
+      xTitle: L.index, yTitle: L.coin
     }));
     setText('scatterCaption', 'Daily log returns, ' + a.scatter.fit.n + ' sessions. Slope β=' +
       F.ratio(a.scatter.fit.slope, 2) + ', axes scaled independently.');
@@ -4737,40 +5139,40 @@ tr.row-rule th {
     }));
 
     /* volatility */
-    var volRatio = S.isNum(a.currentBtcVol) && S.isNum(a.currentIxicVol) && a.currentIxicVol
-      ? a.currentBtcVol / a.currentIxicVol : NaN;
+    var volRatio = S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol) && a.currentIndexVol
+      ? a.currentCoinVol / a.currentIndexVol : NaN;
     setHtml('volStrip', strip([
-      ['BTC 30d', F.pct(a.currentBtcVol, 0)],
-      ['^IXIC 30d', F.pct(a.currentIxicVol, 0)],
+      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0)],
+      [L.index + ' 30d', F.pct(a.currentIndexVol, 0)],
       ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
     ]));
     setHtml('chartVol', G.columnChart({
       series: [
-        { values: S.tail(a.btcVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-btc)' },
-        { values: S.tail(a.ixicVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }
+        { values: S.tail(a.coinVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-btc)' },
+        { values: S.tail(a.indexVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }
       ],
       w: 900, h: 190,
       yFmt: function (v) { return (v * 100).toFixed(0) + '%'; },
-      xLabels: datesForRolling(a.btcVol, a.dates, VOL_CHART_POINTS).map(F.shortDate)
+      xLabels: datesForRolling(a.coinVol, a.dates, VOL_CHART_POINTS).map(F.shortDate)
     }));
 
     /* drawdown */
     setHtml('ddStrip', strip([
-      ['BTC now', F.signedPct(a.btcDd.now, 1), 'neg'],
-      ['BTC worst', F.signedPct(a.btcDd.max, 1), 'neg'],
-      ['^IXIC worst', F.signedPct(a.ixicDd.max, 1), 'neg']
+      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg'],
+      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg'],
+      [L.index + ' worst', F.signedPct(a.indexDd.max, 1), 'neg']
     ]));
     setHtml('chartDdBtc', G.underwaterChart({
-      values: a.btcDd.series, w: 900, h: 150, color: 'var(--c-btc)',
-      xLabels: a.btcDd.dates.map(F.shortDate)
+      values: a.coinDd.series, w: 900, h: 150, color: 'var(--c-btc)',
+      xLabels: a.coinDd.dates.map(F.shortDate)
     }));
     setHtml('chartDdIxic', G.underwaterChart({
-      values: a.ixicDd.series, w: 900, h: 150, color: 'var(--c-idx)',
-      xLabels: a.ixicDd.dates.map(F.shortDate)
+      values: a.indexDd.series, w: 900, h: 150, color: 'var(--c-idx)',
+      xLabels: a.indexDd.dates.map(F.shortDate)
     }));
 
-    var episodes = a.btcEpisodes.map(function (e) { return { code: 'BTC', e: e }; })
-      .concat(a.ixicEpisodes.map(function (e) { return { code: '^IXIC', e: e }; }))
+    var episodes = a.coinEpisodes.map(function (e) { return { code: L.coin, e: e }; })
+      .concat(a.indexEpisodes.map(function (e) { return { code: L.index, e: e }; }))
       .sort(function (p, q) { return p.e.depth - q.e.depth; });
 
     setHtml('ddTable', episodes.length
@@ -4850,6 +5252,9 @@ tr.row-rule th {
     tickSession();
     wireAlerts();
     renderAlerts();
+    wireProbe();
+    if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
+    renderProbe();
     renderHero();
     renderMarkets();
     renderAnalytics();
@@ -4865,8 +5270,12 @@ tr.row-rule th {
     poll(loadCoins, BTC_REFRESH_MS);
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
+    ensureCoinHistory();
     poll(loadSpotlight, DAILY_REFRESH_MS);
-    poll(function () { return loadRange(coinForStop(currentStop()), state.hero.days, true); }, HERO_REFRESH_MS);
+    poll(function () {
+      ensureCoinHistory();   /* a failed statistics leg gets another try */
+      return loadRange(coinForStop(currentStop()), state.hero.days, true);
+    }, HERO_REFRESH_MS);
 
     /* Real-time ticks ride alongside the polls; without WebSocket support
      * the polls alone carry the page, as before. */
@@ -4893,7 +5302,11 @@ tr.row-rule th {
     stop: stop,
     state: state,
     computeAnalytics: computeAnalytics,
+    analyticsFor: analyticsFor,
     renderAnalytics: renderAnalytics,
+    setProbe: setProbe,
+    setStats: setStats,
+    searchCoins: searchCoins,
     renderHero: renderHero,
     renderMarkets: renderMarkets,
     renderSession: renderSession,

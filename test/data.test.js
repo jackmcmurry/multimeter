@@ -145,6 +145,34 @@
     ok('chart with one point is unusable', chart.normalize({ prices: [[1, 2]] }) === null);
     eq('chart keeps a stamp per point', parsedChart.stamps.length, 3);
 
+    /* CoinGecko search (the probe jack) */
+    var search = SRC.coinSearch('sol coin');
+    ok('search URL encodes the query', search.url.indexOf('/search?query=sol%20coin') > 0);
+    var found = search.normalize({ coins: [
+      { id: 'solana', name: 'Solana', api_symbol: 'solana', symbol: 'SOL', market_cap_rank: 6 },
+      { id: 'solar', name: 'Solar', symbol: 'sxp', market_cap_rank: null },
+      { id: '', symbol: 'bad' }
+    ] });
+    eq('search keeps usable coins only', found.length, 2);
+    eq('search upper-cases the symbol', found[1].symbol, 'SXP');
+    eq('search carries the rank', found[0].rank, 6);
+    ok('search with no coins array is null', search.normalize({ exchanges: [] }) === null);
+    var many = search.normalize({ coins: 'abcdefghijkl'.split('').map(function (c) { return { id: c, symbol: c, name: c }; }) });
+    eq('search offers at most eight', many.length, 8);
+
+    /* CoinGecko daily points date as the previous day's close, like FMP */
+    var D = Date.parse('2026-09-10T00:00:00Z');
+    var daily = SRC.dailySeries({
+      prices: [1, 2, 3, 4],
+      stamps: [D, D + 86400000, D + 86400000 + 14 * 3600000, D + 86400000 + 15 * 3600000]
+    });
+    eq('daily series has one point per day', daily.length, 3);
+    eq('a midnight point belongs to the day before', daily[0].date, '2026-09-09');
+    eq('second midnight point dates likewise', daily[1].date, '2026-09-10');
+    eq('an intra-day point keeps its own day', daily[2].date, '2026-09-11');
+    eq('the last point of a day wins', daily[2].price, 4);
+    ok('daily series without stamps is null', SRC.dailySeries({ prices: [1, 2] }) === null);
+
     /* Coinbase WebSocket */
     var CB = SRC.coinbaseWs;
     var tick = CB.normalizeTicker(CB_TICKER);

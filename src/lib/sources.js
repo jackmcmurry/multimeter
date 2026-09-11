@@ -134,6 +134,50 @@
     };
   }
 
+  /* GET /search?query=sol -> { coins: [{ id, name, api_symbol, symbol,
+   * market_cap_rank, thumb, large }], exchanges, ... } sorted by market cap.
+   * Keyless. The probe jack offers the first eight. */
+  function coinSearch(query) {
+    return {
+      url: COINGECKO + '/search?query=' + encodeURIComponent(String(query || '').trim()),
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!p || !Array.isArray(p.coins)) return null;
+        var out = [];
+        for (var i = 0; i < p.coins.length && out.length < 8; i++) {
+          var c = p.coins[i];
+          if (!c || !c.id || !c.symbol) continue;
+          out.push({
+            id: String(c.id),
+            symbol: String(c.symbol).toUpperCase(),
+            name: c.name || String(c.symbol).toUpperCase(),
+            rank: toNum(c.market_cap_rank)
+          });
+        }
+        return out;
+      }
+    };
+  }
+
+  /* A coinChart result over 365 days arrives as one point per day, stamped
+   * 00:00 UTC — which is the close of the PREVIOUS day, the way FMP dates its
+   * daily bars. Shifting each stamp back one millisecond dates midnight
+   * points to the day they close and leaves an intra-day "now" point on its
+   * own day; the last point per day wins. */
+  function dailySeries(entry) {
+    if (!entry || !Array.isArray(entry.prices) || !Array.isArray(entry.stamps)) return null;
+    var byDay = {}, order = [];
+    for (var i = 0; i < entry.prices.length; i++) {
+      var ts = toNum(entry.stamps[i]), v = toNum(entry.prices[i]);
+      if (!isFinite(ts) || !isFinite(v)) continue;
+      var day = isoDay(new Date(ts - 1));
+      if (!byDay.hasOwnProperty(day)) order.push(day);
+      byDay[day] = v;
+    }
+    if (!order.length) return null;
+    return ascendingByDate(order.map(function (d) { return { date: d, price: byDay[d] }; }));
+  }
+
   /* ---- Coinbase Exchange WebSocket (browser) ------------------------------ */
 
   /* wss://ws-feed.exchange.coinbase.com, channels ticker + heartbeat.
@@ -369,6 +413,8 @@
     coinsMarkets: coinsMarkets,
     btcChart: btcChart,
     coinChart: coinChart,
+    coinSearch: coinSearch,
+    dailySeries: dailySeries,
     normalizeFmpQuote: normalizeFmpQuote,
     normalizeEodLight: normalizeEodLight,
     normalizeQuoteChange: normalizeQuoteChange,

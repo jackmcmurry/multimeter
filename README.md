@@ -27,9 +27,19 @@ US market is open.
 | S&P | ^GSPC level, day change | the same rows |
 | STOCK | the stock of the week, day change | the pick in full: price, closes, 5d / 1m / market cap, runner-up |
 | CRYPTO | the crypto of the week, change over the chosen range | the pick in full: price, 7-day sparkline, 7d / 24h / market cap |
-| CORR | BTC–Nasdaq 90-session correlation, 30-session change | return scatter, rolling correlation, coupling table with beta and R² |
-| VOL | BTC 30-session realized vol, annualized | current vols and the rolling column chart |
-| DD | BTC distance below its running peak | underwater curves and the episode table |
+| PROBE | a coin of your choosing, change over the chosen range | coin search (CoinGecko), the pick, its range chart |
+| CORR | coin–index 90-session correlation, 30-session change | pair selector, return scatter, rolling correlation, coupling table with beta and R² |
+| VOL | the coin's 30-session realized vol, annualized | pair selector, current vols and the rolling column chart |
+| DD | the coin's distance below its running peak | pair selector, underwater curves and the episode table |
+
+The statistics measure one coin against one index. The pair defaults to
+bitcoin and the Nasdaq Composite; the selector at the top of those panels
+offers BTC, ETH, the crypto of the week and the probe coin against the Nasdaq
+or the S&P 500 (stored as `mm.stats`). Bitcoin's daily closes come from the
+data job; any other coin's come from its one-year CoinGecko chart, which the
+1Y range tab shares. CoinGecko stamps each daily point at 00:00 UTC, which is
+the close of the day before, so the page dates them that way to line up with
+FMP's bars. The probe coin itself is stored as `mm.probe`.
 
 The keys under the screen are the ones a real meter has. **REL** zeroes the
 reading where it stands, so the change line shows the move since the press.

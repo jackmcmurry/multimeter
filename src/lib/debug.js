@@ -200,10 +200,10 @@
       commonSessions: a ? a.commonSessions : 0,
       beta90: a ? a.coupling[1].beta : null,
       corr90: a ? a.coupling[1].correlation : null,
-      btcVol: a ? a.currentBtcVol : null,
-      ixicVol: a ? a.currentIxicVol : null,
-      btcEpisodes: a ? a.btcEpisodes.length : 0,
-      ixicEpisodes: a ? a.ixicEpisodes.length : 0
+      coinVol: a ? a.currentCoinVol : null,
+      indexVol: a ? a.currentIndexVol : null,
+      coinEpisodes: a ? a.coinEpisodes.length : 0,
+      indexEpisodes: a ? a.indexEpisodes.length : 0
     };
   }
 

@@ -63,6 +63,7 @@
   --c-idx: #5eb1ff;
   --c-spx: #ff9f43;
   --c-qqq: #34d399;
+  --c-probe: #c084fc;
 
   --pos: #2ee59d;
   --neg: #ff6b6b;
@@ -533,6 +534,32 @@ body {
 .row-chg .chg { font-size: 13px; }
 .row-spark { min-width: 0; }
 .rows.alerts li { grid-template-columns: minmax(0, 1fr) auto 36px; }
+
+/* the probe jack's search and results */
+.probe-search {
+  display: block; width: 100%;
+  font-family: var(--f-ui); font-size: 15px; font-weight: 500;
+  color: var(--text); background: var(--cell);
+  border: 1px solid var(--rule); border-radius: 10px;
+  padding: 12px 14px; margin: 4px 0 6px;
+}
+.probe-search:focus-visible { outline: 2px solid var(--holster); outline-offset: 1px; }
+.rows.picks li { grid-template-columns: minmax(0, 1fr); padding: 0; }
+.pick {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 12px 6px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  border-radius: 8px;
+}
+.pick:hover { background: var(--hover); }
+.pick:focus-visible { outline: 2px solid var(--holster); outline-offset: -2px; }
+
+/* the statistics pair selector */
+.stats-picker { margin-bottom: 14px; }
+.picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.picker .pills { margin-top: 0; }
+.picker-label { font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.stats-picker .foot { margin: 10px 0 0; }
 .rows.alerts li.is-fired .row-code { color: var(--dim); text-decoration: line-through; }
 .rows.alerts .pill { padding: 4px 10px; }
 

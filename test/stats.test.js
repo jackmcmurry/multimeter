@@ -235,6 +235,28 @@
       eq('just under a detent snaps down', M.stopAt(M.STEP_DEG * 1.5 - 1), 1);
       eq('just over a detent snaps up', M.stopAt(M.STEP_DEG * 1.5 + 1), 2);
       eq('ampersand label is escaped in the plate', M.plateSvg().indexOf('S&amp;P') > 0, true);
+      eq('eleven stops share 320 degrees', Math.round(M.STEP_DEG), 32);
+      eq('the probe hash routes', R ? R.parseHash('#probe') : '', 'probe');
+    }
+
+    /* ---- statistics for any pair ------------------------------------------ */
+    var APP = MP.app;
+    if (APP && APP.analyticsFor) {
+      /* coin = index squared: log returns exactly double, so beta is 2 and
+       * correlation is 1 on every window */
+      var idx = [], coin = [], px = 100;
+      for (var d = 0; d < 60; d++) {
+        px *= 1 + (((d * 7919) % 13) - 6) / 400;
+        var day = new Date(Date.UTC(2026, 0, 1 + d)).toISOString().slice(0, 10);
+        idx.push({ date: day, price: px });
+        coin.push({ date: day, price: px * px / 100 });
+      }
+      var an = APP.analyticsFor(coin, idx, null, { coin: 'SOL', index: '^GSPC', indexShort: 'SPX' });
+      ok('analytics computed for a custom pair', !!an);
+      close('beta of the squared series is 2', an.coupling[0].beta, 2, 1e-9);
+      close('correlation of the squared series is 1', an.coupling[0].correlation, 1, 1e-9);
+      eq('labels travel with the result', an.labels.coin + '/' + an.labels.indexShort, 'SOL/SPX');
+      ok('too little overlap yields null', APP.analyticsFor(coin.slice(0, 10), idx, null, {}) === null);
     }
 
     /* ---- REL and MIN/MAX -------------------------------------------------- */
