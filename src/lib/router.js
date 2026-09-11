@@ -1,5 +1,5 @@
 /* ============================================================================
- * router.js — hash routing between the dial's stops.
+ * router.js: hash routing between the dial's stops.
  *
  * Each stop is one reading on the meter's screen and one panel in the detail
  * drawer below it; several stops can share a panel (ETH and S&P both open

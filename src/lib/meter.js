@@ -1,5 +1,5 @@
 /* ============================================================================
- * meter.js — the instrument itself: the rotary dial, the knob, and the screen.
+ * meter.js: the instrument itself: the rotary dial, the knob, and the screen.
  *
  * The dial has twelve stops over 320 degrees, clockwise from OFF at the top,
  * with a dead zone at eleven o'clock like a real range switch. Each stop is
@@ -439,7 +439,7 @@
     }
   }
 
-  /* Beep, flash the screen, pulse the phone, and notify — once per crossing. */
+  /* Once per crossing: beep, flash the screen, pulse the phone and notify. */
   function alarm(messages) {
     beep();
     var lcd = el('lcd');
@@ -656,6 +656,7 @@
     wireDial(dial, knob);
     wireKeys(knob);
     wireButtons();
+    wireSkins();
     if (MP.router) MP.router.onChange(onStop);
 
     fitToWindow();
@@ -666,6 +667,48 @@
       (root.requestAnimationFrame || setTimeout)(function () { fitQueued = false; fitToWindow(); });
     });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
+  }
+
+  /* ---- skins -------------------------------------------------------------- */
+  /* Gold is the default and carries no attribute. The colours live in the
+   * stylesheet; this only picks one and remembers it. */
+  var SKINS = ['gold', 'blue', 'pink', 'green', 'red', 'purple', 'silver'];
+
+  function currentSkin() {
+    var s = document.documentElement.getAttribute('data-skin');
+    return SKINS.indexOf(s) >= 0 ? s : 'gold';
+  }
+
+  function markSkin() {
+    var cur = currentSkin();
+    var buttons = document.querySelectorAll('.skin[data-skin]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-skin') === cur ? 'true' : 'false');
+    }
+  }
+
+  /* Unknown names are ignored. Returns the skin in force. */
+  function setSkin(name) {
+    if (SKINS.indexOf(name) < 0) return currentSkin();
+    if (name === 'gold') document.documentElement.removeAttribute('data-skin');
+    else document.documentElement.setAttribute('data-skin', name);
+    if (MP.store) MP.store.set('skin', name);
+    markSkin();
+    return name;
+  }
+
+  function wireSkins() {
+    var saved = MP.store ? MP.store.get('skin', 'gold') : 'gold';
+    if (SKINS.indexOf(saved) >= 0 && saved !== currentSkin()) setSkin(saved);
+    else markSkin();
+    var host = el('skins');
+    if (!host) return;
+    host.addEventListener('click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('.skin[data-skin]') : null;
+      if (!b) return;
+      primeAudio();
+      if (setSkin(b.getAttribute('data-skin'))) tickSound();
+    });
   }
 
   /* ---- fitting the window ------------------------------------------------- */
@@ -713,6 +756,9 @@
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
     fitToWindow: fitToWindow,
+    SKINS: SKINS,
+    setSkin: setSkin,
+    currentSkin: currentSkin,
     init: init,
     refresh: refresh,
     changeText: changeText,

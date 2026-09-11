@@ -1,11 +1,11 @@
 /* ============================================================================
- * sw.template.js — the service worker. build.ps1 stamps the version and
+ * sw.template.js: the service worker. build.ps1 stamps the version and
  * writes docs/sw.js; do not edit that file by hand.
  *
  * What it does, and no more:
  *   - precaches the shell (the page, the manifest, the icons) at install;
  *   - serves navigations and data/*.json network-first, falling back to the
- *     cache when offline — a deploy shows on the next load, and the page
+ *     cache when offline. A deploy shows on the next load, and the page
  *     still opens on a plane with the last snapshots it saw;
  *   - serves icons and the manifest cache-first;
  *   - never touches another origin: CoinGecko, Coinbase and the fonts pass
@@ -13,7 +13,7 @@
  * The cache name carries the build hash, so a new build purges the old one.
  * ========================================================================== */
 /* eslint-env serviceworker */
-var VERSION = '9b85419feef8';
+var VERSION = '14ece2aed94f';
 var CACHE = 'mm-' + VERSION;
 var SHELL = [
   './',

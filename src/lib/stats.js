@@ -1,5 +1,5 @@
 /* ============================================================================
- * stats.js — return-series statistics. Pure functions: no DOM, no network.
+ * stats.js: return-series statistics. Pure functions: no DOM, no network.
  *
  * Conventions used throughout the app:
  *   - A "series" is [{ date: 'YYYY-MM-DD', price: Number }], any order.

@@ -1,5 +1,5 @@
 /* ============================================================================
- * sources.js — where every number comes from, and the normalizers that turn
+ * sources.js: where every number comes from, and the normalizers that turn
  * each upstream payload into the app's own shapes.
  *
  * Two kinds of source:
@@ -162,7 +162,7 @@
   }
 
   /* A coinChart result over 365 days arrives as one point per day, stamped
-   * 00:00 UTC — which is the close of the PREVIOUS day, the way FMP dates its
+   * 00:00 UTC, which is the close of the PREVIOUS day, the way FMP dates its
    * daily bars. Shifting each stamp back one millisecond dates midnight
    * points to the day they close and leaves an intra-day "now" point on its
    * own day; the last point per day wins. */

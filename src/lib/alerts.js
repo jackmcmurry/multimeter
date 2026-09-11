@@ -1,5 +1,5 @@
 /* ============================================================================
- * alerts.js — the continuity beep: a level on any stop that sounds when it is
+ * alerts.js: the continuity beep: a level on any stop that sounds when it is
  * crossed.
  *
  * An alert is { id, stop, level, dir, unit, created, fired }. The direction
@@ -87,7 +87,7 @@
 
   function count() { return armed().length; }
 
-  /* "Bitcoin above $80,000.00" — fmt(stop, level) formats the level. */
+  /* "Bitcoin above $80,000.00". fmt(stop, level) formats the level. */
   function describe(a, fmt) {
     var title = MP.router && MP.router.TITLES && MP.router.TITLES[a.stop] ? MP.router.TITLES[a.stop] : a.stop;
     var level = typeof fmt === 'function' ? fmt(a.stop, a.level) : String(a.level);

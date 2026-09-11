@@ -1,5 +1,5 @@
 /* ============================================================================
- * spotlight.js — "Stock of the Week": the pinned panel at the top of the page.
+ * spotlight.js: "Stock of the Week": the pinned panel at the top of the page.
  *
  * Selection is mechanical and descriptive, never advisory: the largest
  * ABSOLUTE 5-session move across a fixed Nasdaq-100 universe. Absolute rather
@@ -18,7 +18,7 @@
   var S = MP.stats, F = MP.fmt, G = MP.geom;
 
   /* Fixed universe: large Nasdaq-100 constituents. A deliberate subset, not
-   * the whole index — the panel says so rather than implying full coverage. */
+   * the whole index. The panel says so rather than implying full coverage. */
   var UNIVERSE = [
     { symbol: 'AAPL', name: 'Apple Inc.' },
     { symbol: 'MSFT', name: 'Microsoft Corporation' },

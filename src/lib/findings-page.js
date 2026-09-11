@@ -1,5 +1,5 @@
 /* ============================================================================
- * findings-page.js — fills the write-up (findings.html) from data/findings.json.
+ * findings-page.js: fills the write-up (findings.html) from data/findings.json.
  *
  * The prose is written by hand in the template; every number in it is a
  * <span data-f="…"> slot filled here, so the page can never disagree with

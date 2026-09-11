@@ -1,5 +1,5 @@
 /* ============================================================================
- * note.js — the daily reading: three plain sentences about the day's figures.
+ * note.js: the daily reading: three plain sentences about the day's figures.
  *
  * Pure: the data job gathers the figures, this module turns them into a
  * request, checks whatever comes back, and supplies a fallback built only
@@ -12,7 +12,7 @@
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  var PROMPT_VERSION = 1;
+  var PROMPT_VERSION = 2;          /* 2: the house writing style */
   var MODEL = 'claude-opus-5';
   var MAX_TOKENS = 4096;           /* room for adaptive thinking at low effort */
   var RETRY_MS = 2 * 3600000;      /* a rejected reply is re-asked at most every 2h */
@@ -24,7 +24,12 @@
   var BANNED = [
     'buy', 'buying', 'sell', 'selling', 'sold', 'hold', 'should', 'must', 'ought',
     'recommend*', 'advise*', 'bullish', 'bearish', 'will', 'expect*', 'forecast*', 'predict*',
-    'target*', 'guarantee*', 'opportunit*', 'undervalued', 'overvalued', 'cheap', 'dip', 'moon', 'rally'
+    'target*', 'guarantee*', 'opportunit*', 'undervalued', 'overvalued', 'cheap', 'dip', 'moon', 'rally',
+    /* the house style: filler and inflation */
+    'crucial', 'delve*', 'enhanc*', 'foster*', 'garner*', 'highlight*', 'interplay', 'intricate', 'key',
+    'landscape', 'meticulous*', 'pivotal', 'showcas*', 'tapestry', 'testament', 'underscor*', 'valuable',
+    'vibrant', 'groundbreaking', 'renowned', 'diverse array', 'rich heritage', 'commitment to',
+    'serves as', 'stands as', 'in summary', 'in conclusion', 'overall', 'notably', 'remarkabl*'
   ];
   var BANNED_RE = BANNED.map(function (w) {
     var stem = w.replace(/\*$/, '');
@@ -97,8 +102,9 @@
     '2. Describe only the figures you are given, and cite them as given, with the same rounding, units and time horizons.',
     '3. Do not predict, forecast, recommend or advise. Never use the words buy, sell, hold, should, must, will, expect, target, bullish or bearish.',
     '4. Add no facts, news, causes or context that are not in the figures.',
-    '5. No headings, lists, markdown, emoji or quotation marks.',
+    '5. No headings, lists, markdown, emoji, quotation marks or em dashes.',
     '6. The last sentence must say that this is a description of the figures, not advice.',
+    '7. Write short, direct, declarative sentences. Say what the figures are without saying how important they are. Use "is" rather than "serves as" or "represents". Do not end a sentence with an "-ing" phrase that comments on it. No filler words such as crucial, key, pivotal, notably or overall.',
     'Output the three sentences and nothing else.'
   ].join('\n');
 
@@ -165,6 +171,7 @@
   function validate(text) {
     if (typeof text !== 'string' || !text.trim()) return { ok: false, reason: 'empty' };
     if (/[<>*#`]|https?:/i.test(text)) return { ok: false, reason: 'markup or a link' };
+    if (text.indexOf(String.fromCharCode(0x2014)) >= 0) return { ok: false, reason: 'an em dash' };
     var scan = text.replace(/\bnot (?:investment |financial )?advice\b/gi, '');
     for (var i = 0; i < BANNED_RE.length; i++) {
       if (BANNED_RE[i].re.test(scan)) return { ok: false, reason: 'banned word "' + BANNED_RE[i].word + '"' };

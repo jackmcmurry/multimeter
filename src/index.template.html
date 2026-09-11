@@ -19,6 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<script>
+/* A saved skin goes on before the first paint, so the page never flashes gold first. */
+try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
+</script>
 <style>
 [hidden] { display: none !important; }
 /* @inject styles.css */
@@ -36,7 +40,18 @@
 
         <div class="head">
           <span class="brand">MULTIMETER</span>
-          <span class="model" aria-hidden="true">MM-10</span>
+          <span class="head-right">
+            <span class="skins" id="skins" role="group" aria-label="Skin">
+              <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
+              <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
+            </span>
+            <span class="model" aria-hidden="true">MM-10</span>
+          </span>
         </div>
 
         <div class="lcd" id="lcd" role="button" tabindex="0" aria-label="Meter">
@@ -241,28 +256,31 @@
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading (drag it, roll the wheel over it, or use the arrow keys); the tabs on the screen set the chart's range for the coins; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. For the coins, the tabs on the screen set the chart's range. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
       <h2>Dial</h2>
-      <p><b>BTC</b>, <b>ETH</b> — spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. They trade every calendar day.</p>
-      <p><b>NASDAQ</b> — the Nasdaq Composite (^IXIC), roughly 3,000 listed securities. <b>S&amp;P</b> — the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
-      <p><b>STOCK</b> — the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move.</p>
-      <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
-      <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
-      <p><b>PROBE</b> — a coin of your own. Open DATA on that stop, search any coin CoinGecko tracks, and it takes the stop, wearing its symbol on the dial. The choice stays in this browser.</p>
-      <p><b>NOTE</b> — the daily reading: three plain sentences describing the last session's figures, written by Claude after each US close under rules that forbid predictions and advice, checked mechanically, and replaced by a fixed template when a reply breaks them. The drawer shows exactly which figures it was given.</p>
-      <p><b>CORR</b> — the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — that coin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far it sits below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels; any coin's daily closes come from its one-year CoinGecko chart.</p>
+      <p><b>BTC</b>, <b>ETH</b>: spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. Both trade every calendar day.</p>
+      <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
+      <p><b>STOCK</b>: the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe and stores the name with the largest absolute five-session move.</p>
+      <p><b>CRYPTO</b>: the crypto of the week, chosen the same way from a fixed 15-name large-cap universe over seven days. Bitcoin and ether are left out because they have their own stops.</p>
+      <p>The picks rank by absolute move, not by gain, because a ranking of winners would read as a tip. They report what moved in either direction. They are not recommendations.</p>
+      <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
+      <p><b>NOTE</b>: the daily reading. After each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template. The drawer shows the figures it was given.</p>
+      <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
 
+      <h2>Skins</h2>
+      <p>The coloured dots beside the brand pick the skin: gold, blue, pink, green, red, purple or silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
+
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
-      <p>Beta is BTC regressed on the index — the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
+      <p>Beta is BTC regressed on the index: the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
       <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
 
       <h2>Findings</h2>
-      <p>The statistics feed a running write-up, <a href="findings.html">Is bitcoin a tech stock?</a>: how often bitcoin and the Nasdaq have moved together, how long each regime lasted, when the coupling broke, and what that does and does not tell you. Every number on it comes from the same daily history the meter uses.</p>
+      <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
       <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>

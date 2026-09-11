@@ -1,5 +1,5 @@
 /* ============================================================================
- * data.test.js — the data layer: session clock, payload normalizers, and the
+ * data.test.js: the data layer: session clock, payload normalizers, and the
  * scheduled job's decisions, driven against canned payloads.
  *
  *   MP.dataTest.run()          -> { total, passed, failed, failures }

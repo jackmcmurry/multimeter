@@ -19,13 +19,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<script>
+/* A saved skin goes on before the first paint, so the page never flashes gold first. */
+try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
+</script>
 <style>
 [hidden] { display: none !important; }
 /* ============================================================================
- * styles.css — Multimeter.
+ * styles.css: Multimeter.
  *
  * The page is a handheld digital multimeter in the classic field-instrument
- * livery: a graphite body in a yellow rubber holster, a backlit dark display
+ * livery: a graphite body in a rubber holster (gold unless a skin is chosen), a backlit dark display
  * up top with a luminous readout, a rotary function switch in the middle and
  * three input jacks along the bottom. The detail drawer beneath it is a dark
  * card so the charts and tables read as the instrument's manual, not more
@@ -34,7 +38,7 @@
  * Type: Space Grotesk for the body, the labels and the big price, JetBrains
  * Mono for the display's small annunciators.
  *
- * SINGLE THEME BY CHOICE — a physical object has one colour, so every colour
+ * SINGLE THEME BY CHOICE. A physical object has one colour, so every colour
  * is painted explicitly rather than swapped with the viewer's theme.
  * ========================================================================== */
 
@@ -62,6 +66,7 @@
   --knob: #14171c;
   --knob-lt: #2c3139;
   --knob-mark: #f6b71f;
+  --accent-glow: rgba(246, 183, 31, 0.5);
   --key: #333942;
   --key-dk: #0f1215;
   --key-text: #eef1f5;
@@ -401,7 +406,7 @@ body {
 .knob:active { cursor: grabbing; }
 /* under a finger the knob follows exactly and sits a hair lower */
 .knob.is-dragging { transition: scale 120ms ease; scale: 0.985; cursor: grabbing; }
-.knob.is-dragging::before { box-shadow: 0 0 14px rgba(246, 183, 31, 0.8); }
+.knob.is-dragging::before { box-shadow: 0 0 16px var(--accent-glow); }
 .knob::before {
   content: "";
   position: absolute;
@@ -412,7 +417,7 @@ body {
   margin-left: -3.25%;
   border-radius: 4px;
   background: var(--knob-mark);
-  box-shadow: 0 0 8px rgba(246, 183, 31, 0.5);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 /* a grip: fine ridges round the rim, the part a thumb catches */
 .knob::after {
@@ -510,6 +515,46 @@ body {
 .findings-links a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
 .findings-links a:hover { color: var(--holster); }
 .pill.share[href] { text-decoration: none; display: inline-block; }
+
+/* ---- skins ------------------------------------------------------------------ */
+/* A skin recolours the holster and the accent (the knob's mark, the active
+ * label, focus rings, headings). Gold is the default and needs no attribute.
+ * meter.js sets data-skin on <html>; an inline script in the page head
+ * applies a saved skin before the first paint. */
+:root[data-skin="blue"] { --holster: #3b82f6; --holster-dk: #1e56c8; --holster-lt: #7fb0ff; --knob-mark: #6aa8ff; --accent-glow: rgba(106, 168, 255, 0.55); }
+:root[data-skin="pink"] { --holster: #f472b6; --holster-dk: #c7367f; --holster-lt: #ffb3da; --knob-mark: #ff8cc6; --accent-glow: rgba(255, 140, 198, 0.55); }
+:root[data-skin="green"] { --holster: #22c55e; --holster-dk: #15803d; --holster-lt: #7ee8a4; --knob-mark: #4ade80; --accent-glow: rgba(74, 222, 128, 0.5); }
+:root[data-skin="red"] { --holster: #ef4444; --holster-dk: #a91d1d; --holster-lt: #ff9a9a; --knob-mark: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.55); }
+:root[data-skin="purple"] { --holster: #a855f7; --holster-dk: #7426c7; --holster-lt: #d6b0ff; --knob-mark: #c084fc; --accent-glow: rgba(192, 132, 252, 0.55); }
+:root[data-skin="silver"] { --holster: #cbd5e1; --holster-dk: #8a97aa; --holster-lt: #f1f5f9; --knob-mark: #e2e8f0; --accent-glow: rgba(226, 232, 240, 0.45); }
+
+.head { align-items: center; }
+.head-right { display: flex; align-items: center; gap: 14px; }
+.skins { display: flex; align-items: center; gap: 8px; }
+.skin {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.skin:hover { transform: scale(1.18); }
+.skin[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
+.skin:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.skin[data-skin="gold"] { background: #f6b71f; }
+.skin[data-skin="blue"] { background: #3b82f6; }
+.skin[data-skin="pink"] { background: #f472b6; }
+.skin[data-skin="green"] { background: #22c55e; }
+.skin[data-skin="red"] { background: #ef4444; }
+.skin[data-skin="purple"] { background: #a855f7; }
+.skin[data-skin="silver"] { background: #cbd5e1; }
+@media (max-width: 480px) {
+  .model { display: none; }
+  .skins { gap: 7px; }
+}
 
 /* ---- the daily reading ---------------------------------------------------- */
 .lcd-note {
@@ -766,7 +811,18 @@ tr.row-rule th {
 
         <div class="head">
           <span class="brand">MULTIMETER</span>
-          <span class="model" aria-hidden="true">MM-10</span>
+          <span class="head-right">
+            <span class="skins" id="skins" role="group" aria-label="Skin">
+              <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
+              <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
+              <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
+            </span>
+            <span class="model" aria-hidden="true">MM-10</span>
+          </span>
         </div>
 
         <div class="lcd" id="lcd" role="button" tabindex="0" aria-label="Meter">
@@ -971,28 +1027,31 @@ tr.row-rule th {
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading (drag it, roll the wheel over it, or use the arrow keys); the tabs on the screen set the chart's range for the coins; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. For the coins, the tabs on the screen set the chart's range. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
       <h2>Dial</h2>
-      <p><b>BTC</b>, <b>ETH</b> — spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. They trade every calendar day.</p>
-      <p><b>NASDAQ</b> — the Nasdaq Composite (^IXIC), roughly 3,000 listed securities. <b>S&amp;P</b> — the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
-      <p><b>STOCK</b> — the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move.</p>
-      <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
-      <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
-      <p><b>PROBE</b> — a coin of your own. Open DATA on that stop, search any coin CoinGecko tracks, and it takes the stop, wearing its symbol on the dial. The choice stays in this browser.</p>
-      <p><b>NOTE</b> — the daily reading: three plain sentences describing the last session's figures, written by Claude after each US close under rules that forbid predictions and advice, checked mechanically, and replaced by a fixed template when a reply breaks them. The drawer shows exactly which figures it was given.</p>
-      <p><b>CORR</b> — the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — that coin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far it sits below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels; any coin's daily closes come from its one-year CoinGecko chart.</p>
+      <p><b>BTC</b>, <b>ETH</b>: spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. Both trade every calendar day.</p>
+      <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
+      <p><b>STOCK</b>: the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe and stores the name with the largest absolute five-session move.</p>
+      <p><b>CRYPTO</b>: the crypto of the week, chosen the same way from a fixed 15-name large-cap universe over seven days. Bitcoin and ether are left out because they have their own stops.</p>
+      <p>The picks rank by absolute move, not by gain, because a ranking of winners would read as a tip. They report what moved in either direction. They are not recommendations.</p>
+      <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
+      <p><b>NOTE</b>: the daily reading. After each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template. The drawer shows the figures it was given.</p>
+      <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
 
+      <h2>Skins</h2>
+      <p>The coloured dots beside the brand pick the skin: gold, blue, pink, green, red, purple or silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
+
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
-      <p>Beta is BTC regressed on the index — the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
+      <p>Beta is BTC regressed on the index: the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
       <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
 
       <h2>Findings</h2>
-      <p>The statistics feed a running write-up, <a href="findings.html">Is bitcoin a tech stock?</a>: how often bitcoin and the Nasdaq have moved together, how long each regime lasted, when the coupling broke, and what that does and does not tell you. Every number on it comes from the same daily history the meter uses.</p>
+      <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
       <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
@@ -1009,7 +1068,7 @@ tr.row-rule th {
 <script>
 /* ==== src/lib/stats.js ==================================================== */
 /* ============================================================================
- * stats.js — return-series statistics. Pure functions: no DOM, no network.
+ * stats.js: return-series statistics. Pure functions: no DOM, no network.
  *
  * Conventions used throughout the app:
  *   - A "series" is [{ date: 'YYYY-MM-DD', price: Number }], any order.
@@ -1267,7 +1326,7 @@ tr.row-rule th {
 
 /* ==== src/lib/format.js =================================================== */
 /* ============================================================================
- * format.js — display formatting. Pure functions, no DOM.
+ * format.js: display formatting. Pure functions, no DOM.
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -1384,7 +1443,7 @@ tr.row-rule th {
 
 /* ==== src/lib/store.js ==================================================== */
 /* ============================================================================
- * store.js — the one place the page touches localStorage.
+ * store.js: the one place the page touches localStorage.
  *
  * Everything the viewer sets up for themselves (alerts, the probe coin, the
  * statistics pair) lives in this browser only. Storage can be missing,
@@ -1430,7 +1489,7 @@ tr.row-rule th {
 
 /* ==== src/lib/geom.js ===================================================== */
 /* ============================================================================
- * geom.js — SVG chart kit. Rectilinear only: stair-stepped paths, hard-edged
+ * geom.js: SVG chart kit. Rectilinear only: stair-stepped paths, hard-edged
  * columns, square point marks, diagonal hatching, tick-marked crosshair axes.
  * No curves, no gradients, no rounded joins anywhere.
  *
@@ -1538,7 +1597,7 @@ tr.row-rule th {
   }
 
   /* -------------------------------------------------------------------------
-   * 1. sparkStep — axis-free stair line with a square end mark.
+   * 1. sparkStep: axis-free stair line with a square end mark.
    * ---------------------------------------------------------------------- */
   function sparkStep(opts) {
     var values = (opts.values || []).filter(isNum);
@@ -1555,7 +1614,7 @@ tr.row-rule th {
     var path = stairPath(values, x, y);
     var lastX = x(values.length - 1), lastY = y(values[values.length - 1]);
     var s = open(w, h);
-    /* Flat-opacity fill, no gradient — keeps the chart rectilinear. */
+    /* Flat-opacity fill, no gradient, so the chart stays rectilinear. */
     if (opts.area) {
       s += '<path d="' + path.d + 'V' + (h - p.b).toFixed(2) + 'H' + x(0).toFixed(2) + 'Z" ' +
         'fill="' + color + '" fill-opacity="0.12" stroke="none"/>';
@@ -1569,7 +1628,7 @@ tr.row-rule th {
   }
 
   /* -------------------------------------------------------------------------
-   * 2. stepChart — one or more stair series on a shared scale, optional zero
+   * 2. stepChart: one or more stair series on a shared scale, optional zero
    *    rule. Used for the rolling-correlation panel.
    * ---------------------------------------------------------------------- */
   function stepChart(opts) {
@@ -1621,7 +1680,7 @@ tr.row-rule th {
   }
 
   /* -------------------------------------------------------------------------
-   * 3. columnChart — grouped hard-edged columns. Used for rolling volatility.
+   * 3. columnChart: grouped hard-edged columns. Used for rolling volatility.
    * ---------------------------------------------------------------------- */
   function columnChart(opts) {
     var series = opts.series || [];
@@ -1667,7 +1726,7 @@ tr.row-rule th {
   }
 
   /* -------------------------------------------------------------------------
-   * 4. scatterFit — square marks with an OLS line and zero crosshairs. The
+   * 4. scatterFit: square marks with an OLS line and zero crosshairs. The
    *    slope drawn here IS the beta reported in the table.
    * ---------------------------------------------------------------------- */
   function scatterFit(opts) {
@@ -1744,7 +1803,7 @@ tr.row-rule th {
   }
 
   /* -------------------------------------------------------------------------
-   * 5. underwaterChart — drawdown depth as a hatched region hanging from 0.
+   * 5. underwaterChart: drawdown depth as a hatched region hanging from 0.
    * ---------------------------------------------------------------------- */
   function underwaterChart(opts) {
     var values = opts.values || [];
@@ -1791,7 +1850,7 @@ tr.row-rule th {
   }
 
   /* -------------------------------------------------------------------------
-   * 6. smoothLine — the one curved chart in the kit, for the meter's screen.
+   * 6. smoothLine: the one curved chart in the kit, for the meter's screen.
    *    A monotone cubic line (no overshoot between samples) over a soft
    *    gradient, with the latest point marked: the shape a phone's price
    *    chart has, so the display reads as a modern backlit panel while the
@@ -1875,7 +1934,7 @@ tr.row-rule th {
 
 /* ==== src/lib/sources.js ================================================== */
 /* ============================================================================
- * sources.js — where every number comes from, and the normalizers that turn
+ * sources.js: where every number comes from, and the normalizers that turn
  * each upstream payload into the app's own shapes.
  *
  * Two kinds of source:
@@ -2038,7 +2097,7 @@ tr.row-rule th {
   }
 
   /* A coinChart result over 365 days arrives as one point per day, stamped
-   * 00:00 UTC — which is the close of the PREVIOUS day, the way FMP dates its
+   * 00:00 UTC, which is the close of the PREVIOUS day, the way FMP dates its
    * daily bars. Shifting each stamp back one millisecond dates midnight
    * points to the day they close and leaves an intra-day "now" point on its
    * own day; the last point per day wins. */
@@ -2343,7 +2402,7 @@ tr.row-rule th {
 
 /* ==== src/lib/session.js ================================================== */
 /* ============================================================================
- * session.js — the US equity session clock, computed locally.
+ * session.js: the US equity session clock, computed locally.
  *
  * Replaces the Alpha Vantage MARKET_STATUS call: regular NYSE / Nasdaq hours
  * are 09:30–16:00 America/New_York on weekdays that are not exchange
@@ -2459,7 +2518,7 @@ tr.row-rule th {
 
 /* ==== src/lib/router.js =================================================== */
 /* ============================================================================
- * router.js — hash routing between the dial's stops.
+ * router.js: hash routing between the dial's stops.
  *
  * Each stop is one reading on the meter's screen and one panel in the detail
  * drawer below it; several stops can share a panel (ETH and S&P both open
@@ -2616,7 +2675,7 @@ tr.row-rule th {
 
 /* ==== src/lib/funcs.js ==================================================== */
 /* ============================================================================
- * funcs.js — the instrument functions a real meter has: REL and MIN/MAX.
+ * funcs.js: the instrument functions a real meter has: REL and MIN/MAX.
  *
  * REL (relative) zeroes the reading where it stands: from then on the change
  * line shows the move since that reference instead of the day's or range's.
@@ -2698,7 +2757,7 @@ tr.row-rule th {
 
 /* ==== src/lib/alerts.js =================================================== */
 /* ============================================================================
- * alerts.js — the continuity beep: a level on any stop that sounds when it is
+ * alerts.js: the continuity beep: a level on any stop that sounds when it is
  * crossed.
  *
  * An alert is { id, stop, level, dir, unit, created, fired }. The direction
@@ -2786,7 +2845,7 @@ tr.row-rule th {
 
   function count() { return armed().length; }
 
-  /* "Bitcoin above $80,000.00" — fmt(stop, level) formats the level. */
+  /* "Bitcoin above $80,000.00". fmt(stop, level) formats the level. */
   function describe(a, fmt) {
     var title = MP.router && MP.router.TITLES && MP.router.TITLES[a.stop] ? MP.router.TITLES[a.stop] : a.stop;
     var level = typeof fmt === 'function' ? fmt(a.stop, a.level) : String(a.level);
@@ -2814,7 +2873,7 @@ tr.row-rule th {
 
 /* ==== src/lib/meter.js ==================================================== */
 /* ============================================================================
- * meter.js — the instrument itself: the rotary dial, the knob, and the screen.
+ * meter.js: the instrument itself: the rotary dial, the knob, and the screen.
  *
  * The dial has twelve stops over 320 degrees, clockwise from OFF at the top,
  * with a dead zone at eleven o'clock like a real range switch. Each stop is
@@ -3254,7 +3313,7 @@ tr.row-rule th {
     }
   }
 
-  /* Beep, flash the screen, pulse the phone, and notify — once per crossing. */
+  /* Once per crossing: beep, flash the screen, pulse the phone and notify. */
   function alarm(messages) {
     beep();
     var lcd = el('lcd');
@@ -3471,6 +3530,7 @@ tr.row-rule th {
     wireDial(dial, knob);
     wireKeys(knob);
     wireButtons();
+    wireSkins();
     if (MP.router) MP.router.onChange(onStop);
 
     fitToWindow();
@@ -3481,6 +3541,48 @@ tr.row-rule th {
       (root.requestAnimationFrame || setTimeout)(function () { fitQueued = false; fitToWindow(); });
     });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
+  }
+
+  /* ---- skins -------------------------------------------------------------- */
+  /* Gold is the default and carries no attribute. The colours live in the
+   * stylesheet; this only picks one and remembers it. */
+  var SKINS = ['gold', 'blue', 'pink', 'green', 'red', 'purple', 'silver'];
+
+  function currentSkin() {
+    var s = document.documentElement.getAttribute('data-skin');
+    return SKINS.indexOf(s) >= 0 ? s : 'gold';
+  }
+
+  function markSkin() {
+    var cur = currentSkin();
+    var buttons = document.querySelectorAll('.skin[data-skin]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-skin') === cur ? 'true' : 'false');
+    }
+  }
+
+  /* Unknown names are ignored. Returns the skin in force. */
+  function setSkin(name) {
+    if (SKINS.indexOf(name) < 0) return currentSkin();
+    if (name === 'gold') document.documentElement.removeAttribute('data-skin');
+    else document.documentElement.setAttribute('data-skin', name);
+    if (MP.store) MP.store.set('skin', name);
+    markSkin();
+    return name;
+  }
+
+  function wireSkins() {
+    var saved = MP.store ? MP.store.get('skin', 'gold') : 'gold';
+    if (SKINS.indexOf(saved) >= 0 && saved !== currentSkin()) setSkin(saved);
+    else markSkin();
+    var host = el('skins');
+    if (!host) return;
+    host.addEventListener('click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('.skin[data-skin]') : null;
+      if (!b) return;
+      primeAudio();
+      if (setSkin(b.getAttribute('data-skin'))) tickSound();
+    });
   }
 
   /* ---- fitting the window ------------------------------------------------- */
@@ -3528,6 +3630,9 @@ tr.row-rule th {
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
     fitToWindow: fitToWindow,
+    SKINS: SKINS,
+    setSkin: setSkin,
+    currentSkin: currentSkin,
     init: init,
     refresh: refresh,
     changeText: changeText,
@@ -3544,7 +3649,7 @@ tr.row-rule th {
 
 /* ==== src/lib/live.js ===================================================== */
 /* ============================================================================
- * live.js — real-time prices over Coinbase Exchange's public WebSocket.
+ * live.js: real-time prices over Coinbase Exchange's public WebSocket.
  *
  * The page keeps polling CoinGecko as before; this feed only makes the coins
  * on the screen tick between polls. It subscribes one product at a time so a
@@ -3821,9 +3926,9 @@ tr.row-rule th {
 
 /* ==== src/lib/share.js ==================================================== */
 /* ============================================================================
- * share.js — the share card: the screen's reading as a 1200 x 630 picture.
+ * share.js: the share card: the screen's reading as a 1200 x 630 picture.
  *
- * Draws what the screen shows — mode, chart, price, change — onto a canvas
+ * Draws what the screen shows (mode, chart, price, change) onto a canvas
  * and hands the PNG to the system share sheet where there is one, else to
  * the clipboard, else as a download. The chart is the same smoothLine SVG
  * the screen uses, rasterised through an Image; a standalone SVG cannot
@@ -4038,7 +4143,7 @@ tr.row-rule th {
 
 /* ==== src/lib/spotlight.js ================================================ */
 /* ============================================================================
- * spotlight.js — "Stock of the Week": the pinned panel at the top of the page.
+ * spotlight.js: "Stock of the Week": the pinned panel at the top of the page.
  *
  * Selection is mechanical and descriptive, never advisory: the largest
  * ABSOLUTE 5-session move across a fixed Nasdaq-100 universe. Absolute rather
@@ -4057,7 +4162,7 @@ tr.row-rule th {
   var S = MP.stats, F = MP.fmt, G = MP.geom;
 
   /* Fixed universe: large Nasdaq-100 constituents. A deliberate subset, not
-   * the whole index — the panel says so rather than implying full coverage. */
+   * the whole index. The panel says so rather than implying full coverage. */
   var UNIVERSE = [
     { symbol: 'AAPL', name: 'Apple Inc.' },
     { symbol: 'MSFT', name: 'Microsoft Corporation' },
@@ -4428,7 +4533,7 @@ tr.row-rule th {
 
 /* ==== src/lib/app.js ====================================================== */
 /* ============================================================================
- * app.js — state, data wiring, analytics assembly, rendering.
+ * app.js: state, data wiring, analytics assembly, rendering.
  *
  * One number per screen. Bitcoin, ether and the crypto of the week come
  * straight from CoinGecko's public API on a 45s poll. The index quotes, daily

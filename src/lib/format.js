@@ -1,5 +1,5 @@
 /* ============================================================================
- * format.js — display formatting. Pure functions, no DOM.
+ * format.js: display formatting. Pure functions, no DOM.
  * ========================================================================== */
 (function (root) {
   'use strict';

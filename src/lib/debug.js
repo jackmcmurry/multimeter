@@ -1,17 +1,17 @@
 /* ============================================================================
- * debug.js — build-verification scaffolding. NOT part of the release bundle.
+ * debug.js: build-verification scaffolding. NOT part of the release bundle.
  *
  * There is no local JS runtime on this machine, so layout and chart geometry
  * are checked by serving the debug bundle over loopback and calling
  * MP.debug.renderSynthetic() from the browser console. The series it makes are
- * a seeded random walk — deliberately synthetic, never shown to a viewer of
+ * a seeded random walk, deliberately synthetic and never shown to a viewer of
  * the published page, which only ever renders connector data.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  /* mulberry32 — small deterministic PRNG so runs are reproducible. */
+  /* mulberry32: a small deterministic PRNG so runs are reproducible. */
   function prng(seed) {
     var a = seed >>> 0;
     return function () {

@@ -1,5 +1,5 @@
 /* ============================================================================
- * app.js — state, data wiring, analytics assembly, rendering.
+ * app.js: state, data wiring, analytics assembly, rendering.
  *
  * One number per screen. Bitcoin, ether and the crypto of the week come
  * straight from CoinGecko's public API on a 45s poll. The index quotes, daily

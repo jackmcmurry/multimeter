@@ -11,12 +11,21 @@ Built by Jack McMurry with Claude Code.
 
 ## What's on it
 
-The page is one handheld multimeter. The rotary dial picks a function, the
-screen shows that one reading — a tall chart, the price beneath it, the
-change and, for the coins, range tabs — and the DATA key (or a press
-on the screen) opens a drawer beneath the meter with the charts and tables
-behind the number. HOLD freezes the display. The COM jack lights while the
-US market is open.
+The page is one handheld multimeter. The rotary dial picks a function and
+the screen shows that one reading: a tall chart, the price beneath it, the
+change, and range tabs for the coins. The DATA key, or a press on the
+screen, opens a drawer beneath the meter with the charts and tables behind
+the number. HOLD freezes the display. The COM jack lights while the US
+market is open.
+
+The coloured dots beside the brand pick the skin: gold (the default), blue,
+pink, green, red, purple or silver. A skin recolours the holster and the
+accents. The choice is stored in this browser (`mm.skin`) and applied before
+the first paint.
+
+On a wide window the meter lays out like a bench meter, screen on the left
+and dial on the right. On a phone it stacks. Either way it is sized to fit
+the window's height, so the screen and the dial are both in view.
 
 | Dial | Screen reads | Drawer holds |
 |---|---|---|
@@ -109,9 +118,9 @@ Coinbase or the fonts. The cache name carries the build hash that
 Icons are rendered by `tools/icons.ps1` (System.Drawing) into `docs/icons`
 and committed; rerun it only when the art changes.
 
-**SHARE**, in the drawer's header, draws the screen's reading — mode, chart,
-price and change — as a 1200×630 picture and hands it to the system share
-sheet where there is one, otherwise copies it to the clipboard, otherwise
+**SHARE**, in the drawer's header, draws the screen's reading (mode, chart,
+price and change) as a 1200×630 picture. It opens the system share sheet
+where there is one, otherwise copies the picture to the clipboard, otherwise
 downloads it.
 
 ## How it gets data

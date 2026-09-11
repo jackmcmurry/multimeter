@@ -1,5 +1,5 @@
 /* ============================================================================
- * session.js — the US equity session clock, computed locally.
+ * session.js: the US equity session clock, computed locally.
  *
  * Replaces the Alpha Vantage MARKET_STATUS call: regular NYSE / Nasdaq hours
  * are 09:30–16:00 America/New_York on weekdays that are not exchange

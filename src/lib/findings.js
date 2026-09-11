@@ -1,12 +1,12 @@
 /* ============================================================================
- * findings.js — the running answer to "is bitcoin a tech stock?"
+ * findings.js: the running answer to "is bitcoin a tech stock?"
  *
  * Pure: daily closes in, one findings object out, computed by the data job
  * from the same history the meter's statistics use and published as
  * data/findings.json for the write-up page. Everything here is descriptive:
  * regimes are conventional thresholds on a rolling correlation, "breaks" are
  * the largest falls in it, and narrative() turns the numbers into sentences
- * with nothing added — no causes, no forecasts. Numbers are rounded here so
+ * with nothing added: no causes, no forecasts. Numbers are rounded here so
  * the file is small and the browser and Node agree to the digit.
  * ========================================================================== */
 (function (root) {

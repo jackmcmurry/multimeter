@@ -1,5 +1,5 @@
 <#
-    build.ps1 — bundles src/ into the single-file page GitHub Pages serves.
+    build.ps1: bundles src/ into the single-file page GitHub Pages serves.
 
     The page is one HTML document with its CSS and JS inlined, so the source
     tree is concatenated in dependency order and injected into the template's

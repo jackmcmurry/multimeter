@@ -1,5 +1,5 @@
 /* ============================================================================
- * stats.test.js — assertions for MP.stats against hand-computed values.
+ * stats.test.js: assertions for MP.stats against hand-computed values.
  *
  * No local JS runtime is installed on this machine (no node/deno/bun), so the
  * suite is written to run in any JS engine and report a plain object:
@@ -236,6 +236,16 @@
       eq('just over a detent snaps up', M.stopAt(M.STEP_DEG * 1.5 + 1), 2);
       eq('ampersand label is escaped in the plate', M.plateSvg().indexOf('S&amp;P') > 0, true);
       eq('twelve stops share 320 degrees', Math.round(M.STEP_DEG), 29);
+
+      /* skins */
+      var skinBefore = M.currentSkin();
+      ok('gold is among the skins', M.SKINS.indexOf('gold') === 0 && M.SKINS.length >= 6);
+      eq('a skin can be chosen', M.setSkin('blue'), 'blue');
+      eq('the chosen skin is on the page', document.documentElement.getAttribute('data-skin'), 'blue');
+      eq('an unknown skin is ignored', M.setSkin('plaid'), 'blue');
+      M.setSkin('gold');
+      ok('gold needs no attribute', !document.documentElement.hasAttribute('data-skin'));
+      M.setSkin(skinBefore);
       eq('the reading hash routes', R ? R.parseHash('#reading') : '', 'note');
       eq('the probe hash routes', R ? R.parseHash('#probe') : '', 'probe');
     }
@@ -315,6 +325,11 @@
       var longText = new Array(46).join('word ') + '1. ' + new Array(46).join('word ') + 'end. This is not advice.';
       ok('more than 90 words is rejected', /words/.test(NT.validate(longText).reason || ''));
       ok('markup is rejected', !NT.validate('**Bitcoin** rose 2%. The index fell. This is not advice.').ok);
+      eq('an em dash is rejected', NT.validate('Bitcoin rose 2% ' + String.fromCharCode(0x2014) + ' the index fell 1%. This is not advice.').reason, 'an em dash');
+      ok('a year in the text is not mistaken for a dash', NT.validate('Bitcoin rose 2% since 2014. The index fell 1%. This is not advice.').ok);
+      ok('house-style filler is rejected', /banned word "pivotal"/.test(NT.validate('The index fell 1% on a pivotal day. This is not advice.').reason || ''));
+      ok('"serves as" is rejected', /serves as/.test(NT.validate('The 0.52 correlation serves as a guide. This is not advice.').reason || ''));
+      ok('the prompt asks for the house style', NT.SYSTEM.indexOf('em dashes') >= 0 && NT.SYSTEM.indexOf('declarative') >= 0);
 
       var parsedReply = NT.parse({ model: 'claude-opus-5', stop_reason: 'end_turn',
         content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '  Bitcoin rose   2%.\nNot advice.  ' }] });

@@ -1,5 +1,5 @@
 /* ============================================================================
- * pipeline.js — the scheduled data job's logic, runtime-agnostic.
+ * pipeline.js: the scheduled data job's logic, runtime-agnostic.
  *
  * Runs inside GitHub Actions through scripts/update-data.js, which supplies
  * fetch, the environment and file access. It holds no Node APIs, so the debug
@@ -22,7 +22,7 @@
  *              Vantage.
  *   findings   whenever history is rewritten (or missing for the session):
  *              the write-up's statistics, computed here from that history
- *              with MP.findings — no calls at all.
+ *              with MP.findings. No calls at all.
  *   note       once per session after its final quote read: a three-sentence
  *              reading of the figures, written by Claude when a key is set
  *              and checked by MP.note.validate, else the fixed template.

@@ -1,5 +1,5 @@
 /* ============================================================================
- * live.js — real-time prices over Coinbase Exchange's public WebSocket.
+ * live.js: real-time prices over Coinbase Exchange's public WebSocket.
  *
  * The page keeps polling CoinGecko as before; this feed only makes the coins
  * on the screen tick between polls. It subscribes one product at a time so a

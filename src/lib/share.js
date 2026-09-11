@@ -1,7 +1,7 @@
 /* ============================================================================
- * share.js — the share card: the screen's reading as a 1200 x 630 picture.
+ * share.js: the share card: the screen's reading as a 1200 x 630 picture.
  *
- * Draws what the screen shows — mode, chart, price, change — onto a canvas
+ * Draws what the screen shows (mode, chart, price, change) onto a canvas
  * and hands the PNG to the system share sheet where there is one, else to
  * the clipboard, else as a download. The chart is the same smoothLine SVG
  * the screen uses, rasterised through an Image; a standalone SVG cannot

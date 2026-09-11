@@ -1,5 +1,5 @@
 <#
-    serve.ps1 — minimal loopback file server for build verification.
+    serve.ps1: minimal loopback file server for build verification.
 
     Uses a raw TcpListener rather than HttpListener so it needs no URL ACL
     registration and no elevation. It answers one request per connection and

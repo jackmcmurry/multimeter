@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Is bitcoin a tech stock? — Multimeter</title>
+<title>Is bitcoin a tech stock? | Multimeter</title>
 <meta name="description" content="A running answer from daily closes: how tightly bitcoin's returns track the Nasdaq and the S&amp;P, when the coupling held, when it broke, and what that does and does not tell you.">
 <meta name="theme-color" content="#0b0d12">
 <meta property="og:type" content="article">
@@ -14,6 +14,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<script>
+/* The meter's skin carries over to this page. */
+try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
+</script>
 <style>
 [hidden] { display: none !important; }
 /* @inject styles.css */
@@ -44,7 +48,7 @@
       <p>Bitcoin is often described as a leveraged bet on technology stocks: when the Nasdaq sells off, bitcoin sells off harder, and when tech rallies, bitcoin rallies more. If that is true, bitcoin is not a separate asset at all but a high-beta version of one you may already own. If it is only sometimes true, the interesting question becomes <b>when</b>, and how to tell. This page keeps a running answer from daily closes, recomputed by a scheduled job after each US session, and the <a href="index.html">meter</a> shows the same statistics live.</p>
 
       <h2>Why it matters</h2>
-      <p>A holding only diversifies a portfolio when its returns move independently of the rest. A tech-heavy investor who adds bitcoin during a coupled regime adds volatility without adding diversification. The same person during a decoupled regime gets something genuinely different. Neither state is permanent, so a single correlation figure is less useful than knowing how often each regime occurs, how long it lasts, and how abruptly it ends.</p>
+      <p>A holding only diversifies a portfolio when its returns move independently of the rest. A tech-heavy investor who adds bitcoin during a coupled regime adds volatility without adding diversification. The same investor during a decoupled regime gets a different asset. Neither state is permanent, so a single correlation figure is less useful than knowing how often each regime occurs, how long it lasts, and how abruptly it ends.</p>
 
       <h2>Method</h2>
       <p>The sample is <span data-f="sessions">—</span> trading sessions from <span data-f="from">—</span> to <span data-f="to">—</span>. Bitcoin trades every calendar day and the index does not, so the two series are first intersected on the dates each actually traded; otherwise bitcoin's Monday return spans one day while the index's spans three. Returns are daily log returns. Correlation, beta and R² are computed over the last 30, 90 and 252 sessions. Regimes are read off a rolling 90-session correlation: above 0.5 counts as <b>coupled</b>, below 0.2 as <b>decoupled</b>, and the band between as loosely coupled. A <b>break</b> is the fall in that rolling correlation over any 20-session span; the three largest are listed. Volatility is the sample standard deviation of 30 sessions of log returns, annualized by √252. Drawdowns run on each asset's own history, since a drawdown belongs to one price path.</p>

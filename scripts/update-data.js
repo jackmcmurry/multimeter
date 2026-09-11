@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- * update-data.js — entry point for the scheduled data job.
+ * update-data.js: entry point for the scheduled data job.
  *
  * Loads the shared src/lib modules, runs MP.pipeline against the live APIs and
  * writes whichever snapshots came back to docs/data/. Every decision lives in
@@ -57,7 +57,7 @@ async function fetchJson(url) {
     const detail = body && typeof body === 'object'
       ? (body['Error Message'] || body.message || '')
       : String(body).slice(0, 160);
-    const error = new Error('HTTP ' + res.status + (detail ? ' — ' + detail : ''));
+    const error = new Error('HTTP ' + res.status + (detail ? ': ' + detail : ''));
     error.status = res.status;
     throw error;
   }

@@ -1,5 +1,5 @@
 /* ============================================================================
- * store.js — the one place the page touches localStorage.
+ * store.js: the one place the page touches localStorage.
  *
  * Everything the viewer sets up for themselves (alerts, the probe coin, the
  * statistics pair) lives in this browser only. Storage can be missing,

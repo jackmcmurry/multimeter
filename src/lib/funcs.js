@@ -1,5 +1,5 @@
 /* ============================================================================
- * funcs.js — the instrument functions a real meter has: REL and MIN/MAX.
+ * funcs.js: the instrument functions a real meter has: REL and MIN/MAX.
  *
  * REL (relative) zeroes the reading where it stands: from then on the change
  * line shows the move since that reference instead of the day's or range's.

@@ -1,8 +1,8 @@
 /* ============================================================================
- * styles.css — Multimeter.
+ * styles.css: Multimeter.
  *
  * The page is a handheld digital multimeter in the classic field-instrument
- * livery: a graphite body in a yellow rubber holster, a backlit dark display
+ * livery: a graphite body in a rubber holster (gold unless a skin is chosen), a backlit dark display
  * up top with a luminous readout, a rotary function switch in the middle and
  * three input jacks along the bottom. The detail drawer beneath it is a dark
  * card so the charts and tables read as the instrument's manual, not more
@@ -11,7 +11,7 @@
  * Type: Space Grotesk for the body, the labels and the big price, JetBrains
  * Mono for the display's small annunciators.
  *
- * SINGLE THEME BY CHOICE — a physical object has one colour, so every colour
+ * SINGLE THEME BY CHOICE. A physical object has one colour, so every colour
  * is painted explicitly rather than swapped with the viewer's theme.
  * ========================================================================== */
 
@@ -39,6 +39,7 @@
   --knob: #14171c;
   --knob-lt: #2c3139;
   --knob-mark: #f6b71f;
+  --accent-glow: rgba(246, 183, 31, 0.5);
   --key: #333942;
   --key-dk: #0f1215;
   --key-text: #eef1f5;
@@ -378,7 +379,7 @@ body {
 .knob:active { cursor: grabbing; }
 /* under a finger the knob follows exactly and sits a hair lower */
 .knob.is-dragging { transition: scale 120ms ease; scale: 0.985; cursor: grabbing; }
-.knob.is-dragging::before { box-shadow: 0 0 14px rgba(246, 183, 31, 0.8); }
+.knob.is-dragging::before { box-shadow: 0 0 16px var(--accent-glow); }
 .knob::before {
   content: "";
   position: absolute;
@@ -389,7 +390,7 @@ body {
   margin-left: -3.25%;
   border-radius: 4px;
   background: var(--knob-mark);
-  box-shadow: 0 0 8px rgba(246, 183, 31, 0.5);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 /* a grip: fine ridges round the rim, the part a thumb catches */
 .knob::after {
@@ -487,6 +488,46 @@ body {
 .findings-links a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
 .findings-links a:hover { color: var(--holster); }
 .pill.share[href] { text-decoration: none; display: inline-block; }
+
+/* ---- skins ------------------------------------------------------------------ */
+/* A skin recolours the holster and the accent (the knob's mark, the active
+ * label, focus rings, headings). Gold is the default and needs no attribute.
+ * meter.js sets data-skin on <html>; an inline script in the page head
+ * applies a saved skin before the first paint. */
+:root[data-skin="blue"] { --holster: #3b82f6; --holster-dk: #1e56c8; --holster-lt: #7fb0ff; --knob-mark: #6aa8ff; --accent-glow: rgba(106, 168, 255, 0.55); }
+:root[data-skin="pink"] { --holster: #f472b6; --holster-dk: #c7367f; --holster-lt: #ffb3da; --knob-mark: #ff8cc6; --accent-glow: rgba(255, 140, 198, 0.55); }
+:root[data-skin="green"] { --holster: #22c55e; --holster-dk: #15803d; --holster-lt: #7ee8a4; --knob-mark: #4ade80; --accent-glow: rgba(74, 222, 128, 0.5); }
+:root[data-skin="red"] { --holster: #ef4444; --holster-dk: #a91d1d; --holster-lt: #ff9a9a; --knob-mark: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.55); }
+:root[data-skin="purple"] { --holster: #a855f7; --holster-dk: #7426c7; --holster-lt: #d6b0ff; --knob-mark: #c084fc; --accent-glow: rgba(192, 132, 252, 0.55); }
+:root[data-skin="silver"] { --holster: #cbd5e1; --holster-dk: #8a97aa; --holster-lt: #f1f5f9; --knob-mark: #e2e8f0; --accent-glow: rgba(226, 232, 240, 0.45); }
+
+.head { align-items: center; }
+.head-right { display: flex; align-items: center; gap: 14px; }
+.skins { display: flex; align-items: center; gap: 8px; }
+.skin {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.skin:hover { transform: scale(1.18); }
+.skin[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
+.skin:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.skin[data-skin="gold"] { background: #f6b71f; }
+.skin[data-skin="blue"] { background: #3b82f6; }
+.skin[data-skin="pink"] { background: #f472b6; }
+.skin[data-skin="green"] { background: #22c55e; }
+.skin[data-skin="red"] { background: #ef4444; }
+.skin[data-skin="purple"] { background: #a855f7; }
+.skin[data-skin="silver"] { background: #cbd5e1; }
+@media (max-width: 480px) {
+  .model { display: none; }
+  .skins { gap: 7px; }
+}
 
 /* ---- the daily reading ---------------------------------------------------- */
 .lcd-note {

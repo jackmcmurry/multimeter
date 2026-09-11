@@ -1,5 +1,5 @@
 <#
-    icons.ps1 — renders the app icons into docs/icons with System.Drawing.
+    icons.ps1: renders the app icons into docs/icons with System.Drawing.
 
     The art is the favicon's: a yellow rounded square, a dark screen, a knob
     with a yellow mark. Run once, commit the PNGs, rerun only when the art

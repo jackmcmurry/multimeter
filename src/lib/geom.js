@@ -1,5 +1,5 @@
 /* ============================================================================
- * geom.js — SVG chart kit. Rectilinear only: stair-stepped paths, hard-edged
+ * geom.js: SVG chart kit. Rectilinear only: stair-stepped paths, hard-edged
  * columns, square point marks, diagonal hatching, tick-marked crosshair axes.
  * No curves, no gradients, no rounded joins anywhere.
  *
@@ -107,7 +107,7 @@
   }
 
   /* -------------------------------------------------------------------------
-   * 1. sparkStep — axis-free stair line with a square end mark.
+   * 1. sparkStep: axis-free stair line with a square end mark.
    * ---------------------------------------------------------------------- */
   function sparkStep(opts) {
     var values = (opts.values || []).filter(isNum);
@@ -124,7 +124,7 @@
     var path = stairPath(values, x, y);
     var lastX = x(values.length - 1), lastY = y(values[values.length - 1]);
     var s = open(w, h);
-    /* Flat-opacity fill, no gradient — keeps the chart rectilinear. */
+    /* Flat-opacity fill, no gradient, so the chart stays rectilinear. */
     if (opts.area) {
       s += '<path d="' + path.d + 'V' + (h - p.b).toFixed(2) + 'H' + x(0).toFixed(2) + 'Z" ' +
         'fill="' + color + '" fill-opacity="0.12" stroke="none"/>';
@@ -138,7 +138,7 @@
   }
 
   /* -------------------------------------------------------------------------
-   * 2. stepChart — one or more stair series on a shared scale, optional zero
+   * 2. stepChart: one or more stair series on a shared scale, optional zero
    *    rule. Used for the rolling-correlation panel.
    * ---------------------------------------------------------------------- */
   function stepChart(opts) {
@@ -190,7 +190,7 @@
   }
 
   /* -------------------------------------------------------------------------
-   * 3. columnChart — grouped hard-edged columns. Used for rolling volatility.
+   * 3. columnChart: grouped hard-edged columns. Used for rolling volatility.
    * ---------------------------------------------------------------------- */
   function columnChart(opts) {
     var series = opts.series || [];
@@ -236,7 +236,7 @@
   }
 
   /* -------------------------------------------------------------------------
-   * 4. scatterFit — square marks with an OLS line and zero crosshairs. The
+   * 4. scatterFit: square marks with an OLS line and zero crosshairs. The
    *    slope drawn here IS the beta reported in the table.
    * ---------------------------------------------------------------------- */
   function scatterFit(opts) {
@@ -313,7 +313,7 @@
   }
 
   /* -------------------------------------------------------------------------
-   * 5. underwaterChart — drawdown depth as a hatched region hanging from 0.
+   * 5. underwaterChart: drawdown depth as a hatched region hanging from 0.
    * ---------------------------------------------------------------------- */
   function underwaterChart(opts) {
     var values = opts.values || [];
@@ -360,7 +360,7 @@
   }
 
   /* -------------------------------------------------------------------------
-   * 6. smoothLine — the one curved chart in the kit, for the meter's screen.
+   * 6. smoothLine: the one curved chart in the kit, for the meter's screen.
    *    A monotone cubic line (no overshoot between samples) over a soft
    *    gradient, with the latest point marked: the shape a phone's price
    *    chart has, so the display reads as a modern backlit panel while the
