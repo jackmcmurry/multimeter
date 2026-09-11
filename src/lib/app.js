@@ -1,16 +1,17 @@
 /* ============================================================================
  * app.js — state, data wiring, analytics assembly, rendering.
  *
- * One number per screen. Bitcoin comes straight from CoinGecko's public API
- * on a 45s poll. The Nasdaq quotes, daily history and the stock of the week
- * come from snapshot files under data/ that a scheduled GitHub Action rewrites
- * (scripts/update-data.js). Daily history drives the coupling, volatility and
- * drawdown views; the hero chart fetches per range, on demand, and caches.
+ * One number per screen. Bitcoin, ether and the crypto of the week come
+ * straight from CoinGecko's public API on a 45s poll. The index quotes, daily
+ * history and the two weekly picks come from snapshot files under data/ that
+ * a scheduled GitHub Action rewrites (scripts/update-data.js). Daily history
+ * drives the coupling, volatility and drawdown panels; the BTC chart fetches
+ * per range, on demand, and caches.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
-  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
+  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session, SEG = MP.sevenseg;
 
   /* ---- configuration ------------------------------------------------------ */
   var BTC_REFRESH_MS = 45000;
@@ -33,19 +34,27 @@
 
   var INSTRUMENTS = {
     btc: { code: 'BTC / USD', desc: 'Bitcoin spot', dp: 0, color: 'var(--c-btc)' },
+    eth: { code: 'ETH / USD', desc: 'Ether spot', dp: 2, color: 'var(--c-eth)' },
     ixic: { code: '^IXIC', desc: 'Nasdaq Composite', dp: 2, color: 'var(--c-idx)' },
+    spx: { code: '^GSPC', desc: 'S&P 500', dp: 2, color: 'var(--c-spx)' },
     qqq: { code: 'QQQ', desc: 'Invesco QQQ Trust', dp: 2, color: 'var(--c-qqq)' }
   };
+
+  /* CoinGecko ids for the live coins; the crypto of the week joins them once
+   * its pick is known. */
+  var COINS = { btc: 'bitcoin', eth: 'ethereum' };
 
   var state = {
     quotes: {
       btc: { data: null, stamp: null, notice: null },
+      eth: { data: null, stamp: null, notice: null },
       ixic: { data: null, stamp: null, notice: null },
+      spx: { data: null, stamp: null, notice: null },
       qqq: { data: null, stamp: null, notice: null }
     },
     snapshot: { generatedAt: null, notice: null },
     session: { data: null },
-    history: { btc: null, ixic: null, qqq: null, notice: null, pending: true },
+    history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
     analytics: null,
     hero: { days: 1, series: null, notice: null, loading: false, cache: {} },
     teardown: []
@@ -159,13 +168,131 @@
     return !S.isNum(v) ? 'chg is-flat' : (v >= 0 ? 'chg is-up' : 'chg is-down');
   }
 
+  /* The meter's screen paints from app state; every renderer below ends by
+   * asking it to repaint, so the LCD is never staler than the drawer. */
+  function repaint() {
+    if (MP.meter && MP.meter.refresh) MP.meter.refresh();
+  }
+
+  /* ---- the meter's reading ------------------------------------------------ */
+
+  /* One dial stop -> one reading:
+   *   { digits, neg, unit, mode, change: { value, label, suffix, dp }, spark, empty }
+   * digits is already fitted to the seven-segment cells; change is either a
+   * percent (suffix '%') or a plain delta in the reading's own units. Never
+   * throws: a stop whose data has not arrived reads '----'. */
+  function noReading(unit, mode, label) {
+    return {
+      digits: '----', neg: false, unit: unit, mode: mode,
+      change: { value: NaN, label: label, suffix: '', dp: 2 },
+      spark: null, empty: true
+    };
+  }
+
+  var SPARK_POINTS = 120;   /* how much history the LCD chart shows */
+
+  function quoteReading(key, unit, mode, changeLabel) {
+    var meta = INSTRUMENTS[key], d = state.quotes[key].data;
+    var price = d && S.isNum(d.price) ? d.price : NaN;
+    var f = SEG.fit(price, { dp: meta.dp });
+    var series = seriesFor(key);
+    return {
+      digits: f.text, neg: f.neg, unit: unit, mode: mode,
+      change: { value: d && S.isNum(d.changePct) ? d.changePct : NaN, label: changeLabel, suffix: '%', dp: 2 },
+      spark: series ? S.tail(series, SPARK_POINTS) : null,
+      empty: !S.isNum(price)
+    };
+  }
+
+  /* BTC follows the drawer's range pills: the chart and the change are for
+   * the selected range, the price is live spot — the same rule renderHero
+   * applies. */
+  function btcReading() {
+    var r = quoteReading('btc', 'USD', 'BTC/USD', RANGE_LABELS[state.hero.days] || '24H');
+    var series = state.hero.series;
+    if (series && series.length > 1 && series[0] > 0) {
+      r.spark = series;
+      r.change.value = (series[series.length - 1] / series[0] - 1) * 100;
+    } else if (state.hero.days !== 1) {
+      r.change.value = NaN;
+    }
+    return r;
+  }
+
+  /* The two weekly picks share a shape: { price, changePct, changeLabel,
+   * mode, series } from spotlight.js, or null before the scan has run. */
+  function pickReading(r, fallbackMode) {
+    if (!r) return noReading('USD', fallbackMode, '1D');
+    var f = SEG.fit(r.price, { dp: S.isNum(r.price) && r.price < 10 ? 4 : 2 });
+    return {
+      digits: f.text, neg: f.neg, unit: 'USD', mode: r.mode,
+      change: { value: r.changePct, label: r.changeLabel, suffix: '%', dp: 2 },
+      spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
+      empty: !S.isNum(r.price)
+    };
+  }
+
+  function stockReading() {
+    return pickReading(MP.spotlight && MP.spotlight.reading ? MP.spotlight.reading() : null, 'STOCK');
+  }
+
+  function cryptoReading() {
+    return pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
+  }
+
+  function entryValues(entries) {
+    return (entries || []).map(function (e) { return e.value; });
+  }
+
+  /* Last value minus the value `back` steps earlier; NaN when either is missing. */
+  function deltaBack(series, back) {
+    var n = series ? series.length : 0;
+    if (n < back + 1) return NaN;
+    var a = series[n - 1], b = series[n - 1 - back];
+    return S.isNum(a) && S.isNum(b) ? a - b : NaN;
+  }
+
+  var ANALYTICS_MODE = { corr: 'CORR BTC·NDQ 90D', beta: 'BETA 90D', vol: 'VOL BTC 30D', dd: 'DRAWDOWN BTC' };
+  var ANALYTICS_UNIT = { corr: '', beta: '×', vol: '%', dd: '%' };
+
+  function analyticsReading(stop) {
+    var a = state.analytics;
+    if (!a) return noReading(ANALYTICS_UNIT[stop], ANALYTICS_MODE[stop], '30S');
+    var c90 = a.coupling[1] || a.coupling[0];
+    var value, series, dp, scale = 1, suffix = '';
+    if (stop === 'corr') { value = c90.correlation; series = entryValues(a.rollCorr); dp = 2; }
+    else if (stop === 'beta') { value = c90.beta; series = entryValues(a.rollBeta); dp = 2; }
+    else if (stop === 'vol') { value = a.currentBtcVol; series = entryValues(a.btcVol); dp = 1; scale = 100; suffix = '%'; }
+    else { value = a.btcDd.now; series = a.btcDd.series; dp = 1; scale = 100; suffix = '%'; }
+    var f = SEG.fit(S.isNum(value) ? value * scale : NaN, { dp: dp });
+    return {
+      digits: f.text, neg: f.neg, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      change: { value: deltaBack(series, CORR_WINDOW) * scale, label: '30S', suffix: suffix, dp: dp },
+      spark: S.tail(series, SPARK_POINTS),
+      empty: !S.isNum(value)
+    };
+  }
+
+  function reading(stop) {
+    switch (stop) {
+      case 'btc': return btcReading();
+      case 'eth': return quoteReading('eth', 'USD', 'ETH/USD', '24H');
+      case 'nasdaq': return quoteReading('ixic', 'PTS', 'NASDAQ ^IXIC', '1D');
+      case 'spx': return quoteReading('spx', 'PTS', 'S&P 500 ^GSPC', '1D');
+      case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
+      case 'stock': return stockReading();
+      case 'crypto': return cryptoReading();
+      case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
+      default:
+        return { digits: '', neg: false, unit: '', mode: '', change: { value: NaN, label: '', suffix: '', dp: 2 }, spark: null, empty: true };
+    }
+  }
+
   /* ---- hero (home) -------------------------------------------------------- */
   function seriesFor(key) {
-    if (key === 'btc') {
-      if (state.hero.series) return state.hero.series;
-      var spot = state.quotes.btc.data;
-      return spot && spot.sparkline && spot.sparkline.length > 2 ? spot.sparkline : null;
-    }
+    if (key === 'btc' && state.hero.series) return state.hero.series;
+    var spot = state.quotes[key] && state.quotes[key].data;
+    if (spot && spot.sparkline && spot.sparkline.length > 2) return spot.sparkline;
     var hist = state.history[key];
     return hist && hist.length > 2 ? S.tail(hist, 60).map(function (p) { return p.price; }) : null;
   }
@@ -201,6 +328,7 @@
         : '';
     }
     setHtml('heroNotice', noticeHtml(state.hero.notice || state.quotes.btc.notice));
+    repaint();
   }
 
   function loadHeroRange(days, refresh) {
@@ -252,13 +380,13 @@
   /* QQQ is optional upstream (it needs a second API key), so its row appears
    * only once there is something to show. */
   function marketKeys() {
-    var keys = ['btc', 'ixic'];
+    var keys = ['btc', 'eth', 'ixic', 'spx'];
     if (state.quotes.qqq.data || state.history.qqq) keys.push('qqq');
     return keys;
   }
 
   function asOfLabel(key) {
-    if (key === 'btc') return state.quotes.btc.data ? 'live' : '';
+    if (COINS[key]) return state.quotes[key].data ? 'live' : '';
     var ts = state.quotes[key].stamp;
     if (!S.isNum(ts)) return '';
     return new Date(ts).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
@@ -285,6 +413,7 @@
     }).join('');
 
     setHtml('marketNotice', noticeHtml(state.quotes.btc.notice || state.snapshot.notice));
+    repaint();
   }
 
   /* The stamp tracks bitcoin, the one instrument that is actually live; the
@@ -294,14 +423,32 @@
     setText('quoteStamp', S.isNum(ts) ? F.ago(ts) : '—');
   }
 
-  function loadBtc() {
-    return fetchJson(SRC.btcSpot.url).then(function (payload) {
-      var parsed = SRC.btcSpot.normalize(payload);
-      if (!parsed) throw emptyError();
-      var slot = state.quotes.btc;
-      slot.data = parsed;
-      slot.stamp = Date.now();
-      slot.notice = null;
+  function coinIds() {
+    var ids = [COINS.btc, COINS.eth];
+    var pick = MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    if (pick && ids.indexOf(pick) < 0) ids.push(pick);
+    return ids;
+  }
+
+  /* One CoinGecko call covers bitcoin, ether and the crypto of the week. */
+  function loadCoins() {
+    var spec = SRC.coinsMarkets(coinIds());
+    return fetchJson(spec.url).then(function (payload) {
+      var coins = spec.normalize(payload);
+      if (!coins || !coins[COINS.btc]) throw emptyError();
+      var now = Date.now();
+      Object.keys(COINS).forEach(function (key) {
+        var c = coins[COINS[key]];
+        if (!c) return;
+        var slot = state.quotes[key];
+        slot.data = c;
+        slot.stamp = now;
+        slot.notice = null;
+      });
+      if (MP.spotlight && MP.spotlight.setCryptoQuote) {
+        var pick = MP.spotlight.cryptoId();
+        MP.spotlight.setCryptoQuote(pick && coins[pick] ? coins[pick] : null);
+      }
     }).catch(function (err) {
       state.quotes.btc.notice = liveNotice('CoinGecko', err);
       throw err;
@@ -324,6 +471,7 @@
       var snap = SRC.normalizeQuotesSnapshot(payload);
       if (!snap) throw emptyError();
       applySnapshotQuote('ixic', snap.ixic);
+      applySnapshotQuote('spx', snap.spx);
       applySnapshotQuote('qqq', snap.qqq);
       state.snapshot.generatedAt = snap.generatedAt;
       state.snapshot.notice = staleNotice(snap.generatedAt);
@@ -398,6 +546,7 @@
       qqqCoupling: qqqCoupling,
       scatter: { xs: scatterPair.a, ys: scatterPair.b, fit: S.regression(scatterPair.a, scatterPair.b) },
       rollCorr: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.pearson),
+      rollBeta: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.beta),
       btcVol: btcVol,
       ixicVol: ixicVol,
       currentBtcVol: btcVol.length ? btcVol[btcVol.length - 1].value : NaN,
@@ -429,6 +578,7 @@
       setHtml('couplingStrip', strip([['Corr 90d', waiting], ['Beta 90d', waiting], ['R² 90d', waiting]]));
       setHtml('volStrip', strip([['BTC 30d', waiting], ['^IXIC 30d', waiting], ['Ratio', waiting]]));
       setHtml('ddStrip', strip([['BTC now', waiting], ['BTC worst', waiting], ['^IXIC worst', waiting]]));
+      repaint();
       return;
     }
 
@@ -522,6 +672,7 @@
             '<td>' + (r.e.ongoing ? '<span class="tag">not yet</span>' : F.shortDate(r.e.recoveryDate)) + '</td></tr>';
         }).join('') + '</tbody></table>'
       : '');
+    repaint();
   }
 
   /* ---- history ------------------------------------------------------------ */
@@ -538,6 +689,7 @@
       if (snap && snap.btc && snap.ixic) {
         state.history.btc = snap.btc;
         state.history.ixic = snap.ixic;
+        state.history.spx = snap.spx;
         state.history.qqq = snap.qqq;
         state.history.notice = null;
       } else if (!state.history.btc) {
@@ -575,6 +727,9 @@
 
   /* ---- boot --------------------------------------------------------------- */
   function start() {
+    /* The meter subscribes to the router, so it must exist before the router
+     * announces the first stop. */
+    if (MP.meter) MP.meter.init();
     if (MP.router) MP.router.start();
     tickSession();
     renderHero();
@@ -590,7 +745,7 @@
       return;
     }
 
-    poll(loadBtc, BTC_REFRESH_MS);
+    poll(loadCoins, BTC_REFRESH_MS);
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
     poll(loadSpotlight, DAILY_REFRESH_MS);
@@ -614,6 +769,7 @@
     renderHero: renderHero,
     renderMarkets: renderMarkets,
     renderSession: renderSession,
+    reading: reading,
     loadHeroRange: loadHeroRange,
     INSTRUMENTS: INSTRUMENTS,
     config: {

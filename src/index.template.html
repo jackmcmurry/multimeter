@@ -4,12 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multimeter</title>
-<meta name="description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
-<meta name="theme-color" content="#0b1626">
+<meta name="description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<meta name="theme-color" content="#0b0d12">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Multimeter">
-<meta property="og:description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f4f7fb'/%3E%3Ctext x='32' y='44' font-family='Arial,Helvetica,sans-serif' font-size='34' font-weight='700' text-anchor='middle' fill='%230b1626'%3EM%3C/text%3E%3C/svg%3E">
+<meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 [hidden] { display: none !important; }
 /* @inject styles.css */
@@ -17,55 +20,68 @@
 </head>
 <body>
 
-<div class="app">
-  <aside class="side">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">M</span>
-      <span class="brandname">Multimeter</span>
+<main class="stage">
+
+  <!-- ================= THE METER ================= -->
+  <div class="meter">
+    <div class="holster">
+      <div class="shell">
+
+        <div class="head">
+          <span class="brand">MULTIMETER</span>
+          <span class="model" aria-hidden="true">MM-10</span>
+        </div>
+
+        <div class="lcd" id="lcd" role="button" tabindex="0" aria-label="Meter">
+          <div class="lcd-row">
+            <span class="ann" id="lcdMode"></span>
+            <span class="ann ann-hold" id="lcdHold">HOLD</span>
+          </div>
+          <div class="lcd-chart" id="lcdChart"></div>
+          <div class="lcd-main">
+            <div class="lcd-digits" id="lcdDigits"></div>
+            <span class="lcd-unit" id="lcdUnit"></span>
+          </div>
+          <div class="lcd-row lcd-foot">
+            <span class="lcd-chg" id="lcdChange"></span>
+            <span class="ann" id="lcdChangeLabel"></span>
+          </div>
+        </div>
+
+        <div class="keys">
+          <button type="button" class="key" id="detailBtn" aria-expanded="false" aria-controls="drawer">DATA</button>
+          <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
+        </div>
+
+        <div class="dial" id="dial">
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="9" aria-valuenow="1"></div>
+        </div>
+
+        <div class="jacks">
+          <span class="jack" aria-hidden="true"></span>
+          <span class="jack jack-com" id="sessionDot" aria-hidden="true"></span>
+          <span class="jack jack-v" aria-hidden="true"></span>
+          <span class="jack-text" id="sessionText">Market —</span>
+        </div>
+
+      </div>
     </div>
+  </div>
 
-    <nav class="nav" id="nav" aria-label="Sections">
-      <a class="navitem" href="#home" data-view="home">Home</a>
-      <a class="navitem" href="#markets" data-view="markets">Markets</a>
-      <a class="navitem" href="#weekly" data-view="weekly">Weekly</a>
-      <a class="navitem" href="#coupling" data-view="coupling">Coupling</a>
-      <a class="navitem" href="#volatility" data-view="volatility">Volatility</a>
-      <a class="navitem" href="#drawdown" data-view="drawdown">Drawdown</a>
-      <a class="navitem" href="#about" data-view="about">About</a>
-    </nav>
-
-    <div class="side-foot">
-      <span class="dot" id="sessionDot" aria-hidden="true"></span>
-      <span id="sessionText">Market —</span>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar">
-      <h1 id="viewTitle">Home</h1>
+  <!-- ================= DETAIL DRAWER ================= -->
+  <div class="drawer" id="drawer" hidden>
+    <header class="drawer-head">
+      <h2 id="viewTitle">Bitcoin</h2>
       <span class="muted" id="quoteStamp">—</span>
     </header>
 
     <div id="pageNotice"></div>
 
-    <!-- ================= HOME ================= -->
-    <section class="view" data-view="home">
-      <a class="pinstrip" href="#weekly">
-        <span class="pin-label">Stock of the week</span>
-        <span class="pin-symbol" id="pinSymbol">—</span>
-        <span class="chg is-flat" id="pinMove">—</span>
-        <span class="pin-go" aria-hidden="true">›</span>
-      </a>
-
-      <div class="hero">
-        <div class="hero-top">
-          <span class="hero-asset">BTC / USD</span>
-        </div>
-        <div class="hero-price" id="heroPrice">—</div>
-        <div class="hero-sub">
-          <span class="chg is-flat" id="heroChange">—</span>
-          <span class="muted" id="heroRangeLabel">24H</span>
-        </div>
+    <!-- BTC -->
+    <section class="view" data-panel="hero">
+      <div class="hero-sub">
+        <span class="chg is-flat" id="heroChange">—</span>
+        <span class="muted" id="heroRangeLabel">24H</span>
       </div>
 
       <div class="chartbox" id="heroChart"></div>
@@ -80,14 +96,14 @@
       <div id="heroNotice"></div>
     </section>
 
-    <!-- ================= MARKETS ================= -->
-    <section class="view" data-view="markets" hidden>
+    <!-- ETH / NASDAQ / S&P -->
+    <section class="view" data-panel="markets" hidden>
       <ul class="rows" id="marketRows"></ul>
       <div id="marketNotice"></div>
     </section>
 
-    <!-- ================= WEEKLY ================= -->
-    <section class="view" data-view="weekly" hidden>
+    <!-- STOCK -->
+    <section class="view" data-panel="weekly" hidden>
       <div class="hero">
         <div class="hero-top">
           <span class="hero-asset" id="spotSymbol">—</span>
@@ -107,8 +123,30 @@
       <div id="spotNotice"></div>
     </section>
 
-    <!-- ================= COUPLING ================= -->
-    <section class="view" data-view="coupling" hidden>
+    <!-- CRYPTO -->
+    <section class="view" data-panel="crypto" hidden>
+      <div class="hero">
+        <div class="hero-top">
+          <span class="hero-asset" id="cryptoSymbol">—</span>
+          <span class="muted" id="cryptoWeek">—</span>
+        </div>
+        <div class="hero-price" id="cryptoPx">—</div>
+        <div class="hero-sub">
+          <span class="chg is-flat" id="cryptoChg">—</span>
+          <span class="muted" id="cryptoName">—</span>
+        </div>
+      </div>
+
+      <div class="chartbox" id="cryptoSpark"></div>
+      <p class="foot">Seven days, hourly.</p>
+
+      <div class="strip" id="cryptoStrip"></div>
+      <p class="foot" id="cryptoRunner"></p>
+      <div id="cryptoNotice"></div>
+    </section>
+
+    <!-- CORR -->
+    <section class="view" data-panel="coupling" hidden>
       <div class="strip" id="couplingStrip"></div>
       <div class="chartbox" id="chartScatter"></div>
       <p class="foot" id="scatterCaption"></p>
@@ -118,15 +156,15 @@
       <div id="notice-history"></div>
     </section>
 
-    <!-- ================= VOLATILITY ================= -->
-    <section class="view" data-view="volatility" hidden>
+    <!-- VOL -->
+    <section class="view" data-panel="volatility" hidden>
       <div class="strip" id="volStrip"></div>
       <div class="chartbox" id="chartVol"></div>
       <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
     </section>
 
-    <!-- ================= DRAWDOWN ================= -->
-    <section class="view" data-view="drawdown" hidden>
+    <!-- DD -->
+    <section class="view" data-panel="drawdown" hidden>
       <div class="strip" id="ddStrip"></div>
       <div class="chartbox" id="chartDdBtc"></div>
       <p class="foot">BTC / USD below running peak.</p>
@@ -135,19 +173,18 @@
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
-    <!-- ================= ABOUT ================= -->
-    <section class="view prose" data-view="about" hidden>
+    <!-- OFF -->
+    <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live tracker for bitcoin and the Nasdaq, with the statistics that make the comparison mean something. Bitcoin refreshes every 45&nbsp;seconds. Nasdaq figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
-      <h2>Instruments</h2>
-      <p><b>BTC / USD</b> — spot bitcoin, volume-weighted across the exchanges CoinGecko tracks. Trades every calendar day.</p>
-      <p><b>^IXIC</b> — the Nasdaq Composite, roughly 3,000 listed securities. An index level, not a tradable price.</p>
-      <p><b>QQQ</b> — Invesco QQQ Trust, the ETF tracking the Nasdaq-100. It stands in for ^NDX, which the free data plan does not carry.</p>
-
-      <h2>Stock of the week</h2>
-      <p>A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move. The price beside it refreshes with the Nasdaq quotes.</p>
-      <p>Absolute rather than largest gain, deliberately. Ranking by best performer would read as a tip. This reports what moved, in either direction — it is not a recommendation.</p>
+      <h2>Dial</h2>
+      <p><b>BTC</b>, <b>ETH</b> — spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. They trade every calendar day.</p>
+      <p><b>NASDAQ</b> — the Nasdaq Composite (^IXIC), roughly 3,000 listed securities. <b>S&amp;P</b> — the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
+      <p><b>STOCK</b> — the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move.</p>
+      <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
+      <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
+      <p><b>CORR</b> — bitcoin against the Nasdaq Composite over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — bitcoin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far bitcoin sits below its running peak.</p>
 
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
@@ -155,7 +192,7 @@
       <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for bitcoin spot and its chart, called directly from your browser. Financial Modeling Prep for the ^IXIC quote and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open indicator is computed in your browser from NYSE hours and holidays.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>
@@ -163,8 +200,8 @@
       <h2>Standing</h2>
       <p>Market data for reference only. Nothing here is investment advice, a recommendation, or a solicitation to trade. Figures are as reported by the sources above and may be delayed, revised, or wrong.</p>
     </section>
-  </main>
-</div>
+  </div>
+</main>
 
 <script>
 /* @inject lib */

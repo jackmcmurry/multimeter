@@ -226,9 +226,24 @@
         }
         if (/\/quote$/.test(u.pathname)) {
           if (sym === '^IXIC') return Promise.resolve(FMP_IXIC);
+          if (sym === '^GSPC') return Promise.resolve([{ symbol: '^GSPC', name: 'S&P 500', price: 6512.34, changePercentage: -0.41, timestamp: 1789070407 }]);
           return Promise.resolve([{ symbol: sym, name: sym + ' Inc.', price: 250, changePercentage: 1.1, marketCap: 1e11, timestamp: 1789070407 }]);
         }
         if (/\/historical-price-eod\/light$/.test(u.pathname)) return Promise.resolve(eodRows(sym, 290, '2026-09-11'));
+      }
+      if (u.hostname === 'api.coingecko.com') {
+        /* the weekly crypto scan: SOL wins on absolute move, DOGE is runner-up,
+         * aptos is missing from the response and so counts as skipped */
+        var cgMoves = {
+          solana: 18.4, ripple: -3.1, binancecoin: 2.2, cardano: -6.5, dogecoin: -15.2,
+          'avalanche-2': 7.7, chainlink: 4.4, polkadot: -2.0, litecoin: 1.1, tron: 0.6,
+          uniswap: 9.9, stellar: -4.2, 'bitcoin-cash': 3.3, near: -8.8
+        };
+        return Promise.resolve(Object.keys(cgMoves).map(function (id, i) {
+          return { id: id, symbol: id.slice(0, 3), name: id, current_price: 10 + i,
+            price_change_percentage_24h: 0.5, price_change_percentage_7d_in_currency: cgMoves[id],
+            market_cap: 1e10, market_cap_rank: i + 3 };
+        }));
       }
       if (u.hostname === 'www.alphavantage.co') {
         if (opts.avLimited) return Promise.resolve(AV_LIMITED);
@@ -285,8 +300,17 @@
     t.ok('index history covers the 252-session window', r1.out.history.ixic.length > 252);
     t.eq('history checked for the last completed session', r1.out.history.checkedFor, '2026-09-11');
     t.eq('QQQ history present', r1.out.history.qqq.length, 2);
-    t.eq('FMP calls: 15 scan + 1 series + 2 quotes + 2 history', r1.calls.fmp, 20);
+    t.close('S&P quote written', r1.out.quotes.spx.price, 6512.34);
+    t.ok('S&P history covers the 252-session window', r1.out.history.spx.length > 252);
+    t.eq('crypto scan picks the largest absolute 7d move', s1.crypto.symbol, 'SOL');
+    t.eq('crypto pick keeps its CoinGecko id', s1.crypto.id, 'solana');
+    t.eq('crypto pick is keyed to this week', s1.crypto.weekOf, '2026-09-14');
+    t.eq('crypto runner-up recorded', s1.crypto.runnerUp.symbol, 'DOGE');
+    t.eq('missing coin counted as skipped', s1.crypto.skipped, 1);
+    t.eq('crypto history starts with this week', s1.cryptoHistory[0].symbol, 'SOL');
+    t.eq('FMP calls: 15 scan + 1 series + 3 quotes + 3 history', r1.calls.fmp, 22);
     t.eq('Alpha Vantage calls: quote + daily', r1.calls.av, 2);
+    t.eq('CoinGecko calls: one scan', r1.calls.cg, 1);
     t.ok('keys redacted from every logged URL', api.log.every(function (u) {
       var red = P.redact(u);
       return red.indexOf('test-fmp-key') < 0 && red.indexOf('test-av-key') < 0;
@@ -297,13 +321,14 @@
     t.eq('quiet pre-market run writes nothing', Object.keys(r2.out).length, 0);
     t.eq('quiet run makes no FMP calls', r2.calls.fmp, 0);
     t.eq('quiet run makes no Alpha Vantage calls', r2.calls.av, 0);
+    t.eq('quiet run makes no CoinGecko calls', r2.calls.cg, 0);
 
     /* 3. market open, 45 minutes after the last QQQ read */
     var r3 = await step(db, api, '2026-09-14T13:50:00Z');
     t.ok('open market refreshes quotes', !!r3.out.quotes);
     t.ok('open market leaves history alone', !r3.out.history);
     t.ok('open market leaves the pick alone', !r3.out.spotlight);
-    t.eq('open market costs two FMP calls', r3.calls.fmp, 2);
+    t.eq('open market costs three FMP calls', r3.calls.fmp, 3);
     t.eq('QQQ is throttled inside the hour', r3.calls.av, 0);
     t.eq('finalFor is untouched while open', r3.out.quotes.finalFor, '2026-09-11');
 
@@ -338,7 +363,8 @@
     t.ok('failed scan keeps no pick', r9.out.spotlight && r9.out.spotlight.current === null);
     t.eq('failed read is not marked final', r9.out.quotes.finalFor, null);
     var r10 = await step(down, downApi, '2026-09-14T13:20:00Z');
-    t.eq('failed scan is not retried within three hours', r10.calls.fmp, 1);
+    t.eq('failed scan is not retried within three hours', r10.calls.fmp, 2);
+    t.ok('crypto pick survives FMP being down', r9.out.spotlight && r9.out.spotlight.crypto && r9.out.spotlight.crypto.symbol === 'SOL');
 
     /* 8. Alpha Vantage rate-limited */
     var lim = store();

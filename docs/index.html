@@ -4,56 +4,98 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multimeter</title>
-<meta name="description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
-<meta name="theme-color" content="#0b1626">
+<meta name="description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<meta name="theme-color" content="#0b0d12">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Multimeter">
-<meta property="og:description" content="A live bitcoin-vs-Nasdaq tracker: correlation, beta, volatility and drawdowns, plus the week's biggest Nasdaq-100 mover.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f4f7fb'/%3E%3Ctext x='32' y='44' font-family='Arial,Helvetica,sans-serif' font-size='34' font-weight='700' text-anchor='middle' fill='%230b1626'%3EM%3C/text%3E%3C/svg%3E">
+<meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 [hidden] { display: none !important; }
 /* ============================================================================
  * styles.css — Multimeter.
  *
- * Deliberately plain: a native system UI stack (no webfont request at all), a
- * sidebar, one number per screen, and hairlines instead of boxes. Navy ground,
- * white type, gold used only for the active nav item, the pinned strip and the
- * regression line.
+ * The page is a handheld digital multimeter in the classic field-instrument
+ * livery: a graphite body in a yellow rubber holster, a backlit dark display
+ * up top with a luminous readout, a rotary function switch in the middle and
+ * three input jacks along the bottom. The detail drawer beneath it is a dark
+ * card so the charts and tables read as the instrument's manual, not more
+ * instrument.
  *
- * SINGLE THEME BY CHOICE — the brief specifies navy with white text, so every
- * colour is painted explicitly rather than swapped with the viewer's theme.
+ * Type: IBM Plex Sans for the body and labels, IBM Plex Mono for the display
+ * annunciators. The big digits are seven-segment SVG, not a font.
+ *
+ * SINGLE THEME BY CHOICE — a physical object has one colour, so every colour
+ * is painted explicitly rather than swapped with the viewer's theme.
  * ========================================================================== */
 
 :root {
-  --navy: #0b1626;
-  --side: #091220;
-  --cell: #101f36;
-  --hover: #16294a;
-  --rule: #1e3152;
+  /* the bench it sits on */
+  --bg: #0b0d12;
 
-  --text: #f4f7fb;
-  --dim: #93a5c0;
+  /* holster and body */
+  --holster: #f6b71f;
+  --holster-dk: #c98f0c;
+  --holster-lt: #ffd35a;
+  --shell: #23272e;
+  --shell-dk: #15181d;
+  --shell-lt: #333942;
 
-  --gold: #d8ae55;
+  /* display */
+  --lcd: #0a1216;
+  --lcd-dk: #040709;
+  --lcd-ink: #e6fff5;
+  --lcd-dim: #6d8c86;
+  --lcd-ghost: #142026;
+  --up: #2ee59d;
+  --down: #ff6b6b;
 
-  --c-btc: #e0944c;
-  --c-idx: #6fb3dc;
-  --c-qqq: #8acfb4;
+  /* controls */
+  --knob: #14171c;
+  --knob-lt: #2c3139;
+  --knob-mark: #f6b71f;
+  --key: #333942;
+  --key-dk: #0f1215;
+  --key-text: #eef1f5;
+  --hold: #ef4a4a;
+  --hold-dk: #9c2323;
+  --jack: #07080a;
+  --jack-ring: #ef4a4a;
+  --led: #2ee59d;
+  --led-off: #26332e;
 
-  --pos: #4ec98a;
-  --neg: #f0776d;
+  /* the drawer card and everything printed on it */
+  --card: #14171d;
+  --text: #eef1f5;
+  --dim: #97a3b4;
+  --rule: #262b34;
+  --cell: #1b2028;
+  --hover: #232933;
+  --gold: #f6b71f;
 
-  /* Native stack: whatever the viewer's OS ships. No webfont, no download. */
-  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --c-btc: #f7931a;
+  --c-eth: #8c9eff;
+  --c-idx: #5eb1ff;
+  --c-spx: #ff9f43;
+  --c-qqq: #34d399;
+
+  --pos: #2ee59d;
+  --neg: #ff6b6b;
+
+  --f-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-lcd: "IBM Plex Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
 
-html { background: var(--navy); }
+html { background: var(--bg); }
 
 body {
   margin: 0;
-  background: var(--navy);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--f-ui);
   font-size: 15px;
@@ -63,97 +105,294 @@ body {
 
 .muted { color: var(--dim); }
 
-/* ---- frame --------------------------------------------------------------- */
-.app {
-  display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+/* ---- stage --------------------------------------------------------------- */
+.stage {
   min-height: 100vh;
-}
-
-.side {
-  background: var(--side);
-  padding: 22px 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 12px 48px;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
-.logo {
-  width: 30px; height: 30px; flex: none;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--text); color: var(--navy);
-  border-radius: 50%;
-  font-size: 18px; font-weight: 700; letter-spacing: -0.02em;
-}
-.brandname { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+/* ---- the meter body ------------------------------------------------------ */
+.meter { width: min(100%, 660px); }
 
-.nav { display: flex; flex-direction: column; gap: 2px; }
-.navitem {
+.holster {
+  background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
+  border-radius: 36px;
+  padding: 14px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 var(--holster-dk),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.shell {
+  background: linear-gradient(180deg, var(--shell-lt), var(--shell) 12%, var(--shell) 90%, var(--shell-dk));
+  border-radius: 26px;
+  padding: 16px 18px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px 12px;
+}
+.brand { font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: var(--text); }
+.model { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); }
+
+/* ---- display ------------------------------------------------------------- */
+.lcd {
   display: block;
-  padding: 10px 14px;
-  border-radius: 9px;
+  width: 100%;
+  background: radial-gradient(120% 90% at 50% 0%, #10201f 0%, var(--lcd) 60%);
+  color: var(--lcd-ink);
+  border: 3px solid var(--lcd-dk);
+  border-radius: 12px;
+  padding: 14px 18px 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 4px 14px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
+  font-family: var(--f-lcd);
+  cursor: pointer;
+  text-align: left;
+}
+.lcd:focus-visible { outline: 3px solid var(--holster); outline-offset: 3px; }
+
+.lcd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 18px;
+}
+.ann {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--lcd-dim);
+}
+.ann-hold { opacity: 0.18; }
+.ann-hold.is-on { opacity: 1; color: var(--holster); }
+
+.lcd-chart { display: block; width: 100%; min-height: 60px; margin: 8px 0 2px; }
+.lcd-chart .chart { display: block; width: 100%; height: auto; color: inherit; }
+
+.lcd-main { display: flex; align-items: flex-end; gap: 12px; margin: 6px 0 6px; }
+.lcd-digits { flex: 1; min-width: 0; }
+.lcd-seg { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 5px rgba(46, 229, 157, 0.22)); }
+.seg { fill: var(--lcd-ghost); }
+.seg.on { fill: var(--lcd-ink); }
+.lcd-unit {
+  flex: none;
+  width: 48px;
+  padding-bottom: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--lcd-dim);
+}
+
+.lcd-foot { margin-top: 2px; }
+.lcd-chg {
+  min-width: 84px;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart { opacity: 0.1; }
+.lcd.is-off .lcd-chart { min-height: 120px; }
+.lcd.is-off .lcd-seg { filter: none; }
+
+/* a change of stop refreshes the readout with a short fade */
+.lcd.is-swap .lcd-chart, .lcd.is-swap .lcd-digits, .lcd.is-swap .lcd-foot, .lcd.is-swap #lcdMode {
+  animation: lcd-swap 260ms ease-out;
+}
+@keyframes lcd-swap {
+  from { opacity: 0.15; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- keys ---------------------------------------------------------------- */
+.keys { display: flex; justify-content: space-between; margin: 16px 6px 4px; }
+.key {
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--key-text);
+  background: linear-gradient(180deg, var(--shell-lt), var(--key));
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 24px;
+  box-shadow: 0 3px 0 var(--key-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.key:active, .key.is-on { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-dk); }
+.key.is-on { color: var(--holster); }
+.key:focus-visible { outline: 3px solid var(--holster); outline-offset: 2px; }
+.key-hold {
+  color: var(--key-text);
+  background: linear-gradient(180deg, #ff6e6e, var(--hold));
+  box-shadow: 0 3px 0 var(--hold-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+}
+.key-hold:active, .key-hold.is-held {
+  background: var(--hold-dk);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--hold-dk);
+}
+
+/* ---- dial ---------------------------------------------------------------- */
+.dial {
+  position: relative;
+  width: 86%;
+  aspect-ratio: 1 / 1;
+  margin: 4px auto 6px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.dial-plate { display: block; width: 100%; height: 100%; }
+.dial-face { fill: var(--shell-dk); stroke: var(--key-dk); stroke-width: 1.2; }
+.dial-arc { fill: none; stroke: var(--dim); stroke-width: 1.2; opacity: 0.45; }
+.dial-tick { stroke: var(--text); stroke-width: 2.5; }
+.dial-hit { fill: transparent; pointer-events: all; cursor: pointer; transition: fill 200ms ease; }
+.dial-lab {
+  fill: var(--text);
+  font-family: var(--f-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  transition: fill 200ms ease;
+}
+.dial-stop.is-on .dial-lab { fill: var(--holster); }
+.dial-stop.is-on .dial-hit { fill: var(--holster); fill-opacity: 0.16; }
+
+.knob {
+  position: absolute;
+  inset: 27%;   /* radius ≈ 85 of the plate's 184 half-width: inside the 92 face ring */
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, var(--knob-lt), var(--knob) 68%);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.5);
+  /* a spring: overshoots the detent a touch, then settles */
+  transition: transform 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: grab;
+}
+.knob:active { cursor: grabbing; }
+.knob::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  width: 6.5%;
+  height: 34%;
+  margin-left: -3.25%;
+  border-radius: 4px;
+  background: var(--knob-mark);
+  box-shadow: 0 0 8px rgba(246, 183, 31, 0.5);
+}
+.knob::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+}
+.knob.is-detent { animation: detent 240ms ease-out; }
+@keyframes detent {
+  0% { scale: 1; }
+  35% { scale: 0.965; }
+  100% { scale: 1; }
+}
+.knob:focus-visible { outline: 3px solid var(--holster); outline-offset: 5px; }
+
+/* ---- jacks --------------------------------------------------------------- */
+.jacks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 26px;
+  padding-top: 4px;
+}
+.jack {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--jack);
+  border: 4px solid var(--jack-ring);
+  box-shadow: inset 0 0 0 3px var(--shell-lt), 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.jack-com { border-color: var(--knob-lt); }
+.jack-com.is-closed { background: var(--led-off); }
+.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt), 0 0 14px var(--led); }
+.jack-text {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--dim);
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
 }
-.navitem:hover { background: var(--hover); color: var(--text); }
-.navitem.is-on { background: var(--cell); color: var(--gold); font-weight: 600; }
-.navitem:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 
-.side-foot {
-  margin-top: auto;
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 8px;
-  font-size: 13px; color: var(--dim);
+/* ---- drawer -------------------------------------------------------------- */
+.drawer {
+  width: min(100%, 660px);
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 18px 20px 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
-.dot.is-open { background: var(--pos); }
-.dot.is-closed { background: var(--dim); }
-
-.main { padding: 20px clamp(16px, 3vw, 36px) 48px; min-width: 0; }
-
-.topbar {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 16px; padding-bottom: 18px; margin-bottom: 22px;
+.drawer-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--rule);
 }
-.topbar h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
-.topbar .muted { font-size: 13px; }
-
-/* ---- pinned strip -------------------------------------------------------- */
-.pinstrip {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 14px; margin-bottom: 26px;
-  background: var(--cell);
-  border-left: 3px solid var(--gold);
-  border-radius: 4px;
-  color: var(--text); text-decoration: none;
+.drawer-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--holster);
 }
-.pinstrip:hover { background: var(--hover); }
-.pinstrip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.pin-label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
-.pin-symbol { font-size: 15px; font-weight: 600; }
-.pin-go { margin-left: auto; color: var(--dim); font-size: 19px; line-height: 1; }
+.drawer-head .muted { font-size: 12px; }
 
-/* ---- hero ---------------------------------------------------------------- */
-.hero { margin-bottom: 18px; }
-.hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
-.hero-asset { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
-.hero-top .muted { font-size: 13px; }
+/* ---- hero (the weekly-pick panels) --------------------------------------- */
+.hero { margin-bottom: 14px; }
+.hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.hero-asset { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.hero-top .muted { font-size: 12px; }
 
 .hero-price {
-  font-size: clamp(38px, 6vw, 56px);
+  font-size: clamp(30px, 8vw, 40px);
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
 .hero-price.is-empty { color: var(--dim); }
 
 .hero-sub { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
-.hero-sub .muted { font-size: 13px; }
+.hero-sub .muted { font-size: 12px; }
 
 .chg {
   font-size: 15px;
@@ -165,18 +404,18 @@ body {
 .chg.is-flat { color: var(--dim); }
 
 /* ---- range pills --------------------------------------------------------- */
-.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 .pill {
   font-family: inherit;
-  font-size: 13px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
   color: var(--dim);
   background: none; border: 0;
-  padding: 7px 16px; border-radius: 999px;
+  padding: 6px 14px; border-radius: 999px;
   cursor: pointer;
 }
 .pill:hover { background: var(--hover); color: var(--text); }
-.pill.is-on { background: var(--cell); color: var(--text); }
-.pill:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pill.is-on { background: var(--cell); color: var(--holster); }
+.pill:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .pill[disabled] { opacity: 0.45; cursor: default; }
 
 /* ---- chart shell --------------------------------------------------------- */
@@ -194,36 +433,37 @@ body {
 .rows { list-style: none; margin: 0; padding: 0; }
 .rows li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px 150px 90px;
+  grid-template-columns: minmax(0, 1fr) 110px 96px 76px;
   align-items: center;
-  gap: 16px;
-  padding: 16px 4px;
+  gap: 12px;
+  padding: 14px 2px;
   border-bottom: 1px solid var(--rule);
 }
 .rows li:last-child { border-bottom: 0; }
 .row-name { min-width: 0; }
-.row-code { font-size: 15px; font-weight: 600; }
-.row-desc { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-px { font-size: 17px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.row-code { font-size: 14px; font-weight: 600; }
+.row-desc { font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-px { font-size: 15px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .row-chg { text-align: right; }
+.row-chg .chg { font-size: 13px; }
 .row-spark { min-width: 0; }
 
 /* ---- stat strip ---------------------------------------------------------- */
 .strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 22px 30px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 16px 20px;
+  margin-bottom: 18px;
 }
-.stat-label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
+.stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .stat-value {
-  margin-top: 3px;
-  font-size: 26px; font-weight: 600;
+  margin-top: 2px;
+  font-size: 22px; font-weight: 600;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.foot { margin: 8px 0 26px; font-size: 13px; color: var(--dim); }
+.foot { margin: 8px 0 22px; font-size: 12.5px; color: var(--dim); }
 
 /* ---- tables -------------------------------------------------------------- */
 .table-scroll, .table-host { overflow-x: auto; margin-top: 8px; }
@@ -231,17 +471,17 @@ body {
 table.data {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 table.data th, table.data td {
-  padding: 10px 12px 10px 0;
+  padding: 9px 10px 9px 0;
   text-align: right;
   border-bottom: 1px solid var(--rule);
   white-space: nowrap;
 }
 table.data thead th {
-  font-size: 12px; font-weight: 600; color: var(--dim);
+  font-size: 11px; font-weight: 600; color: var(--dim);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 table.data th[scope="row"], table.data thead th:first-child { text-align: left; }
@@ -249,17 +489,17 @@ table.data tbody tr:last-child th, table.data tbody tr:last-child td { border-bo
 .dim { color: var(--dim); }
 .neg { color: var(--neg); }
 tr.row-rule th {
-  text-align: left; padding-top: 18px;
-  font-size: 12px; font-weight: 600; color: var(--gold);
+  text-align: left; padding-top: 16px;
+  font-size: 11px; font-weight: 600; color: var(--gold);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .tag { font-size: 12px; color: var(--dim); }
 
 /* ---- notices ------------------------------------------------------------- */
 .notice {
-  margin: 14px 0;
-  padding: 10px 13px;
-  font-size: 13.5px;
+  margin: 12px 0;
+  padding: 9px 12px;
+  font-size: 13px;
   background: var(--cell);
   border-left: 3px solid var(--gold);
   border-radius: 4px;
@@ -270,34 +510,31 @@ tr.row-rule th {
 /* ---- about --------------------------------------------------------------- */
 .prose { max-width: 68ch; }
 .prose h2 {
-  margin: 30px 0 8px;
-  font-size: 13px; font-weight: 600; color: var(--gold);
-  text-transform: uppercase; letter-spacing: 0.07em;
+  margin: 26px 0 6px;
+  font-size: 12px; font-weight: 700; color: var(--holster);
+  text-transform: uppercase; letter-spacing: 0.1em;
 }
 .prose h2:first-child { margin-top: 0; }
-.prose p { margin: 0 0 12px; color: var(--dim); }
+.prose p { margin: 0 0 10px; font-size: 14px; color: var(--dim); }
 .prose b { color: var(--text); font-weight: 600; }
 .prose a {
   color: var(--text);
-  text-decoration-color: var(--gold);
+  text-decoration-color: var(--holster);
   text-underline-offset: 3px;
 }
-.prose a:hover { color: var(--gold); }
-.prose a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.prose a:hover { color: var(--holster); }
+.prose a:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 
 /* ---- responsive ---------------------------------------------------------- */
-@media (max-width: 820px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
-  .side {
-    flex-direction: row; align-items: center; gap: 14px;
-    padding: 12px 14px; overflow-x: auto;
-  }
-  .brand { padding: 0; }
-  .brandname { display: none; }
-  .nav { flex-direction: row; gap: 4px; }
-  .navitem { padding: 8px 12px; white-space: nowrap; }
-  .side-foot { margin-top: 0; margin-left: auto; white-space: nowrap; }
-  .rows li { grid-template-columns: minmax(0, 1fr) 110px; row-gap: 8px; }
+@media (max-width: 480px) {
+  .stage { padding: 10px 6px 32px; gap: 12px; }
+  .holster { border-radius: 28px; padding: 10px; }
+  .shell { border-radius: 20px; padding: 12px 12px 14px; }
+  .lcd { padding: 12px 14px 10px; }
+  .drawer { border-radius: 14px; padding: 14px 12px 18px; }
+  .dial { width: 100%; }
+  .dial-lab { font-size: 13.5px; }
+  .rows li { grid-template-columns: minmax(0, 1fr) 84px 64px; }
   .row-spark { display: none; }
 }
 
@@ -309,55 +546,68 @@ tr.row-rule th {
 </head>
 <body>
 
-<div class="app">
-  <aside class="side">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">M</span>
-      <span class="brandname">Multimeter</span>
+<main class="stage">
+
+  <!-- ================= THE METER ================= -->
+  <div class="meter">
+    <div class="holster">
+      <div class="shell">
+
+        <div class="head">
+          <span class="brand">MULTIMETER</span>
+          <span class="model" aria-hidden="true">MM-10</span>
+        </div>
+
+        <div class="lcd" id="lcd" role="button" tabindex="0" aria-label="Meter">
+          <div class="lcd-row">
+            <span class="ann" id="lcdMode"></span>
+            <span class="ann ann-hold" id="lcdHold">HOLD</span>
+          </div>
+          <div class="lcd-chart" id="lcdChart"></div>
+          <div class="lcd-main">
+            <div class="lcd-digits" id="lcdDigits"></div>
+            <span class="lcd-unit" id="lcdUnit"></span>
+          </div>
+          <div class="lcd-row lcd-foot">
+            <span class="lcd-chg" id="lcdChange"></span>
+            <span class="ann" id="lcdChangeLabel"></span>
+          </div>
+        </div>
+
+        <div class="keys">
+          <button type="button" class="key" id="detailBtn" aria-expanded="false" aria-controls="drawer">DATA</button>
+          <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
+        </div>
+
+        <div class="dial" id="dial">
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="9" aria-valuenow="1"></div>
+        </div>
+
+        <div class="jacks">
+          <span class="jack" aria-hidden="true"></span>
+          <span class="jack jack-com" id="sessionDot" aria-hidden="true"></span>
+          <span class="jack jack-v" aria-hidden="true"></span>
+          <span class="jack-text" id="sessionText">Market —</span>
+        </div>
+
+      </div>
     </div>
+  </div>
 
-    <nav class="nav" id="nav" aria-label="Sections">
-      <a class="navitem" href="#home" data-view="home">Home</a>
-      <a class="navitem" href="#markets" data-view="markets">Markets</a>
-      <a class="navitem" href="#weekly" data-view="weekly">Weekly</a>
-      <a class="navitem" href="#coupling" data-view="coupling">Coupling</a>
-      <a class="navitem" href="#volatility" data-view="volatility">Volatility</a>
-      <a class="navitem" href="#drawdown" data-view="drawdown">Drawdown</a>
-      <a class="navitem" href="#about" data-view="about">About</a>
-    </nav>
-
-    <div class="side-foot">
-      <span class="dot" id="sessionDot" aria-hidden="true"></span>
-      <span id="sessionText">Market —</span>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar">
-      <h1 id="viewTitle">Home</h1>
+  <!-- ================= DETAIL DRAWER ================= -->
+  <div class="drawer" id="drawer" hidden>
+    <header class="drawer-head">
+      <h2 id="viewTitle">Bitcoin</h2>
       <span class="muted" id="quoteStamp">—</span>
     </header>
 
     <div id="pageNotice"></div>
 
-    <!-- ================= HOME ================= -->
-    <section class="view" data-view="home">
-      <a class="pinstrip" href="#weekly">
-        <span class="pin-label">Stock of the week</span>
-        <span class="pin-symbol" id="pinSymbol">—</span>
-        <span class="chg is-flat" id="pinMove">—</span>
-        <span class="pin-go" aria-hidden="true">›</span>
-      </a>
-
-      <div class="hero">
-        <div class="hero-top">
-          <span class="hero-asset">BTC / USD</span>
-        </div>
-        <div class="hero-price" id="heroPrice">—</div>
-        <div class="hero-sub">
-          <span class="chg is-flat" id="heroChange">—</span>
-          <span class="muted" id="heroRangeLabel">24H</span>
-        </div>
+    <!-- BTC -->
+    <section class="view" data-panel="hero">
+      <div class="hero-sub">
+        <span class="chg is-flat" id="heroChange">—</span>
+        <span class="muted" id="heroRangeLabel">24H</span>
       </div>
 
       <div class="chartbox" id="heroChart"></div>
@@ -372,14 +622,14 @@ tr.row-rule th {
       <div id="heroNotice"></div>
     </section>
 
-    <!-- ================= MARKETS ================= -->
-    <section class="view" data-view="markets" hidden>
+    <!-- ETH / NASDAQ / S&P -->
+    <section class="view" data-panel="markets" hidden>
       <ul class="rows" id="marketRows"></ul>
       <div id="marketNotice"></div>
     </section>
 
-    <!-- ================= WEEKLY ================= -->
-    <section class="view" data-view="weekly" hidden>
+    <!-- STOCK -->
+    <section class="view" data-panel="weekly" hidden>
       <div class="hero">
         <div class="hero-top">
           <span class="hero-asset" id="spotSymbol">—</span>
@@ -399,8 +649,30 @@ tr.row-rule th {
       <div id="spotNotice"></div>
     </section>
 
-    <!-- ================= COUPLING ================= -->
-    <section class="view" data-view="coupling" hidden>
+    <!-- CRYPTO -->
+    <section class="view" data-panel="crypto" hidden>
+      <div class="hero">
+        <div class="hero-top">
+          <span class="hero-asset" id="cryptoSymbol">—</span>
+          <span class="muted" id="cryptoWeek">—</span>
+        </div>
+        <div class="hero-price" id="cryptoPx">—</div>
+        <div class="hero-sub">
+          <span class="chg is-flat" id="cryptoChg">—</span>
+          <span class="muted" id="cryptoName">—</span>
+        </div>
+      </div>
+
+      <div class="chartbox" id="cryptoSpark"></div>
+      <p class="foot">Seven days, hourly.</p>
+
+      <div class="strip" id="cryptoStrip"></div>
+      <p class="foot" id="cryptoRunner"></p>
+      <div id="cryptoNotice"></div>
+    </section>
+
+    <!-- CORR -->
+    <section class="view" data-panel="coupling" hidden>
       <div class="strip" id="couplingStrip"></div>
       <div class="chartbox" id="chartScatter"></div>
       <p class="foot" id="scatterCaption"></p>
@@ -410,15 +682,15 @@ tr.row-rule th {
       <div id="notice-history"></div>
     </section>
 
-    <!-- ================= VOLATILITY ================= -->
-    <section class="view" data-view="volatility" hidden>
+    <!-- VOL -->
+    <section class="view" data-panel="volatility" hidden>
       <div class="strip" id="volStrip"></div>
       <div class="chartbox" id="chartVol"></div>
       <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
     </section>
 
-    <!-- ================= DRAWDOWN ================= -->
-    <section class="view" data-view="drawdown" hidden>
+    <!-- DD -->
+    <section class="view" data-panel="drawdown" hidden>
       <div class="strip" id="ddStrip"></div>
       <div class="chartbox" id="chartDdBtc"></div>
       <p class="foot">BTC / USD below running peak.</p>
@@ -427,19 +699,18 @@ tr.row-rule th {
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
-    <!-- ================= ABOUT ================= -->
-    <section class="view prose" data-view="about" hidden>
+    <!-- OFF -->
+    <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live tracker for bitcoin and the Nasdaq, with the statistics that make the comparison mean something. Bitcoin refreshes every 45&nbsp;seconds. Nasdaq figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
-      <h2>Instruments</h2>
-      <p><b>BTC / USD</b> — spot bitcoin, volume-weighted across the exchanges CoinGecko tracks. Trades every calendar day.</p>
-      <p><b>^IXIC</b> — the Nasdaq Composite, roughly 3,000 listed securities. An index level, not a tradable price.</p>
-      <p><b>QQQ</b> — Invesco QQQ Trust, the ETF tracking the Nasdaq-100. It stands in for ^NDX, which the free data plan does not carry.</p>
-
-      <h2>Stock of the week</h2>
-      <p>A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move. The price beside it refreshes with the Nasdaq quotes.</p>
-      <p>Absolute rather than largest gain, deliberately. Ranking by best performer would read as a tip. This reports what moved, in either direction — it is not a recommendation.</p>
+      <h2>Dial</h2>
+      <p><b>BTC</b>, <b>ETH</b> — spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. They trade every calendar day.</p>
+      <p><b>NASDAQ</b> — the Nasdaq Composite (^IXIC), roughly 3,000 listed securities. <b>S&amp;P</b> — the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
+      <p><b>STOCK</b> — the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe, and stores whichever name posted the largest <b>absolute</b> five-session move.</p>
+      <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
+      <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
+      <p><b>CORR</b> — bitcoin against the Nasdaq Composite over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — bitcoin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far bitcoin sits below its running peak.</p>
 
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
@@ -447,7 +718,7 @@ tr.row-rule th {
       <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for bitcoin spot and its chart, called directly from your browser. Financial Modeling Prep for the ^IXIC quote and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open indicator is computed in your browser from NYSE hours and holidays.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>
@@ -455,8 +726,8 @@ tr.row-rule th {
       <h2>Standing</h2>
       <p>Market data for reference only. Nothing here is investment advice, a recommendation, or a solicitation to trade. Figures are as reported by the sources above and may be delayed, revised, or wrong.</p>
     </section>
-  </main>
-</div>
+  </div>
+</main>
 
 <script>
 /* ==== src/lib/stats.js ==================================================== */
@@ -1189,14 +1460,204 @@ tr.row-rule th {
     return s;
   }
 
+  /* -------------------------------------------------------------------------
+   * 6. smoothLine — the one curved chart in the kit, for the meter's screen.
+   *    A monotone cubic line (no overshoot between samples) over a soft
+   *    gradient, with the latest point marked: the shape a phone's price
+   *    chart has, so the display reads as a modern backlit panel while the
+   *    printed charts in the drawer stay rectilinear.
+   * ---------------------------------------------------------------------- */
+  function sign(x) { return x < 0 ? -1 : 1; }
+
+  /* Tangent at the middle of three points, limited so the curve stays
+   * monotone between samples (Fritsch–Carlson, as d3's curveMonotoneX). */
+  function slope3(x0, y0, x1, y1, x2, y2) {
+    var h0 = x1 - x0, h1 = x2 - x1;
+    var s0 = (y1 - y0) / (h0 || (h1 < 0 && -0));
+    var s1 = (y2 - y1) / (h1 || (h0 < 0 && -0));
+    var p = (s0 * h1 + s1 * h0) / (h0 + h1);
+    return (sign(s0) + sign(s1)) * Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p)) || 0;
+  }
+
+  function slope2(x0, y0, x1, y1, t) {
+    var h = x1 - x0;
+    return h ? (3 * (y1 - y0) / h - t) / 2 : t;
+  }
+
+  function monotonePath(xs, ys) {
+    var n = xs.length;
+    if (n < 2) return '';
+    if (n === 2) return 'M' + xs[0].toFixed(2) + ',' + ys[0].toFixed(2) + 'L' + xs[1].toFixed(2) + ',' + ys[1].toFixed(2);
+    var t = new Array(n);
+    for (var i = 1; i < n - 1; i++) t[i] = slope3(xs[i - 1], ys[i - 1], xs[i], ys[i], xs[i + 1], ys[i + 1]);
+    t[0] = slope2(xs[0], ys[0], xs[1], ys[1], t[1]);
+    t[n - 1] = slope2(xs[n - 2], ys[n - 2], xs[n - 1], ys[n - 1], t[n - 2]);
+    var d = 'M' + xs[0].toFixed(2) + ',' + ys[0].toFixed(2);
+    for (var k = 0; k < n - 1; k++) {
+      var dx = (xs[k + 1] - xs[k]) / 3;
+      d += 'C' + (xs[k] + dx).toFixed(2) + ',' + (ys[k] + dx * t[k]).toFixed(2) +
+        ' ' + (xs[k + 1] - dx).toFixed(2) + ',' + (ys[k + 1] - dx * t[k + 1]).toFixed(2) +
+        ' ' + xs[k + 1].toFixed(2) + ',' + ys[k + 1].toFixed(2);
+    }
+    return d;
+  }
+
+  function smoothLine(opts) {
+    var values = (opts.values || []).filter(isNum);
+    var w = opts.w || 600, h = opts.h || 200;
+    var color = opts.color || 'currentColor';
+    if (values.length < 2) return open(w, h, 'chart-empty') + '</svg>';
+    var p = { l: 4, r: 12, t: 12, b: 4 };
+    var dom = extent(values);
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var xs = [], ys = [];
+    for (var i = 0; i < values.length; i++) { xs.push(x(i)); ys.push(y(values[i])); }
+    var d = monotonePath(xs, ys);
+    var gid = nextId('glow');
+    var lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
+
+    var s = open(w, h, 'chart-smooth');
+    s += '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" style="stop-color:' + color + ';stop-opacity:0.32"/>' +
+      '<stop offset="1" style="stop-color:' + color + ';stop-opacity:0"/></linearGradient></defs>';
+    s += '<path d="' + d + 'V' + (h - p.b).toFixed(2) + 'H' + xs[0].toFixed(2) + 'Z" fill="url(#' + gid + ')" stroke="none"/>';
+    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
+      '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
+    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
+    return s + '</svg>';
+  }
+
   MP.geom = {
     sparkStep: sparkStep,
+    smoothLine: smoothLine,
+    monotonePath: monotonePath,
     stepChart: stepChart,
     columnChart: columnChart,
     scatterFit: scatterFit,
     underwaterChart: underwaterChart,
     niceTicks: niceTicks,
     extent: extent
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/sevenseg.js ================================================= */
+/* ============================================================================
+ * sevenseg.js — the LCD's seven-segment readout, as inline SVG.
+ *
+ * Pure: strings in, an SVG string out, no DOM. Every segment of every cell is
+ * always drawn; lit ones carry the `on` class, so unlit segments ghost faintly
+ * behind the reading the way a real liquid-crystal display does. Colour comes
+ * from the stylesheet (.seg / .seg.on), never from this file.
+ *
+ * The readout is one half-width sign cell followed by seven digit cells,
+ * right-aligned. A '.' in the text lights the decimal point of the cell before
+ * it. fit() turns a number into text that fits those seven cells, dropping
+ * decimals first and reporting 'OL' (overload) when the integer part alone
+ * will not fit — which is what a meter does too.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var DIGITS = 7;
+  var CELL_W = 20, CELL_H = 36, PITCH = 30, SIGN_W = 14, GAP = 6;
+  var VIEW_W = 232, VIEW_H = 40;
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  /* Chamfered segment polygons for a 20 x 36 cell, thickness 3.5. */
+  var SEGMENTS = {
+    a: '2,0 18,0 15,3.5 5,3.5',
+    b: '20,2 20,17 16.5,15 16.5,5',
+    c: '20,19 20,34 16.5,31 16.5,21',
+    d: '2,36 18,36 15,32.5 5,32.5',
+    e: '0,19 0,34 3.5,31 3.5,21',
+    f: '0,2 0,17 3.5,15 3.5,5',
+    g: '3,18 5,16.25 15,16.25 17,18 15,19.75 5,19.75'
+  };
+  var ORDER = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+  var SIGN_SEGMENT = '0,18 2,16.25 12,16.25 14,18 12,19.75 2,19.75';
+
+  var GLYPHS = {
+    '0': 'abcdef', '1': 'bc', '2': 'abdeg', '3': 'abcdg', '4': 'bcfg',
+    '5': 'acdfg', '6': 'acdefg', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg',
+    '-': 'g', ' ': '',
+    'O': 'abcdef', 'L': 'def', 'H': 'bcefg', 'd': 'bcdeg', 'E': 'adefg',
+    'r': 'eg', 'n': 'ceg', 'o': 'cdeg', 'P': 'abefg'
+  };
+
+  /* 'text' -> [{ glyph, dp }] right-aligned into DIGITS cells. Unknown
+   * characters render blank rather than throwing. */
+  function cells(text) {
+    var out = [];
+    var s = String(text === undefined || text === null ? '' : text);
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === '.') {
+        if (!out.length) out.push({ glyph: ' ', dp: false });
+        out[out.length - 1].dp = true;
+        continue;
+      }
+      out.push({ glyph: GLYPHS.hasOwnProperty(ch) ? ch : ' ', dp: false });
+    }
+    if (out.length > DIGITS) out = out.slice(out.length - DIGITS);
+    while (out.length < DIGITS) out.unshift({ glyph: ' ', dp: false });
+    return out;
+  }
+
+  /* value -> { text, neg }. dp is the preferred number of decimals; it is
+   * reduced until the digits fit, then the reading overloads. */
+  function fit(value, opts) {
+    var dp = opts && isNum(opts.dp) ? Math.max(0, Math.floor(opts.dp)) : 2;
+    if (!isNum(value)) return { text: '----', neg: false };
+    var abs = Math.abs(value);
+    var s;
+    for (;;) {
+      s = abs.toFixed(dp);
+      if (s.replace('.', '').length <= DIGITS) break;
+      if (dp === 0) return { text: 'OL', neg: false };
+      dp -= 1;
+    }
+    return { text: s, neg: value < 0 && Number(s) !== 0 };
+  }
+
+  function segClass(on) { return on ? 'seg on' : 'seg'; }
+
+  function cellSvg(x, cell) {
+    var lit = GLYPHS[cell.glyph] || '';
+    var s = '<g transform="translate(' + x + ',0)">';
+    for (var i = 0; i < ORDER.length; i++) {
+      var k = ORDER[i];
+      s += '<polygon class="' + segClass(lit.indexOf(k) >= 0) + '" points="' + SEGMENTS[k] + '"/>';
+    }
+    s += '<rect class="' + segClass(cell.dp) + ' seg-dp" x="' + (CELL_W + 2) + '" y="' + (CELL_H - 4) +
+      '" width="4" height="4"/>';
+    return s + '</g>';
+  }
+
+  /* text: what fit() produced; neg lights the sign cell. */
+  function svg(text, neg, opts) {
+    var cls = opts && opts.className ? ' ' + opts.className : '';
+    var s = '<svg viewBox="0 0 ' + VIEW_W + ' ' + VIEW_H + '" class="lcd-seg' + cls +
+      '" aria-hidden="true" preserveAspectRatio="xMidYMid meet">';
+    s += '<g transform="translate(4,2) skewX(-6)">';
+    s += '<polygon class="' + segClass(!!neg) + '" points="' + SIGN_SEGMENT + '"/>';
+    var list = cells(text);
+    for (var i = 0; i < list.length; i++) {
+      s += cellSvg(SIGN_W + GAP + i * PITCH, list[i]);
+    }
+    return s + '</g></svg>';
+  }
+
+  MP.sevenseg = {
+    DIGITS: DIGITS,
+    GLYPHS: GLYPHS,
+    cells: cells,
+    fit: fit,
+    svg: svg
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -1262,33 +1723,67 @@ tr.row-rule th {
    * -> [ { current_price, price_change_percentage_24h, market_cap,
    *        total_volume, circulating_supply, max_supply, market_cap_rank,
    *        last_updated, sparkline_in_7d: { price: [...] } } ]              */
+  function coinSpot(coin) {
+    return {
+      id: coin.id || null,
+      symbol: coin.symbol ? String(coin.symbol).toUpperCase() : null,
+      name: coin.name || null,
+      price: toNum(coin.current_price),
+      changePct: toNum(coin.price_change_percentage_24h),   /* percentage points */
+      change7d: toNum(coin.price_change_percentage_7d_in_currency),
+      marketCap: toNum(coin.market_cap),
+      volume: toNum(coin.total_volume),
+      supply: toNum(coin.circulating_supply),
+      maxSupply: toNum(coin.max_supply),
+      rank: toNum(coin.market_cap_rank),
+      sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
+      updatedAt: Date.parse(coin.last_updated) || null
+    };
+  }
+
   var btcSpot = {
     url: COINGECKO + '/coins/markets?vs_currency=usd&ids=bitcoin&sparkline=true',
     normalize: function (payload) {
       var p = parsePayload(payload);
       var coin = Array.isArray(p) ? p[0] : null;
       if (!coin || !isFinite(toNum(coin.current_price))) return null;
-      return {
-        price: toNum(coin.current_price),
-        changePct: toNum(coin.price_change_percentage_24h),   /* percentage points */
-        marketCap: toNum(coin.market_cap),
-        volume: toNum(coin.total_volume),
-        supply: toNum(coin.circulating_supply),
-        maxSupply: toNum(coin.max_supply),
-        rank: toNum(coin.market_cap_rank),
-        sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
-        updatedAt: Date.parse(coin.last_updated) || null
-      };
+      return coinSpot(coin);
     }
   };
 
-  /* GET /coins/bitcoin/market_chart?vs_currency=usd&days=N
+  /* The same endpoint for several coins in one request, with the 7-day change
+   * included: the page reads BTC, ETH and the crypto of the week together,
+   * and the data job's weekly scan reads a whole universe. Resolves to a map
+   * of CoinGecko id -> coinSpot, or null when nothing usable came back. */
+  function coinsMarkets(ids, opts) {
+    var spark = !(opts && opts.sparkline === false);
+    return {
+      url: COINGECKO + '/coins/markets?vs_currency=usd&ids=' + encodeURIComponent(ids.join(',')) +
+        '&sparkline=' + (spark ? 'true' : 'false') + '&price_change_percentage=7d',
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!Array.isArray(p)) return null;
+        var out = {}, any = false;
+        for (var i = 0; i < p.length; i++) {
+          var coin = p[i];
+          if (!coin || !coin.id || !isFinite(toNum(coin.current_price))) continue;
+          out[coin.id] = coinSpot(coin);
+          any = true;
+        }
+        return any ? out : null;
+      }
+    };
+  }
+
+  /* GET /coins/{id}/market_chart?vs_currency=usd&days=N
    * -> { prices: [[ms, price], ...], market_caps: [...], total_volumes: [...] }
    * CoinGecko picks the granularity: ~5-minute for 1 day, hourly up to 90
    * days, daily beyond. */
-  function btcChart(days) {
+  function btcChart(days) { return coinChart('bitcoin', days); }
+
+  function coinChart(id, days) {
     return {
-      url: COINGECKO + '/coins/bitcoin/market_chart?vs_currency=usd&days=' + encodeURIComponent(days),
+      url: COINGECKO + '/coins/' + encodeURIComponent(id) + '/market_chart?vs_currency=usd&days=' + encodeURIComponent(days),
       normalize: function (payload) {
         var p = parsePayload(payload);
         if (!p || !Array.isArray(p.prices)) return null;
@@ -1439,6 +1934,7 @@ tr.row-rule th {
     return {
       generatedAt: stampOf(p.generatedAt),
       ixic: readQuote(p.ixic),
+      spx: readQuote(p.spx),
       qqq: readQuote(p.qqq),
       spotlight: readQuote(p.spotlight)
     };
@@ -1451,6 +1947,7 @@ tr.row-rule th {
       generatedAt: stampOf(p.generatedAt),
       btc: readSeries(p.btc),
       ixic: readSeries(p.ixic),
+      spx: readSeries(p.spx),
       qqq: readSeries(p.qqq)
     };
   }
@@ -1463,7 +1960,9 @@ tr.row-rule th {
       current: p.current && p.current.symbol ? p.current : null,
       history: Array.isArray(p.history) ? p.history.filter(function (h) { return h && h.symbol; }) : [],
       change: p.change && typeof p.change === 'object' ? p.change : null,
-      series: readSeries(p.series)
+      series: readSeries(p.series),
+      crypto: p.crypto && p.crypto.id && p.crypto.symbol ? p.crypto : null,
+      cryptoHistory: Array.isArray(p.cryptoHistory) ? p.cryptoHistory.filter(function (h) { return h && h.symbol; }) : []
     };
   }
 
@@ -1471,7 +1970,9 @@ tr.row-rule th {
     COINGECKO: COINGECKO,
     SNAPSHOT: SNAPSHOT,
     btcSpot: btcSpot,
+    coinsMarkets: coinsMarkets,
     btcChart: btcChart,
+    coinChart: coinChart,
     normalizeFmpQuote: normalizeFmpQuote,
     normalizeEodLight: normalizeEodLight,
     normalizeQuoteChange: normalizeQuoteChange,
@@ -1605,33 +2106,74 @@ tr.row-rule th {
 
 /* ==== src/lib/router.js =================================================== */
 /* ============================================================================
- * router.js — hash routing between sections.
+ * router.js — hash routing between the dial's stops.
  *
- * The page is one document with several views; only one is ever shown. Charts
- * render into hidden views quite happily because every SVG carries a viewBox
- * and sizes from CSS, so nothing needs re-rendering on reveal.
+ * Each stop is one reading on the meter's screen and one panel in the detail
+ * drawer below it; several stops can share a panel (ETH and S&P both open
+ * the markets panel). Only one panel is ever shown. Charts render into
+ * hidden panels quite happily because every SVG carries a viewBox and sizes
+ * from CSS, so nothing needs re-rendering on reveal.
+ *
+ * Old section hashes are kept as aliases so links out in the world still land
+ * somewhere sensible.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  var VIEWS = ['home', 'markets', 'weekly', 'coupling', 'volatility', 'drawdown', 'about'];
+  /* Dial order, clockwise from the top. */
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'corr', 'vol', 'dd'];
 
-  var TITLES = {
-    home: 'Home',
-    markets: 'Markets',
-    weekly: 'Stock of the week',
-    coupling: 'Coupling',
-    volatility: 'Volatility',
-    drawdown: 'Drawdown',
-    about: 'About'
+  var ALIASES = {
+    ixic: 'nasdaq',
+    ndq: 'nasdaq',
+    qqq: 'nasdaq',
+    gspc: 'spx',
+    sp500: 'spx',
+    home: 'btc',
+    markets: 'btc',
+    weekly: 'stock',
+    coupling: 'corr',
+    beta: 'corr',
+    volatility: 'vol',
+    drawdown: 'dd',
+    about: 'off'
   };
 
-  var DEFAULT_VIEW = 'home';
+  /* Which drawer panel (.view[data-panel]) each stop opens. */
+  var PANELS = {
+    off: 'about',
+    btc: 'hero',
+    eth: 'markets',
+    nasdaq: 'markets',
+    spx: 'markets',
+    stock: 'weekly',
+    crypto: 'crypto',
+    corr: 'coupling',
+    vol: 'volatility',
+    dd: 'drawdown'
+  };
 
-  /* Pure: '#coupling' -> 'coupling'; anything unrecognised -> the default. */
+  var TITLES = {
+    off: 'Off',
+    btc: 'Bitcoin',
+    eth: 'Ether',
+    nasdaq: 'Nasdaq Composite',
+    spx: 'S&P 500',
+    stock: 'Stock of the week',
+    crypto: 'Crypto of the week',
+    corr: 'Correlation',
+    vol: 'Volatility',
+    dd: 'Drawdown'
+  };
+
+  var DEFAULT_VIEW = 'btc';
+
+  /* Pure: '#corr' -> 'corr', '#coupling' -> 'corr'; anything unrecognised ->
+   * the default. */
   function parseHash(hash) {
     var raw = String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+    raw = ALIASES[raw] || raw;
     return VIEWS.indexOf(raw) >= 0 ? raw : DEFAULT_VIEW;
   }
 
@@ -1643,17 +2185,10 @@ tr.row-rule th {
     if (current === target) return target;
     current = target;
 
-    var sections = document.querySelectorAll('.view[data-view]');
+    var panel = PANELS[target];
+    var sections = document.querySelectorAll('.view[data-panel]');
     for (var i = 0; i < sections.length; i++) {
-      sections[i].hidden = sections[i].getAttribute('data-view') !== target;
-    }
-
-    var items = document.querySelectorAll('.navitem[data-view]');
-    for (var j = 0; j < items.length; j++) {
-      var on = items[j].getAttribute('data-view') === target;
-      items[j].classList.toggle('is-on', on);
-      if (on) items[j].setAttribute('aria-current', 'page');
-      else items[j].removeAttribute('aria-current');
+      sections[i].hidden = sections[i].getAttribute('data-panel') !== panel;
     }
 
     var title = document.getElementById('viewTitle');
@@ -1665,6 +2200,18 @@ tr.row-rule th {
     return target;
   }
 
+  /* Navigate: writes the hash so the back button works, and shows the view
+   * directly when the hash already matches (a reload, or a repeated click). */
+  function go(view) {
+    var target = VIEWS.indexOf(view) >= 0 ? view : DEFAULT_VIEW;
+    if (root.location && root.location.hash !== '#' + target) {
+      root.location.hash = target;
+    } else {
+      show(target);
+    }
+    return target;
+  }
+
   function onChange(fn) { if (typeof fn === 'function') listeners.push(fn); }
 
   function start() {
@@ -1672,20 +2219,365 @@ tr.row-rule th {
     if (root.addEventListener) {
       root.addEventListener('hashchange', function () {
         show(parseHash(root.location.hash));
-        if (root.scrollTo) root.scrollTo(0, 0);
       });
     }
   }
 
   MP.router = {
     VIEWS: VIEWS,
+    ALIASES: ALIASES,
+    PANELS: PANELS,
     TITLES: TITLES,
     DEFAULT_VIEW: DEFAULT_VIEW,
     parseHash: parseHash,
     show: show,
+    go: go,
     onChange: onChange,
     start: start,
     currentView: function () { return current; }
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/meter.js ==================================================== */
+/* ============================================================================
+ * meter.js — the instrument itself: the rotary dial, the knob, and the LCD.
+ *
+ * The dial has ten stops over 320 degrees, clockwise from OFF at the top,
+ * with a dead zone at eleven o'clock like a real range switch. Each
+ * stop is a router view; turning the knob navigates, and navigation turns the
+ * knob, so the back button and a typed hash both move the dial.
+ *
+ * The LCD paints from MP.app.reading(stop). HOLD freezes the display only:
+ * data keeps arriving, the drawer keeps updating, and releasing HOLD shows
+ * the current reading at once. Changing the stop releases it too, since a
+ * held number under a different mode label would mislead.
+ *
+ * Colour never appears in this file; the SVG it builds is styled by class.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var G = MP.geom, SEG = MP.sevenseg;
+
+  var STOPS = [
+    { id: 'off', label: 'OFF' },
+    { id: 'btc', label: 'BTC' },
+    { id: 'eth', label: 'ETH' },
+    { id: 'nasdaq', label: 'NASDAQ' },
+    { id: 'spx', label: 'S&P' },
+    { id: 'stock', label: 'STOCK' },
+    { id: 'crypto', label: 'CRYPTO' },
+    { id: 'corr', label: 'CORR' },
+    { id: 'vol', label: 'VOL' },
+    { id: 'dd', label: 'DD' }
+  ];
+  var SWEEP_DEG = 320;                              /* OFF at the top to the last stop */
+  var STEP_DEG = SWEEP_DEG / (STOPS.length - 1);    /* the dead zone takes the rest */
+  var DETENT_MS = 240;                              /* how long the click feedback lasts */
+
+  /* plate geometry, in viewBox units; MARGIN leaves room for the longest label
+   * at three o'clock, which would otherwise clip at the plate's edge */
+  var SIZE = 300, CX = 150, CY = 150, MARGIN = 34;
+  var R_FACE = 92, R_ARC = 105, R_TICK_IN = 100, R_TICK_OUT = 112, R_LABEL = 144, R_HIT = 18;
+
+  var TAP_PX = 4;   /* pointer travel below which a press is a tap, not a drag */
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function el(id) { return document.getElementById(id); }
+  function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
+
+  /* ---- pure geometry ------------------------------------------------------ */
+  function angleOf(index) { return index * STEP_DEG; }
+
+  /* Nearest stop to a bearing in degrees clockwise from twelve o'clock. The
+   * dead zone splits in the middle: its first half snaps back to the last
+   * stop, its second half forward to OFF. */
+  function stopAt(deg) {
+    var d = ((deg % 360) + 360) % 360;
+    return Math.round(d / STEP_DEG) % STOPS.length;
+  }
+
+  function indexOf(id) {
+    for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) return i;
+    return -1;
+  }
+
+  function polar(r, deg) {
+    var t = deg * Math.PI / 180;
+    return { x: (CX + r * Math.sin(t)).toFixed(2), y: (CY - r * Math.cos(t)).toFixed(2) };
+  }
+
+  function escapeText(s) {
+    return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+  }
+
+  /* The printed face plate: recessed ring, arc, one tick and label per stop. */
+  function plateSvg() {
+    var s = '<svg class="dial-plate" viewBox="' + (-MARGIN) + ' ' + (-MARGIN) + ' ' +
+      (SIZE + 2 * MARGIN) + ' ' + (SIZE + 2 * MARGIN) + '" aria-hidden="true">';
+    s += '<circle class="dial-face" cx="' + CX + '" cy="' + CY + '" r="' + R_FACE + '"/>';
+    var a0 = polar(R_ARC, angleOf(0)), a1 = polar(R_ARC, angleOf(STOPS.length - 1));
+    s += '<path class="dial-arc" d="M' + a0.x + ',' + a0.y + ' A' + R_ARC + ',' + R_ARC + ' 0 1 1 ' + a1.x + ',' + a1.y + '"/>';
+    for (var i = 0; i < STOPS.length; i++) {
+      var deg = angleOf(i);
+      var t0 = polar(R_TICK_IN, deg), t1 = polar(R_TICK_OUT, deg), lp = polar(R_LABEL, deg);
+      s += '<line class="dial-tick" x1="' + t0.x + '" y1="' + t0.y + '" x2="' + t1.x + '" y2="' + t1.y + '"/>';
+      s += '<g class="dial-stop" data-stop="' + STOPS[i].id + '">' +
+        '<circle class="dial-hit" cx="' + lp.x + '" cy="' + lp.y + '" r="' + R_HIT + '"/>' +
+        '<text class="dial-lab" x="' + lp.x + '" y="' + lp.y + '" text-anchor="middle" dominant-baseline="central">' +
+        escapeText(STOPS[i].label) + '</text></g>';
+    }
+    return s + '</svg>';
+  }
+
+  /* ---- state -------------------------------------------------------------- */
+  var currentId = null;
+  var shownAngle = 0;      /* continuous, so the knob always takes the short way */
+  var held = false;
+
+  /* ---- knob --------------------------------------------------------------- */
+  function rotateTo(index) {
+    var knob = el('knob');
+    var target = angleOf(index);
+    var cur = ((shownAngle % 360) + 360) % 360;
+    var delta = ((target - cur + 540) % 360) - 180;
+    shownAngle += delta;
+    if (knob) {
+      knob.style.transform = 'rotate(' + shownAngle + 'deg)';
+      knob.setAttribute('aria-valuenow', String(index));
+      var title = MP.router && MP.router.TITLES ? MP.router.TITLES[STOPS[index].id] : STOPS[index].label;
+      knob.setAttribute('aria-valuetext', title);
+    }
+  }
+
+  function markLabel(id) {
+    var labels = document.querySelectorAll('.dial-stop[data-stop]');
+    for (var i = 0; i < labels.length; i++) {
+      labels[i].classList.toggle('is-on', labels[i].getAttribute('data-stop') === id);
+    }
+  }
+
+  function go(id) {
+    if (MP.router) MP.router.go(id);
+  }
+
+  function step(by) {
+    var i = indexOf(currentId);
+    if (i < 0) i = 0;
+    go(STOPS[(i + by + STOPS.length) % STOPS.length].id);
+  }
+
+  function wireDial(dial, knob) {
+    var drag = null;
+
+    function bearing(ev) {
+      var r = dial.getBoundingClientRect();
+      var dx = ev.clientX - (r.left + r.width / 2);
+      var dy = ev.clientY - (r.top + r.height / 2);
+      return (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+    }
+
+    dial.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== undefined && ev.button !== 0) return;
+      var stopEl = ev.target.closest ? ev.target.closest('.dial-stop[data-stop]') : null;
+      drag = {
+        id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, moved: false,
+        onKnob: knob.contains(ev.target),
+        tapStop: stopEl ? stopEl.getAttribute('data-stop') : null
+      };
+      if (dial.setPointerCapture) { try { dial.setPointerCapture(ev.pointerId); } catch (e) { /* not capturable */ } }
+      /* preventDefault below also suppresses the focus a press would give,
+       * so hand the knob focus explicitly: the arrow keys then work at once. */
+      if (drag.onKnob && knob.focus) knob.focus({ preventScroll: true });
+      ev.preventDefault();
+    });
+
+    dial.addEventListener('pointermove', function (ev) {
+      if (!drag || ev.pointerId !== drag.id) return;
+      if (!drag.moved) {
+        var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+        if (Math.sqrt(dx * dx + dy * dy) < TAP_PX) return;
+        drag.moved = true;
+      }
+      var idx = stopAt(bearing(ev));
+      if (STOPS[idx].id !== currentId) go(STOPS[idx].id);
+    });
+
+    function release(ev) {
+      if (!drag || ev.pointerId !== drag.id) return;
+      var d = drag;
+      drag = null;
+      if (ev.type === 'pointercancel' || d.moved) return;
+      if (d.tapStop) go(d.tapStop);
+      else if (d.onKnob) step(1);
+    }
+    dial.addEventListener('pointerup', release);
+    dial.addEventListener('pointercancel', release);
+  }
+
+  function wireKeys(knob) {
+    knob.addEventListener('keydown', function (ev) {
+      var k = ev.key;
+      if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
+      else if (k === 'ArrowLeft' || k === 'ArrowDown') step(-1);
+      else if (k === 'Home') go(STOPS[0].id);
+      else if (k === 'End') go(STOPS[STOPS.length - 1].id);
+      else if (k === 'Enter' || k === ' ') step(1);
+      else return;
+      ev.preventDefault();
+    });
+  }
+
+  /* ---- hold and drawer ---------------------------------------------------- */
+  function setHold(on) {
+    held = !!on;
+    var btn = el('holdBtn');
+    if (btn) {
+      btn.classList.toggle('is-held', held);
+      btn.setAttribute('aria-pressed', held ? 'true' : 'false');
+    }
+    var ann = el('lcdHold');
+    if (ann) ann.classList.toggle('is-on', held);
+    if (!held) refresh();
+  }
+
+  function openDrawer(open) {
+    var drawer = el('drawer'), btn = el('detailBtn');
+    if (!drawer) return;
+    var show = open === undefined ? drawer.hidden : !!open;
+    drawer.hidden = !show;
+    if (btn) {
+      btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+      btn.classList.toggle('is-on', show);
+    }
+  }
+
+  function wireButtons() {
+    var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd');
+    if (hold) hold.addEventListener('click', function () { setHold(!held); });
+    if (detail) detail.addEventListener('click', function () { openDrawer(); });
+    if (lcd) {
+      lcd.addEventListener('click', function () { openDrawer(); });
+      lcd.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { openDrawer(); ev.preventDefault(); }
+      });
+    }
+  }
+
+  /* ---- the screen --------------------------------------------------------- */
+  function changeText(c) {
+    if (!c || !isNum(c.value)) return '----';
+    var arrow = c.value >= 0 ? '▲' : '▼';
+    return arrow + Math.abs(c.value).toFixed(isNum(c.dp) ? c.dp : 2) + (c.suffix || '');
+  }
+
+  function describe(r, off) {
+    if (off) return 'Meter off. Press to open the details.';
+    var title = MP.router && MP.router.TITLES ? MP.router.TITLES[currentId] : currentId;
+    var value = r.empty ? 'no reading yet' : (r.neg ? '-' : '') + r.digits + (r.unit ? ' ' + r.unit : '');
+    var c = r.change;
+    var change = c && isNum(c.value)
+      ? ', ' + (c.value >= 0 ? 'up ' : 'down ') + Math.abs(c.value).toFixed(isNum(c.dp) ? c.dp : 2) + (c.suffix || '') + ' over ' + c.label
+      : '';
+    return title + ': ' + value + change + '. Press to open the details.';
+  }
+
+  function paint(r) {
+    var lcd = el('lcd');
+    if (!lcd) return;
+    var off = currentId === 'off';
+    lcd.classList.toggle('is-off', off);
+    setText('lcdMode', off ? '' : r.mode || '');
+    setText('lcdUnit', off ? '' : r.unit || '');
+    var digits = el('lcdDigits');
+    if (digits) digits.innerHTML = SEG.svg(off ? '' : r.digits, !off && r.neg);
+    setText('lcdChange', off ? '' : changeText(r.change));
+    setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
+    var chart = el('lcdChart');
+    if (chart) {
+      var series = r.spark || [];
+      var c = r.change;
+      /* the line takes the colour of the move: the change if known, else the
+       * series' own direction */
+      var down = c && isNum(c.value) ? c.value < 0
+        : series.length > 1 && series[series.length - 1] < series[0];
+      chart.innerHTML = !off && series.length > 1
+        ? G.smoothLine({ values: series, w: 600, h: 200, color: down ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+        : '';
+    }
+    lcd.setAttribute('aria-label', describe(r, off));
+  }
+
+  function refresh() {
+    if (held || !currentId) return;
+    var app = MP.app;
+    if (!app || !app.reading) return;
+    paint(app.reading(currentId));
+  }
+
+  /* ---- detent feedback ---------------------------------------------------- */
+  var detentTimer = null;
+
+  /* The knob dips for a moment and the screen's readout refreshes with a
+   * short fade, so a change of stop is felt as well as seen. A phone that
+   * supports it also gets a tiny haptic tick. */
+  function detent() {
+    var knob = el('knob'), lcd = el('lcd');
+    if (knob) knob.classList.remove('is-detent');
+    if (lcd) lcd.classList.remove('is-swap');
+    /* restart the animation even when two stops arrive back to back */
+    void (knob && knob.offsetWidth);
+    if (knob) knob.classList.add('is-detent');
+    if (lcd) lcd.classList.add('is-swap');
+    clearTimeout(detentTimer);
+    detentTimer = setTimeout(function () {
+      if (knob) knob.classList.remove('is-detent');
+      if (lcd) lcd.classList.remove('is-swap');
+    }, DETENT_MS);
+    if (root.navigator && typeof root.navigator.vibrate === 'function') {
+      try { root.navigator.vibrate(8); } catch (e) { /* not permitted */ }
+    }
+  }
+
+  /* ---- routing ------------------------------------------------------------ */
+  function onStop(id) {
+    var idx = indexOf(id);
+    if (idx < 0) return;
+    var changed = currentId !== null && currentId !== id;
+    currentId = id;
+    rotateTo(idx);
+    markLabel(id);
+    if (changed) detent();
+    if (changed && held) setHold(false);   /* setHold(false) repaints */
+    else refresh();
+  }
+
+  function init() {
+    var dial = el('dial'), knob = el('knob');
+    if (!dial || !knob) return;
+    if (!dial.querySelector('.dial-plate')) dial.insertAdjacentHTML('afterbegin', plateSvg());
+    knob.setAttribute('aria-valuemin', '0');
+    knob.setAttribute('aria-valuemax', String(STOPS.length - 1));
+    wireDial(dial, knob);
+    wireKeys(knob);
+    wireButtons();
+    if (MP.router) MP.router.onChange(onStop);
+  }
+
+  MP.meter = {
+    STOPS: STOPS,
+    STEP_DEG: STEP_DEG,
+    SWEEP_DEG: SWEEP_DEG,
+    angleOf: angleOf,
+    stopAt: stopAt,
+    plateSvg: plateSvg,
+    init: init,
+    refresh: refresh,
+    setHold: setHold,
+    isHeld: function () { return held; },
+    openDrawer: openDrawer,
+    current: function () { return currentId; }
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -1732,33 +2624,77 @@ tr.row-rule th {
 
   var RULE = 'Largest absolute 5-session move across a fixed 15-name Nasdaq-100 universe.';
 
+  /* The crypto of the week draws from the large caps beyond BTC and ETH, which
+   * have dial stops of their own. CoinGecko ids, so the page and the data job
+   * ask for exactly these. */
+  var CRYPTO_UNIVERSE = [
+    { id: 'solana', symbol: 'SOL', name: 'Solana' },
+    { id: 'ripple', symbol: 'XRP', name: 'XRP' },
+    { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
+    { id: 'cardano', symbol: 'ADA', name: 'Cardano' },
+    { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin' },
+    { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche' },
+    { id: 'chainlink', symbol: 'LINK', name: 'Chainlink' },
+    { id: 'polkadot', symbol: 'DOT', name: 'Polkadot' },
+    { id: 'litecoin', symbol: 'LTC', name: 'Litecoin' },
+    { id: 'tron', symbol: 'TRX', name: 'TRON' },
+    { id: 'uniswap', symbol: 'UNI', name: 'Uniswap' },
+    { id: 'stellar', symbol: 'XLM', name: 'Stellar' },
+    { id: 'bitcoin-cash', symbol: 'BCH', name: 'Bitcoin Cash' },
+    { id: 'near', symbol: 'NEAR', name: 'NEAR Protocol' },
+    { id: 'aptos', symbol: 'APT', name: 'Aptos' }
+  ];
+
+  var CRYPTO_RULE = 'Largest absolute 7-day move across a fixed 15-name large-cap universe, BTC and ETH excluded.';
+
   /* ---- pure selection ----------------------------------------------------- */
 
-  /* rows: [{ symbol, changePct5d }] — entries with a non-finite change are
-   * treated as unavailable (a plan denial, a dead symbol) and skipped.
-   * Ties break on symbol so the same scan always yields the same winner. */
-  function selectSpotlight(rows) {
+  /* Ranks rows by the absolute value of `field`; entries with a non-finite
+   * value are treated as unavailable (a plan denial, a dead symbol) and
+   * skipped. Ties break on symbol so the same scan always yields the same
+   * winner. */
+  function rankMovers(rows, field) {
     var usable = (rows || []).filter(function (r) {
-      return r && typeof r.symbol === 'string' && S.isNum(r.changePct5d);
+      return r && typeof r.symbol === 'string' && S.isNum(r[field]);
     });
     if (!usable.length) return null;
-
     var ranked = usable.slice().sort(function (a, b) {
-      var d = Math.abs(b.changePct5d) - Math.abs(a.changePct5d);
+      var d = Math.abs(b[field]) - Math.abs(a[field]);
       if (d !== 0) return d;
       return a.symbol < b.symbol ? -1 : a.symbol > b.symbol ? 1 : 0;
     });
+    return { win: ranked[0], next: ranked[1] || null, scanned: usable.length, skipped: (rows || []).length - usable.length };
+  }
 
-    var win = ranked[0];
-    var next = ranked[1] || null;
+  /* rows: [{ symbol, changePct5d }] */
+  function selectSpotlight(rows) {
+    var r = rankMovers(rows, 'changePct5d');
+    if (!r) return null;
     return {
-      symbol: win.symbol,
-      changePct5d: win.changePct5d,
-      direction: win.changePct5d >= 0 ? 'up' : 'down',
-      scanned: usable.length,
-      skipped: (rows || []).length - usable.length,
-      runnerUp: next ? { symbol: next.symbol, changePct5d: next.changePct5d } : null,
+      symbol: r.win.symbol,
+      changePct5d: r.win.changePct5d,
+      direction: r.win.changePct5d >= 0 ? 'up' : 'down',
+      scanned: r.scanned,
+      skipped: r.skipped,
+      runnerUp: r.next ? { symbol: r.next.symbol, changePct5d: r.next.changePct5d } : null,
       rule: RULE
+    };
+  }
+
+  /* rows: [{ id, symbol, name, changePct7d }] */
+  function selectCrypto(rows) {
+    var r = rankMovers(rows, 'changePct7d');
+    if (!r) return null;
+    return {
+      id: r.win.id,
+      symbol: r.win.symbol,
+      name: r.win.name || r.win.symbol,
+      changePct7d: r.win.changePct7d,
+      direction: r.win.changePct7d >= 0 ? 'up' : 'down',
+      scanned: r.scanned,
+      skipped: r.skipped,
+      runnerUp: r.next ? { id: r.next.id, symbol: r.next.symbol, changePct7d: r.next.changePct7d } : null,
+      rule: CRYPTO_RULE
     };
   }
 
@@ -1786,7 +2722,11 @@ tr.row-rule th {
     change: null,    /* multi-horizon change for the pick's symbol */
     series: null,    /* daily closes for the sparkline */
     history: [],     /* previous weeks */
-    notice: null
+    notice: null,
+    crypto: null,        /* the week's crypto pick */
+    cryptoQuote: null,   /* its live CoinGecko reading, with the 7-day sparkline */
+    cryptoHistory: [],
+    cryptoNotice: null
   };
 
   function el(id) { return document.getElementById(id); }
@@ -1806,21 +2746,103 @@ tr.row-rule th {
       : '';
   }
 
-  function render() {
-    var pick = view.pick, q = view.quote, ch = view.change;
+  function repaint() {
+    if (MP.meter && MP.meter.refresh) MP.meter.refresh();
+  }
 
-    /* the one-line strip on Home */
-    setText('pinSymbol', pick ? pick.symbol : '—');
-    var pin = el('pinMove');
-    if (pin) {
-      if (pick && S.isNum(pick.changePct5d)) {
-        pin.textContent = F.signedPctPoints(pick.changePct5d, 1);
-        pin.className = 'chg ' + (pick.changePct5d >= 0 ? 'is-up' : 'is-down');
+  /* What the meter shows at the STOCK stop, or null before a pick exists.
+   * The live quote's day change is preferred; before it arrives the scan's
+   * own five-session move stands in, labelled as such. */
+  function reading() {
+    var pick = view.pick, q = view.quote;
+    if (!pick) return null;
+    var live = q && S.isNum(q.changePct);
+    return {
+      price: q && S.isNum(q.price) ? q.price : NaN,
+      changePct: live ? q.changePct : pick.changePct5d,
+      changeLabel: live ? '1D' : '5D',
+      mode: pick.symbol,
+      series: view.series && view.series.length > 2
+        ? view.series.map(function (p) { return p.price; })
+        : null
+    };
+  }
+
+  /* What the meter shows at the CRYPTO stop, or null before a pick exists. */
+  function cryptoReading() {
+    var pick = view.crypto, q = view.cryptoQuote;
+    if (!pick) return null;
+    var live = q && S.isNum(q.changePct);
+    return {
+      price: q && S.isNum(q.price) ? q.price : NaN,
+      changePct: live ? q.changePct : pick.changePct7d,
+      changeLabel: live ? '24H' : '7D',
+      mode: pick.symbol,
+      series: q && q.sparkline && q.sparkline.length > 2 ? q.sparkline : null
+    };
+  }
+
+  function renderCrypto() {
+    var pick = view.crypto, q = view.cryptoQuote;
+    var notice = view.cryptoNotice
+      ? '<p class="notice notice-' + view.cryptoNotice.level + '">' + F.escapeHtml(view.cryptoNotice.text) + '</p>'
+      : '';
+
+    if (!pick) {
+      setText('cryptoSymbol', '—');
+      setText('cryptoWeek', '');
+      setText('cryptoName', 'No pick yet');
+      setText('cryptoRunner', '');
+      setHtml('cryptoStrip', '');
+      setHtml('cryptoSpark', '');
+      setHtml('cryptoNotice', notice);
+      return;
+    }
+
+    setText('cryptoSymbol', pick.symbol);
+    setText('cryptoWeek', 'Week of ' + F.shortDate(pick.weekOf));
+    setText('cryptoName', (q && q.name) || pick.name || pick.symbol);
+
+    var px = el('cryptoPx');
+    if (px) {
+      px.textContent = q && S.isNum(q.price) ? F.usd(q.price, q.price < 10 ? 4 : 2) : F.DASH;
+      px.classList.toggle('is-empty', !(q && S.isNum(q.price)));
+    }
+    var chg = el('cryptoChg');
+    if (chg) {
+      if (q && S.isNum(q.changePct)) {
+        chg.textContent = F.signedPctPoints(q.changePct);
+        chg.className = 'chg ' + (q.changePct >= 0 ? 'is-up' : 'is-down');
       } else {
-        pin.textContent = F.DASH;
-        pin.className = 'chg is-flat';
+        chg.textContent = F.DASH;
+        chg.className = 'chg is-flat';
       }
     }
+
+    setHtml('cryptoSpark', q && q.sparkline && q.sparkline.length > 2
+      ? G.sparkStep({ values: q.sparkline, w: 900, h: 200, color: 'var(--gold)', area: true, strokeWidth: 1.8 })
+      : '');
+
+    setHtml('cryptoStrip', statStrip([
+      ['7d move', F.signedPctPoints(pick.changePct7d, 1)],
+      ['24h', q && S.isNum(q.changePct) ? F.signedPctPoints(q.changePct, 2) : F.DASH],
+      ['Market cap', q && S.isNum(q.marketCap) && q.marketCap > 0 ? F.compact(q.marketCap) : F.DASH]
+    ]));
+
+    var bits = [];
+    if (pick.runnerUp) {
+      bits.push('Runner-up ' + pick.runnerUp.symbol + ' ' + F.signedPctPoints(pick.runnerUp.changePct7d, 1));
+    }
+    if (view.cryptoHistory.length) {
+      bits.push('before: ' + view.cryptoHistory.map(function (h) { return h.symbol; }).join(', '));
+    }
+    setText('cryptoRunner', bits.join(' · '));
+    setHtml('cryptoNotice', notice);
+  }
+
+  function render() {
+    var pick = view.pick, q = view.quote, ch = view.change;
+    renderCrypto();
 
     if (!pick) {
       setText('spotSymbol', '—');
@@ -1829,6 +2851,7 @@ tr.row-rule th {
       setText('spotRunner', '');
       setHtml('spotStrip', '');
       setHtml('spotNotice', noticeHtml());
+      repaint();
       return;
     }
 
@@ -1876,6 +2899,7 @@ tr.row-rule th {
     }
     setText('spotRunner', bits.join(' · '));
     setHtml('spotNotice', noticeHtml());
+    repaint();
   }
 
   /* ---- data in ------------------------------------------------------------ */
@@ -1892,6 +2916,25 @@ tr.row-rule th {
       return !pick || h.weekOf !== pick.weekOf;
     }).slice(0, 4);
     view.notice = pick ? null : { level: 'quiet', text: 'This week’s pick appears after the Monday scan runs.' };
+
+    var crypto = snap.crypto || null;
+    view.crypto = crypto;
+    if (view.cryptoQuote && (!crypto || view.cryptoQuote.id !== crypto.id)) view.cryptoQuote = null;
+    view.cryptoHistory = (snap.cryptoHistory || []).filter(function (h) {
+      return !crypto || h.weekOf !== crypto.weekOf;
+    }).slice(0, 4);
+    view.cryptoNotice = crypto ? null : { level: 'quiet', text: 'This week’s crypto pick appears after the Monday scan runs.' };
+    render();
+  }
+
+  /* The CoinGecko id the page should ask for alongside BTC and ETH. */
+  function cryptoId() {
+    return view.crypto ? view.crypto.id : null;
+  }
+
+  /* q: a coinSpot from MP.sources.coinsMarkets, for the current crypto pick. */
+  function setCryptoQuote(q) {
+    view.cryptoQuote = q && (!view.crypto || q.id === view.crypto.id) ? q : null;
     render();
   }
 
@@ -1910,12 +2953,19 @@ tr.row-rule th {
   MP.spotlight = {
     UNIVERSE: UNIVERSE,
     RULE: RULE,
+    CRYPTO_UNIVERSE: CRYPTO_UNIVERSE,
+    CRYPTO_RULE: CRYPTO_RULE,
     selectSpotlight: selectSpotlight,
+    selectCrypto: selectCrypto,
     weekOf: weekOf,
     nameFor: nameFor,
     applySnapshot: applySnapshot,
     setQuote: setQuote,
+    setCryptoQuote: setCryptoQuote,
+    cryptoId: cryptoId,
     setNotice: setNotice,
+    reading: reading,
+    cryptoReading: cryptoReading,
     view: view,
     render: render
   };
@@ -1926,16 +2976,17 @@ tr.row-rule th {
 /* ============================================================================
  * app.js — state, data wiring, analytics assembly, rendering.
  *
- * One number per screen. Bitcoin comes straight from CoinGecko's public API
- * on a 45s poll. The Nasdaq quotes, daily history and the stock of the week
- * come from snapshot files under data/ that a scheduled GitHub Action rewrites
- * (scripts/update-data.js). Daily history drives the coupling, volatility and
- * drawdown views; the hero chart fetches per range, on demand, and caches.
+ * One number per screen. Bitcoin, ether and the crypto of the week come
+ * straight from CoinGecko's public API on a 45s poll. The index quotes, daily
+ * history and the two weekly picks come from snapshot files under data/ that
+ * a scheduled GitHub Action rewrites (scripts/update-data.js). Daily history
+ * drives the coupling, volatility and drawdown panels; the BTC chart fetches
+ * per range, on demand, and caches.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
-  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
+  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session, SEG = MP.sevenseg;
 
   /* ---- configuration ------------------------------------------------------ */
   var BTC_REFRESH_MS = 45000;
@@ -1958,19 +3009,27 @@ tr.row-rule th {
 
   var INSTRUMENTS = {
     btc: { code: 'BTC / USD', desc: 'Bitcoin spot', dp: 0, color: 'var(--c-btc)' },
+    eth: { code: 'ETH / USD', desc: 'Ether spot', dp: 2, color: 'var(--c-eth)' },
     ixic: { code: '^IXIC', desc: 'Nasdaq Composite', dp: 2, color: 'var(--c-idx)' },
+    spx: { code: '^GSPC', desc: 'S&P 500', dp: 2, color: 'var(--c-spx)' },
     qqq: { code: 'QQQ', desc: 'Invesco QQQ Trust', dp: 2, color: 'var(--c-qqq)' }
   };
+
+  /* CoinGecko ids for the live coins; the crypto of the week joins them once
+   * its pick is known. */
+  var COINS = { btc: 'bitcoin', eth: 'ethereum' };
 
   var state = {
     quotes: {
       btc: { data: null, stamp: null, notice: null },
+      eth: { data: null, stamp: null, notice: null },
       ixic: { data: null, stamp: null, notice: null },
+      spx: { data: null, stamp: null, notice: null },
       qqq: { data: null, stamp: null, notice: null }
     },
     snapshot: { generatedAt: null, notice: null },
     session: { data: null },
-    history: { btc: null, ixic: null, qqq: null, notice: null, pending: true },
+    history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
     analytics: null,
     hero: { days: 1, series: null, notice: null, loading: false, cache: {} },
     teardown: []
@@ -2084,13 +3143,131 @@ tr.row-rule th {
     return !S.isNum(v) ? 'chg is-flat' : (v >= 0 ? 'chg is-up' : 'chg is-down');
   }
 
+  /* The meter's screen paints from app state; every renderer below ends by
+   * asking it to repaint, so the LCD is never staler than the drawer. */
+  function repaint() {
+    if (MP.meter && MP.meter.refresh) MP.meter.refresh();
+  }
+
+  /* ---- the meter's reading ------------------------------------------------ */
+
+  /* One dial stop -> one reading:
+   *   { digits, neg, unit, mode, change: { value, label, suffix, dp }, spark, empty }
+   * digits is already fitted to the seven-segment cells; change is either a
+   * percent (suffix '%') or a plain delta in the reading's own units. Never
+   * throws: a stop whose data has not arrived reads '----'. */
+  function noReading(unit, mode, label) {
+    return {
+      digits: '----', neg: false, unit: unit, mode: mode,
+      change: { value: NaN, label: label, suffix: '', dp: 2 },
+      spark: null, empty: true
+    };
+  }
+
+  var SPARK_POINTS = 120;   /* how much history the LCD chart shows */
+
+  function quoteReading(key, unit, mode, changeLabel) {
+    var meta = INSTRUMENTS[key], d = state.quotes[key].data;
+    var price = d && S.isNum(d.price) ? d.price : NaN;
+    var f = SEG.fit(price, { dp: meta.dp });
+    var series = seriesFor(key);
+    return {
+      digits: f.text, neg: f.neg, unit: unit, mode: mode,
+      change: { value: d && S.isNum(d.changePct) ? d.changePct : NaN, label: changeLabel, suffix: '%', dp: 2 },
+      spark: series ? S.tail(series, SPARK_POINTS) : null,
+      empty: !S.isNum(price)
+    };
+  }
+
+  /* BTC follows the drawer's range pills: the chart and the change are for
+   * the selected range, the price is live spot — the same rule renderHero
+   * applies. */
+  function btcReading() {
+    var r = quoteReading('btc', 'USD', 'BTC/USD', RANGE_LABELS[state.hero.days] || '24H');
+    var series = state.hero.series;
+    if (series && series.length > 1 && series[0] > 0) {
+      r.spark = series;
+      r.change.value = (series[series.length - 1] / series[0] - 1) * 100;
+    } else if (state.hero.days !== 1) {
+      r.change.value = NaN;
+    }
+    return r;
+  }
+
+  /* The two weekly picks share a shape: { price, changePct, changeLabel,
+   * mode, series } from spotlight.js, or null before the scan has run. */
+  function pickReading(r, fallbackMode) {
+    if (!r) return noReading('USD', fallbackMode, '1D');
+    var f = SEG.fit(r.price, { dp: S.isNum(r.price) && r.price < 10 ? 4 : 2 });
+    return {
+      digits: f.text, neg: f.neg, unit: 'USD', mode: r.mode,
+      change: { value: r.changePct, label: r.changeLabel, suffix: '%', dp: 2 },
+      spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
+      empty: !S.isNum(r.price)
+    };
+  }
+
+  function stockReading() {
+    return pickReading(MP.spotlight && MP.spotlight.reading ? MP.spotlight.reading() : null, 'STOCK');
+  }
+
+  function cryptoReading() {
+    return pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
+  }
+
+  function entryValues(entries) {
+    return (entries || []).map(function (e) { return e.value; });
+  }
+
+  /* Last value minus the value `back` steps earlier; NaN when either is missing. */
+  function deltaBack(series, back) {
+    var n = series ? series.length : 0;
+    if (n < back + 1) return NaN;
+    var a = series[n - 1], b = series[n - 1 - back];
+    return S.isNum(a) && S.isNum(b) ? a - b : NaN;
+  }
+
+  var ANALYTICS_MODE = { corr: 'CORR BTC·NDQ 90D', beta: 'BETA 90D', vol: 'VOL BTC 30D', dd: 'DRAWDOWN BTC' };
+  var ANALYTICS_UNIT = { corr: '', beta: '×', vol: '%', dd: '%' };
+
+  function analyticsReading(stop) {
+    var a = state.analytics;
+    if (!a) return noReading(ANALYTICS_UNIT[stop], ANALYTICS_MODE[stop], '30S');
+    var c90 = a.coupling[1] || a.coupling[0];
+    var value, series, dp, scale = 1, suffix = '';
+    if (stop === 'corr') { value = c90.correlation; series = entryValues(a.rollCorr); dp = 2; }
+    else if (stop === 'beta') { value = c90.beta; series = entryValues(a.rollBeta); dp = 2; }
+    else if (stop === 'vol') { value = a.currentBtcVol; series = entryValues(a.btcVol); dp = 1; scale = 100; suffix = '%'; }
+    else { value = a.btcDd.now; series = a.btcDd.series; dp = 1; scale = 100; suffix = '%'; }
+    var f = SEG.fit(S.isNum(value) ? value * scale : NaN, { dp: dp });
+    return {
+      digits: f.text, neg: f.neg, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      change: { value: deltaBack(series, CORR_WINDOW) * scale, label: '30S', suffix: suffix, dp: dp },
+      spark: S.tail(series, SPARK_POINTS),
+      empty: !S.isNum(value)
+    };
+  }
+
+  function reading(stop) {
+    switch (stop) {
+      case 'btc': return btcReading();
+      case 'eth': return quoteReading('eth', 'USD', 'ETH/USD', '24H');
+      case 'nasdaq': return quoteReading('ixic', 'PTS', 'NASDAQ ^IXIC', '1D');
+      case 'spx': return quoteReading('spx', 'PTS', 'S&P 500 ^GSPC', '1D');
+      case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
+      case 'stock': return stockReading();
+      case 'crypto': return cryptoReading();
+      case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
+      default:
+        return { digits: '', neg: false, unit: '', mode: '', change: { value: NaN, label: '', suffix: '', dp: 2 }, spark: null, empty: true };
+    }
+  }
+
   /* ---- hero (home) -------------------------------------------------------- */
   function seriesFor(key) {
-    if (key === 'btc') {
-      if (state.hero.series) return state.hero.series;
-      var spot = state.quotes.btc.data;
-      return spot && spot.sparkline && spot.sparkline.length > 2 ? spot.sparkline : null;
-    }
+    if (key === 'btc' && state.hero.series) return state.hero.series;
+    var spot = state.quotes[key] && state.quotes[key].data;
+    if (spot && spot.sparkline && spot.sparkline.length > 2) return spot.sparkline;
     var hist = state.history[key];
     return hist && hist.length > 2 ? S.tail(hist, 60).map(function (p) { return p.price; }) : null;
   }
@@ -2126,6 +3303,7 @@ tr.row-rule th {
         : '';
     }
     setHtml('heroNotice', noticeHtml(state.hero.notice || state.quotes.btc.notice));
+    repaint();
   }
 
   function loadHeroRange(days, refresh) {
@@ -2177,13 +3355,13 @@ tr.row-rule th {
   /* QQQ is optional upstream (it needs a second API key), so its row appears
    * only once there is something to show. */
   function marketKeys() {
-    var keys = ['btc', 'ixic'];
+    var keys = ['btc', 'eth', 'ixic', 'spx'];
     if (state.quotes.qqq.data || state.history.qqq) keys.push('qqq');
     return keys;
   }
 
   function asOfLabel(key) {
-    if (key === 'btc') return state.quotes.btc.data ? 'live' : '';
+    if (COINS[key]) return state.quotes[key].data ? 'live' : '';
     var ts = state.quotes[key].stamp;
     if (!S.isNum(ts)) return '';
     return new Date(ts).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
@@ -2210,6 +3388,7 @@ tr.row-rule th {
     }).join('');
 
     setHtml('marketNotice', noticeHtml(state.quotes.btc.notice || state.snapshot.notice));
+    repaint();
   }
 
   /* The stamp tracks bitcoin, the one instrument that is actually live; the
@@ -2219,14 +3398,32 @@ tr.row-rule th {
     setText('quoteStamp', S.isNum(ts) ? F.ago(ts) : '—');
   }
 
-  function loadBtc() {
-    return fetchJson(SRC.btcSpot.url).then(function (payload) {
-      var parsed = SRC.btcSpot.normalize(payload);
-      if (!parsed) throw emptyError();
-      var slot = state.quotes.btc;
-      slot.data = parsed;
-      slot.stamp = Date.now();
-      slot.notice = null;
+  function coinIds() {
+    var ids = [COINS.btc, COINS.eth];
+    var pick = MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    if (pick && ids.indexOf(pick) < 0) ids.push(pick);
+    return ids;
+  }
+
+  /* One CoinGecko call covers bitcoin, ether and the crypto of the week. */
+  function loadCoins() {
+    var spec = SRC.coinsMarkets(coinIds());
+    return fetchJson(spec.url).then(function (payload) {
+      var coins = spec.normalize(payload);
+      if (!coins || !coins[COINS.btc]) throw emptyError();
+      var now = Date.now();
+      Object.keys(COINS).forEach(function (key) {
+        var c = coins[COINS[key]];
+        if (!c) return;
+        var slot = state.quotes[key];
+        slot.data = c;
+        slot.stamp = now;
+        slot.notice = null;
+      });
+      if (MP.spotlight && MP.spotlight.setCryptoQuote) {
+        var pick = MP.spotlight.cryptoId();
+        MP.spotlight.setCryptoQuote(pick && coins[pick] ? coins[pick] : null);
+      }
     }).catch(function (err) {
       state.quotes.btc.notice = liveNotice('CoinGecko', err);
       throw err;
@@ -2249,6 +3446,7 @@ tr.row-rule th {
       var snap = SRC.normalizeQuotesSnapshot(payload);
       if (!snap) throw emptyError();
       applySnapshotQuote('ixic', snap.ixic);
+      applySnapshotQuote('spx', snap.spx);
       applySnapshotQuote('qqq', snap.qqq);
       state.snapshot.generatedAt = snap.generatedAt;
       state.snapshot.notice = staleNotice(snap.generatedAt);
@@ -2323,6 +3521,7 @@ tr.row-rule th {
       qqqCoupling: qqqCoupling,
       scatter: { xs: scatterPair.a, ys: scatterPair.b, fit: S.regression(scatterPair.a, scatterPair.b) },
       rollCorr: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.pearson),
+      rollBeta: S.rollingPair(btcR, ixicR, CORR_WINDOW, S.beta),
       btcVol: btcVol,
       ixicVol: ixicVol,
       currentBtcVol: btcVol.length ? btcVol[btcVol.length - 1].value : NaN,
@@ -2354,6 +3553,7 @@ tr.row-rule th {
       setHtml('couplingStrip', strip([['Corr 90d', waiting], ['Beta 90d', waiting], ['R² 90d', waiting]]));
       setHtml('volStrip', strip([['BTC 30d', waiting], ['^IXIC 30d', waiting], ['Ratio', waiting]]));
       setHtml('ddStrip', strip([['BTC now', waiting], ['BTC worst', waiting], ['^IXIC worst', waiting]]));
+      repaint();
       return;
     }
 
@@ -2447,6 +3647,7 @@ tr.row-rule th {
             '<td>' + (r.e.ongoing ? '<span class="tag">not yet</span>' : F.shortDate(r.e.recoveryDate)) + '</td></tr>';
         }).join('') + '</tbody></table>'
       : '');
+    repaint();
   }
 
   /* ---- history ------------------------------------------------------------ */
@@ -2463,6 +3664,7 @@ tr.row-rule th {
       if (snap && snap.btc && snap.ixic) {
         state.history.btc = snap.btc;
         state.history.ixic = snap.ixic;
+        state.history.spx = snap.spx;
         state.history.qqq = snap.qqq;
         state.history.notice = null;
       } else if (!state.history.btc) {
@@ -2500,6 +3702,9 @@ tr.row-rule th {
 
   /* ---- boot --------------------------------------------------------------- */
   function start() {
+    /* The meter subscribes to the router, so it must exist before the router
+     * announces the first stop. */
+    if (MP.meter) MP.meter.init();
     if (MP.router) MP.router.start();
     tickSession();
     renderHero();
@@ -2515,7 +3720,7 @@ tr.row-rule th {
       return;
     }
 
-    poll(loadBtc, BTC_REFRESH_MS);
+    poll(loadCoins, BTC_REFRESH_MS);
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
     poll(loadSpotlight, DAILY_REFRESH_MS);
@@ -2539,6 +3744,7 @@ tr.row-rule th {
     renderHero: renderHero,
     renderMarkets: renderMarkets,
     renderSession: renderSession,
+    reading: reading,
     loadHeroRange: loadHeroRange,
     INSTRUMENTS: INSTRUMENTS,
     config: {

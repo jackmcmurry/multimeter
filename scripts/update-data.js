@@ -93,7 +93,8 @@ async function main() {
 
   result.warnings.forEach((w) => annotate('warning', w));
   console.log('calls: FMP ' + result.calls.fmp + ' (' + result.failed.fmp + ' failed), ' +
-    'Alpha Vantage ' + result.calls.av + ' (' + result.failed.av + ' failed)');
+    'Alpha Vantage ' + result.calls.av + ' (' + result.failed.av + ' failed), ' +
+    'CoinGecko ' + result.calls.cg + ' (' + result.failed.cg + ' failed)');
 
   if (result.calls.fmp > 0 && result.failed.fmp === result.calls.fmp) {
     annotate('error', 'Every FMP request failed. Check that the FMP_API_KEY secret holds a valid key.');

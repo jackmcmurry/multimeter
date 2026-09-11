@@ -10,15 +10,18 @@
  * next one:
  *   spotlight  once a week: FMP stock-price-change across the fixed universe,
  *              largest absolute five-session move wins (the MP.spotlight
- *              rule). The pick's daily closes refresh once per session.
+ *              rule). The pick's daily closes refresh once per session. The
+ *              crypto of the week is scanned the same way from one keyless
+ *              CoinGecko coins/markets call (largest absolute 7-day move).
  *   quotes     every run while the market is open, then one final read after
- *              the close. ^IXIC and the spotlight name from FMP; QQQ from
- *              Alpha Vantage at most hourly, because its free tier allows 25
- *              calls a day.
- *   history    once per session, an hour after the close: ^IXIC and BTCUSD
- *              daily closes from FMP, QQQ daily closes from Alpha Vantage.
+ *              the close. ^IXIC, ^GSPC and the spotlight name from FMP; QQQ
+ *              from Alpha Vantage at most hourly, because its free tier
+ *              allows 25 calls a day.
+ *   history    once per session, an hour after the close: ^IXIC, ^GSPC and
+ *              BTCUSD daily closes from FMP, QQQ daily closes from Alpha
+ *              Vantage.
  *
- * Budget on the free plans, per weekday: about 60 FMP calls of 250 and 10
+ * Budget on the free plans, per weekday: about 90 FMP calls of 250 and 10
  * Alpha Vantage calls of 25.
  * ========================================================================== */
 (function (root) {
@@ -63,7 +66,8 @@
    * Both can arrive with HTTP 200. */
   function upstreamMessage(payload) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
-    return payload['Error Message'] || payload.Information || payload.Note || null;
+    var cg = payload.status && payload.status.error_message;   /* CoinGecko */
+    return payload['Error Message'] || payload.Information || payload.Note || cg || null;
   }
 
   function lastDate(series) {
@@ -83,8 +87,8 @@
     var nowIso = new Date(now).toISOString();
     var today = SRC.isoDay(new Date(now));
 
-    var calls = { fmp: 0, av: 0 };
-    var failed = { fmp: 0, av: 0 };
+    var calls = { fmp: 0, av: 0, cg: 0 };
+    var failed = { fmp: 0, av: 0, cg: 0 };
     var warnings = [];
     var out = {};
     var result = { out: out, calls: calls, failed: failed, warnings: warnings, skipped: null };
@@ -225,7 +229,41 @@
       };
     }
 
-    if (scanDue || detailDue) {
+    /* ---- crypto of the week: weekly scan (CoinGecko, no key) -------------- */
+    var crypto = spot.crypto && spot.crypto.id ? spot.crypto : null;
+    var cryptoNeedsScan = !crypto || crypto.weekOf !== week;
+    var cryptoDue = force === 'all' || force === 'spotlight' ||
+      (cryptoNeedsScan && (spot.cryptoTriedWeek !== week || now - (spot.cryptoTriedAt || 0) >= SCAN_RETRY_MS));
+    var cryptoHistory = Array.isArray(spot.cryptoHistory) ? spot.cryptoHistory.slice() : [];
+    var cryptoTried = { week: spot.cryptoTriedWeek || null, at: spot.cryptoTriedAt || null };
+
+    if (cryptoDue) {
+      var scanSpec = SRC.coinsMarkets(SP.CRYPTO_UNIVERSE.map(function (c) { return c.id; }), { sparkline: false });
+      var markets = await attempt('crypto scan', async function () {
+        return scanSpec.normalize(await get('cg', scanSpec.url));
+      });
+      cryptoTried = { week: week, at: now };
+
+      var cryptoRows = SP.CRYPTO_UNIVERSE.map(function (c) {
+        var m = markets && markets[c.id];
+        return { id: c.id, symbol: c.symbol, name: c.name, changePct7d: m ? m.change7d : NaN };
+      });
+      var cryptoPick = SP.selectCrypto(cryptoRows);
+      if (cryptoPick && cryptoPick.scanned >= MIN_USABLE_SCAN) {
+        crypto = Object.assign({ weekOf: week }, cryptoPick, {
+          source: 'CoinGecko coins/markets 7d',
+          computedAt: nowIso
+        });
+        cryptoHistory = [{ weekOf: week, id: cryptoPick.id, symbol: cryptoPick.symbol, changePct7d: cryptoPick.changePct7d }]
+          .concat(cryptoHistory.filter(function (h) { return h && h.weekOf !== week; }))
+          .slice(0, SPOTLIGHT_HISTORY_KEEP);
+      } else {
+        warnings.push('crypto scan: only ' + (cryptoPick ? cryptoPick.scanned : 0) +
+          ' usable coins, so the previous pick stands');
+      }
+    }
+
+    if (scanDue || detailDue || cryptoDue) {
       out.spotlight = {
         generatedAt: nowIso,
         current: current,
@@ -234,7 +272,11 @@
         series: detail.series,
         detailFor: detail.detailFor,
         scanTriedWeek: scanTried.week,
-        scanTriedAt: scanTried.at
+        scanTriedAt: scanTried.at,
+        crypto: crypto,
+        cryptoHistory: cryptoHistory,
+        cryptoTriedWeek: cryptoTried.week,
+        cryptoTriedAt: cryptoTried.at
       };
     }
 
@@ -244,6 +286,7 @@
 
     if (quotesDue) {
       var ixic = await fmpQuote('^IXIC');
+      var spx = await fmpQuote('^GSPC');
       var pickQuote = current ? await fmpQuote(current.symbol) : null;
 
       var qqq = avKey ? (q.qqq || null) : null;
@@ -261,6 +304,7 @@
         /* A closed-market read counts as that session's final only if it landed. */
         finalFor: !session.open && ixic ? closeSession : (q.finalFor || null),
         ixic: ixic ? stamp(ixic) : (q.ixic || null),
+        spx: spx ? stamp(spx) : (q.spx || null),
         qqq: qqq,
         spotlight: pickQuote ? stamp(pickQuote) : keptPick
       };
@@ -274,6 +318,7 @@
     if (historyDue) {
       var from = SRC.isoDay(new Date(now - HISTORY_DAYS * DAY_MS));
       var ixicDaily = await fmpDaily('^IXIC', from);
+      var spxDaily = await fmpDaily('^GSPC', from);
       var btcDaily = await fmpDaily('BTCUSD', from);
       var qqqDaily = null;
       if (avKey) {
@@ -290,6 +335,7 @@
         to: today,
         btc: btcDaily || h.btc || null,
         ixic: ixicDaily || h.ixic || null,
+        spx: spxDaily || h.spx || null,
         qqq: avKey ? (qqqDaily || h.qqq || null) : null
       };
     }

@@ -58,33 +58,67 @@
    * -> [ { current_price, price_change_percentage_24h, market_cap,
    *        total_volume, circulating_supply, max_supply, market_cap_rank,
    *        last_updated, sparkline_in_7d: { price: [...] } } ]              */
+  function coinSpot(coin) {
+    return {
+      id: coin.id || null,
+      symbol: coin.symbol ? String(coin.symbol).toUpperCase() : null,
+      name: coin.name || null,
+      price: toNum(coin.current_price),
+      changePct: toNum(coin.price_change_percentage_24h),   /* percentage points */
+      change7d: toNum(coin.price_change_percentage_7d_in_currency),
+      marketCap: toNum(coin.market_cap),
+      volume: toNum(coin.total_volume),
+      supply: toNum(coin.circulating_supply),
+      maxSupply: toNum(coin.max_supply),
+      rank: toNum(coin.market_cap_rank),
+      sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
+      updatedAt: Date.parse(coin.last_updated) || null
+    };
+  }
+
   var btcSpot = {
     url: COINGECKO + '/coins/markets?vs_currency=usd&ids=bitcoin&sparkline=true',
     normalize: function (payload) {
       var p = parsePayload(payload);
       var coin = Array.isArray(p) ? p[0] : null;
       if (!coin || !isFinite(toNum(coin.current_price))) return null;
-      return {
-        price: toNum(coin.current_price),
-        changePct: toNum(coin.price_change_percentage_24h),   /* percentage points */
-        marketCap: toNum(coin.market_cap),
-        volume: toNum(coin.total_volume),
-        supply: toNum(coin.circulating_supply),
-        maxSupply: toNum(coin.max_supply),
-        rank: toNum(coin.market_cap_rank),
-        sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
-        updatedAt: Date.parse(coin.last_updated) || null
-      };
+      return coinSpot(coin);
     }
   };
 
-  /* GET /coins/bitcoin/market_chart?vs_currency=usd&days=N
+  /* The same endpoint for several coins in one request, with the 7-day change
+   * included: the page reads BTC, ETH and the crypto of the week together,
+   * and the data job's weekly scan reads a whole universe. Resolves to a map
+   * of CoinGecko id -> coinSpot, or null when nothing usable came back. */
+  function coinsMarkets(ids, opts) {
+    var spark = !(opts && opts.sparkline === false);
+    return {
+      url: COINGECKO + '/coins/markets?vs_currency=usd&ids=' + encodeURIComponent(ids.join(',')) +
+        '&sparkline=' + (spark ? 'true' : 'false') + '&price_change_percentage=7d',
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!Array.isArray(p)) return null;
+        var out = {}, any = false;
+        for (var i = 0; i < p.length; i++) {
+          var coin = p[i];
+          if (!coin || !coin.id || !isFinite(toNum(coin.current_price))) continue;
+          out[coin.id] = coinSpot(coin);
+          any = true;
+        }
+        return any ? out : null;
+      }
+    };
+  }
+
+  /* GET /coins/{id}/market_chart?vs_currency=usd&days=N
    * -> { prices: [[ms, price], ...], market_caps: [...], total_volumes: [...] }
    * CoinGecko picks the granularity: ~5-minute for 1 day, hourly up to 90
    * days, daily beyond. */
-  function btcChart(days) {
+  function btcChart(days) { return coinChart('bitcoin', days); }
+
+  function coinChart(id, days) {
     return {
-      url: COINGECKO + '/coins/bitcoin/market_chart?vs_currency=usd&days=' + encodeURIComponent(days),
+      url: COINGECKO + '/coins/' + encodeURIComponent(id) + '/market_chart?vs_currency=usd&days=' + encodeURIComponent(days),
       normalize: function (payload) {
         var p = parsePayload(payload);
         if (!p || !Array.isArray(p.prices)) return null;
@@ -235,6 +269,7 @@
     return {
       generatedAt: stampOf(p.generatedAt),
       ixic: readQuote(p.ixic),
+      spx: readQuote(p.spx),
       qqq: readQuote(p.qqq),
       spotlight: readQuote(p.spotlight)
     };
@@ -247,6 +282,7 @@
       generatedAt: stampOf(p.generatedAt),
       btc: readSeries(p.btc),
       ixic: readSeries(p.ixic),
+      spx: readSeries(p.spx),
       qqq: readSeries(p.qqq)
     };
   }
@@ -259,7 +295,9 @@
       current: p.current && p.current.symbol ? p.current : null,
       history: Array.isArray(p.history) ? p.history.filter(function (h) { return h && h.symbol; }) : [],
       change: p.change && typeof p.change === 'object' ? p.change : null,
-      series: readSeries(p.series)
+      series: readSeries(p.series),
+      crypto: p.crypto && p.crypto.id && p.crypto.symbol ? p.crypto : null,
+      cryptoHistory: Array.isArray(p.cryptoHistory) ? p.cryptoHistory.filter(function (h) { return h && h.symbol; }) : []
     };
   }
 
@@ -267,7 +305,9 @@
     COINGECKO: COINGECKO,
     SNAPSHOT: SNAPSHOT,
     btcSpot: btcSpot,
+    coinsMarkets: coinsMarkets,
     btcChart: btcChart,
+    coinChart: coinChart,
     normalizeFmpQuote: normalizeFmpQuote,
     normalizeEodLight: normalizeEodLight,
     normalizeQuoteChange: normalizeQuoteChange,

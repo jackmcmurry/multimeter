@@ -89,6 +89,24 @@
     };
     st.quotes.btc.stamp = Date.now();
 
+    st.quotes.eth.data = {
+      id: 'ethereum', symbol: 'ETH', name: 'Ethereum',
+      price: Math.round(lastBtc * 0.052 * 100) / 100,
+      changePct: (lastBtc / prevBtc - 1) * 100 * 1.4,
+      marketCap: lastBtc * 0.052 * 120e6,
+      sparkline: data.btc.slice(-96).map(function (p) { return Math.round(p.price * 0.052 * 100) / 100; })
+    };
+    st.quotes.eth.stamp = Date.now();
+
+    st.quotes.spx.data = {
+      symbol: '^GSPC', name: 'S&P 500',
+      price: Math.round(lastIxic * 0.2497 * 100) / 100,
+      changePct: (lastIxic / prevIxic - 1) * 100 * 0.8,
+      prevClose: prevIxic * 0.2497
+    };
+    st.quotes.spx.stamp = Date.now();
+    st.history.spx = data.ixic.map(function (p) { return { date: p.date, price: Math.round(p.price * 0.2497 * 100) / 100 }; });
+
     st.quotes.ixic.data = {
       price: lastIxic,
       changePct: (lastIxic / prevIxic - 1) * 100,
@@ -151,6 +169,26 @@
         { weekOf: '2026-08-31', symbol: 'INTC', changePct5d: 8.5 },
         { weekOf: '2026-08-24', symbol: 'NFLX', changePct5d: -7.5 }
       ];
+
+      /* crypto of the week: a synthetic SOL pick with a week of hourly prices */
+      var solSeries = data.btc.slice(-7).map(function (p) { return p.price * 0.00142; });
+      var hourly = [];
+      for (var hI = 0; hI < solSeries.length - 1; hI++) {
+        for (var k = 0; k < 24; k++) hourly.push(solSeries[hI] + (solSeries[hI + 1] - solSeries[hI]) * (k / 24));
+      }
+      hourly.push(solSeries[solSeries.length - 1]);
+      sv.crypto = {
+        weekOf: MP.spotlight.weekOf(new Date()), id: 'solana', symbol: 'SOL', name: 'Solana',
+        changePct7d: 18.4, direction: 'up', scanned: 14, skipped: 1,
+        runnerUp: { id: 'dogecoin', symbol: 'DOGE', changePct7d: -15.2 }, rule: MP.spotlight.CRYPTO_RULE
+      };
+      sv.cryptoQuote = {
+        id: 'solana', symbol: 'SOL', name: 'Solana',
+        price: Math.round(hourly[hourly.length - 1] * 100) / 100, changePct: 3.21, change7d: 18.4,
+        marketCap: 61e9, sparkline: hourly.map(function (v) { return Math.round(v * 100) / 100; })
+      };
+      sv.cryptoHistory = [{ weekOf: '2026-08-31', id: 'ripple', symbol: 'XRP', changePct7d: -11.0 }];
+      sv.cryptoNotice = null;
       MP.spotlight.render();
     }
 
@@ -167,5 +205,36 @@
     };
   }
 
-  MP.debug = { renderSynthetic: renderSynthetic, synthesize: synthesize };
+  /* Turns the dial through every stop, one every `ms`, for a visual pass.
+   * Returns a function that stops the tour. */
+  function cycle(ms) {
+    var stops = MP.meter ? MP.meter.STOPS : [];
+    var i = 0;
+    var id = setInterval(function () {
+      if (!stops.length || !MP.router) return;
+      MP.router.go(stops[i % stops.length].id);
+      i += 1;
+    }, ms || 1200);
+    return function () { clearInterval(id); };
+  }
+
+  /* Paints a set of representative readings into the LCD digits, one every
+   * `ms`, so cell alignment, the sign and the decimal point can be eyeballed.
+   * Hold the meter first (MP.meter.setHold(true)) or the next repaint wins. */
+  function lcdSamples(ms) {
+    var SEG = MP.sevenseg;
+    var host = document.getElementById('lcdDigits');
+    if (!SEG || !host) return function () {};
+    var samples = [
+      SEG.fit(116432, { dp: 0 }), SEG.fit(26081.724, { dp: 2 }), SEG.fit(0.42, { dp: 2 }),
+      SEG.fit(-12.34, { dp: 1 }), SEG.fit(NaN), SEG.fit(12345678, { dp: 0 })
+    ];
+    var i = 0;
+    function show() { var s = samples[i % samples.length]; host.innerHTML = SEG.svg(s.text, s.neg); i += 1; }
+    show();
+    var id = setInterval(show, ms || 1500);
+    return function () { clearInterval(id); };
+  }
+
+  MP.debug = { renderSynthetic: renderSynthetic, synthesize: synthesize, cycle: cycle, lcdSamples: lcdSamples };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

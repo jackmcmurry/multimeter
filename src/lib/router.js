@@ -1,31 +1,72 @@
 /* ============================================================================
- * router.js — hash routing between sections.
+ * router.js — hash routing between the dial's stops.
  *
- * The page is one document with several views; only one is ever shown. Charts
- * render into hidden views quite happily because every SVG carries a viewBox
- * and sizes from CSS, so nothing needs re-rendering on reveal.
+ * Each stop is one reading on the meter's screen and one panel in the detail
+ * drawer below it; several stops can share a panel (ETH and S&P both open
+ * the markets panel). Only one panel is ever shown. Charts render into
+ * hidden panels quite happily because every SVG carries a viewBox and sizes
+ * from CSS, so nothing needs re-rendering on reveal.
+ *
+ * Old section hashes are kept as aliases so links out in the world still land
+ * somewhere sensible.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  var VIEWS = ['home', 'markets', 'weekly', 'coupling', 'volatility', 'drawdown', 'about'];
+  /* Dial order, clockwise from the top. */
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'corr', 'vol', 'dd'];
 
-  var TITLES = {
-    home: 'Home',
-    markets: 'Markets',
-    weekly: 'Stock of the week',
-    coupling: 'Coupling',
-    volatility: 'Volatility',
-    drawdown: 'Drawdown',
-    about: 'About'
+  var ALIASES = {
+    ixic: 'nasdaq',
+    ndq: 'nasdaq',
+    qqq: 'nasdaq',
+    gspc: 'spx',
+    sp500: 'spx',
+    home: 'btc',
+    markets: 'btc',
+    weekly: 'stock',
+    coupling: 'corr',
+    beta: 'corr',
+    volatility: 'vol',
+    drawdown: 'dd',
+    about: 'off'
   };
 
-  var DEFAULT_VIEW = 'home';
+  /* Which drawer panel (.view[data-panel]) each stop opens. */
+  var PANELS = {
+    off: 'about',
+    btc: 'hero',
+    eth: 'markets',
+    nasdaq: 'markets',
+    spx: 'markets',
+    stock: 'weekly',
+    crypto: 'crypto',
+    corr: 'coupling',
+    vol: 'volatility',
+    dd: 'drawdown'
+  };
 
-  /* Pure: '#coupling' -> 'coupling'; anything unrecognised -> the default. */
+  var TITLES = {
+    off: 'Off',
+    btc: 'Bitcoin',
+    eth: 'Ether',
+    nasdaq: 'Nasdaq Composite',
+    spx: 'S&P 500',
+    stock: 'Stock of the week',
+    crypto: 'Crypto of the week',
+    corr: 'Correlation',
+    vol: 'Volatility',
+    dd: 'Drawdown'
+  };
+
+  var DEFAULT_VIEW = 'btc';
+
+  /* Pure: '#corr' -> 'corr', '#coupling' -> 'corr'; anything unrecognised ->
+   * the default. */
   function parseHash(hash) {
     var raw = String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+    raw = ALIASES[raw] || raw;
     return VIEWS.indexOf(raw) >= 0 ? raw : DEFAULT_VIEW;
   }
 
@@ -37,17 +78,10 @@
     if (current === target) return target;
     current = target;
 
-    var sections = document.querySelectorAll('.view[data-view]');
+    var panel = PANELS[target];
+    var sections = document.querySelectorAll('.view[data-panel]');
     for (var i = 0; i < sections.length; i++) {
-      sections[i].hidden = sections[i].getAttribute('data-view') !== target;
-    }
-
-    var items = document.querySelectorAll('.navitem[data-view]');
-    for (var j = 0; j < items.length; j++) {
-      var on = items[j].getAttribute('data-view') === target;
-      items[j].classList.toggle('is-on', on);
-      if (on) items[j].setAttribute('aria-current', 'page');
-      else items[j].removeAttribute('aria-current');
+      sections[i].hidden = sections[i].getAttribute('data-panel') !== panel;
     }
 
     var title = document.getElementById('viewTitle');
@@ -59,6 +93,18 @@
     return target;
   }
 
+  /* Navigate: writes the hash so the back button works, and shows the view
+   * directly when the hash already matches (a reload, or a repeated click). */
+  function go(view) {
+    var target = VIEWS.indexOf(view) >= 0 ? view : DEFAULT_VIEW;
+    if (root.location && root.location.hash !== '#' + target) {
+      root.location.hash = target;
+    } else {
+      show(target);
+    }
+    return target;
+  }
+
   function onChange(fn) { if (typeof fn === 'function') listeners.push(fn); }
 
   function start() {
@@ -66,17 +112,19 @@
     if (root.addEventListener) {
       root.addEventListener('hashchange', function () {
         show(parseHash(root.location.hash));
-        if (root.scrollTo) root.scrollTo(0, 0);
       });
     }
   }
 
   MP.router = {
     VIEWS: VIEWS,
+    ALIASES: ALIASES,
+    PANELS: PANELS,
     TITLES: TITLES,
     DEFAULT_VIEW: DEFAULT_VIEW,
     parseHash: parseHash,
     show: show,
+    go: go,
     onChange: onChange,
     start: start,
     currentView: function () { return current; }

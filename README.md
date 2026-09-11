@@ -11,30 +11,44 @@ Built by Jack McMurry with Claude Code.
 
 ## What's on it
 
-A sidebar and seven views, one screen each:
+The page is one handheld multimeter. The rotary dial picks a function, the
+LCD shows that one reading — seven-segment digits, a unit, a mode
+annunciator, the change and a small sparkline — and the DATA key (or a press
+on the screen) opens a drawer beneath the meter with the charts and tables
+behind the number. HOLD freezes the display. The COM jack lights while the
+US market is open.
 
-| View | Holds |
-|---|---|
-| Home | Pinned stock-of-the-week strip, BTC hero price, chart, 24H/1W/1M/1Y pills |
-| Markets | BTC, ^IXIC and QQQ as rows: price, change, sparkline, as-of time |
-| Weekly | The stock of the week in full |
-| Coupling | Corr / beta / RÂ², return scatter, rolling correlation, table |
-| Volatility | Current 30d vols and the rolling column chart |
-| Drawdown | Current and worst drawdowns, underwater curves, episode table |
-| About | Method, sources, and the not-advice line |
+| Dial | Screen reads | Drawer holds |
+|---|---|---|
+| OFF | blank | Method, sources, and the not-advice line |
+| BTC | spot price in USD, change over the chart's range | BTC chart with 24H/1W/1M/1Y pills |
+| ETH | spot price in USD, 24h change | BTC, ETH, ^IXIC, ^GSPC (and QQQ with a key) as rows |
+| NASDAQ | ^IXIC level, day change | the same rows |
+| S&P | ^GSPC level, day change | the same rows |
+| STOCK | the stock of the week, day change | the pick in full: price, closes, 5d / 1m / market cap, runner-up |
+| CRYPTO | the crypto of the week, 24h change | the pick in full: price, 7-day sparkline, 7d / 24h / market cap |
+| CORR | BTC–Nasdaq 90-session correlation, 30-session change | return scatter, rolling correlation, coupling table with beta and R² |
+| VOL | BTC 30-session realized vol, annualized | current vols and the rolling column chart |
+| DD | BTC distance below its running peak | underwater curves and the episode table |
 
-Routing is hash-based (`#coupling`), so a section is linkable and the back
-button works.
+Routing is hash-based (`#corr`), so a stop is linkable and the back button
+turns the dial. The old section hashes (`#home`, `#markets`, `#weekly`,
+`#coupling`, `#beta`, `#volatility`, `#drawdown`, `#about`) and the tickers
+`#ixic`, `#gspc`, `#qqq` still resolve.
+
+The knob turns by dragging, by tapping a label, by tapping the knob itself
+(one stop clockwise), or with the arrow keys once it has focus.
 
 ## How it gets data
 
 The page is static: one HTML file on GitHub Pages. Numbers reach it two ways.
 
-**Bitcoin, live, from your browser.** CoinGecko's public API needs no key and
+**Crypto, live, from your browser.** CoinGecko's public API needs no key and
 allows cross-origin requests, so the page polls it directly every 45 seconds
-for the spot price and fetches the hero chart per range.
+for bitcoin, ether and the crypto of the week in one call, and fetches the
+BTC chart per range.
 
-**Everything Nasdaq, from snapshot files.** Financial Modeling Prep and Alpha
+**Everything else, from snapshot files.** Financial Modeling Prep and Alpha
 Vantage require API keys, and a key in a public page is a leaked key. So a
 scheduled GitHub Action (`.github/workflows/site.yml`) runs
 `scripts/update-data.js` with the keys held as repository secrets, writes plain
@@ -43,13 +57,14 @@ files once a minute.
 
 | Snapshot | Holds | Refreshed |
 |---|---|---|
-| `quotes.json` | ^IXIC and the spotlight name (FMP), QQQ (Alpha Vantage) | every 15 min while the market is open, then once after the close |
-| `history.json` | ^IXIC and BTCUSD daily closes (FMP), QQQ daily closes (Alpha Vantage) | once per session, an hour after the close |
-| `spotlight.json` | the week's pick, its daily closes and multi-horizon change | Monday scan; detail once per session |
+| `quotes.json` | ^IXIC, ^GSPC and the spotlight name (FMP), QQQ (Alpha Vantage) | every 15 min while the market is open, then once after the close |
+| `history.json` | ^IXIC, ^GSPC and BTCUSD daily closes (FMP), QQQ daily closes (Alpha Vantage) | once per session, an hour after the close |
+| `spotlight.json` | the stock of the week with its daily closes and multi-horizon change; the crypto of the week (CoinGecko scan) | Monday scans; stock detail once per session |
 
 Each run of the job works out for itself what is due (`src/lib/pipeline.js`),
 so a late or skipped cron tick heals on the next one. On the free plans it
-uses about 60 of FMP's 250 daily calls and 10 of Alpha Vantage's 25.
+uses about 90 of FMP's 250 daily calls, 10 of Alpha Vantage's 25, and one
+keyless CoinGecko call a week.
 
 The market-open dot is computed in the browser from NYSE hours and a holiday
 table (`src/lib/session.js`), with no API call.
@@ -95,6 +110,8 @@ MP.test.run()                        // statistics, spotlight rule, router
 MP.dataTest.run()                    // session clock and every payload normalizer
 await MP.dataTest.runPipeline()      // the data job against canned payloads
 MP.app.stop(); MP.debug.renderSynthetic(7, 365)  // seeded walk through the real render path
+var stop = MP.debug.cycle(1200); stop()          // tour every dial stop, then halt the tour
+MP.meter.setHold(true); MP.debug.lcdSamples()    // representative readings through the LCD digits
 ```
 
 The pipeline suite replays a full Monday: pre-market first run, quiet runs,
@@ -112,14 +129,16 @@ parameter, or if any `var(--token)` does not resolve against `styles.css`.
 scripts/update-data.js       data job entry point (Node 20, I/O only)
 src/
   index.template.html        page shell with two @inject markers
-  styles.css                 navy single-theme sheet
+  styles.css                 the meter body, display, dial and drawer; single theme, IBM Plex via Google Fonts
   lib/
     stats.js                 statistics (pure)
     format.js                display formatting
     geom.js                  SVG chart kit
+    sevenseg.js              seven-segment LCD digits as SVG (pure)
     sources.js               endpoints + payload normalizers
     session.js               NYSE session clock
-    router.js                hash routing
+    router.js                hash routing between dial stops
+    meter.js                 the dial, the knob, HOLD, and the LCD paint
     spotlight.js             stock-of-the-week rule and panel
     app.js                   state, polling, analytics, render
     pipeline.js              the data job's decisions (debug bundle + Node)

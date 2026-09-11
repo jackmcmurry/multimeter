@@ -352,8 +352,79 @@
     return s;
   }
 
+  /* -------------------------------------------------------------------------
+   * 6. smoothLine — the one curved chart in the kit, for the meter's screen.
+   *    A monotone cubic line (no overshoot between samples) over a soft
+   *    gradient, with the latest point marked: the shape a phone's price
+   *    chart has, so the display reads as a modern backlit panel while the
+   *    printed charts in the drawer stay rectilinear.
+   * ---------------------------------------------------------------------- */
+  function sign(x) { return x < 0 ? -1 : 1; }
+
+  /* Tangent at the middle of three points, limited so the curve stays
+   * monotone between samples (Fritsch–Carlson, as d3's curveMonotoneX). */
+  function slope3(x0, y0, x1, y1, x2, y2) {
+    var h0 = x1 - x0, h1 = x2 - x1;
+    var s0 = (y1 - y0) / (h0 || (h1 < 0 && -0));
+    var s1 = (y2 - y1) / (h1 || (h0 < 0 && -0));
+    var p = (s0 * h1 + s1 * h0) / (h0 + h1);
+    return (sign(s0) + sign(s1)) * Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p)) || 0;
+  }
+
+  function slope2(x0, y0, x1, y1, t) {
+    var h = x1 - x0;
+    return h ? (3 * (y1 - y0) / h - t) / 2 : t;
+  }
+
+  function monotonePath(xs, ys) {
+    var n = xs.length;
+    if (n < 2) return '';
+    if (n === 2) return 'M' + xs[0].toFixed(2) + ',' + ys[0].toFixed(2) + 'L' + xs[1].toFixed(2) + ',' + ys[1].toFixed(2);
+    var t = new Array(n);
+    for (var i = 1; i < n - 1; i++) t[i] = slope3(xs[i - 1], ys[i - 1], xs[i], ys[i], xs[i + 1], ys[i + 1]);
+    t[0] = slope2(xs[0], ys[0], xs[1], ys[1], t[1]);
+    t[n - 1] = slope2(xs[n - 2], ys[n - 2], xs[n - 1], ys[n - 1], t[n - 2]);
+    var d = 'M' + xs[0].toFixed(2) + ',' + ys[0].toFixed(2);
+    for (var k = 0; k < n - 1; k++) {
+      var dx = (xs[k + 1] - xs[k]) / 3;
+      d += 'C' + (xs[k] + dx).toFixed(2) + ',' + (ys[k] + dx * t[k]).toFixed(2) +
+        ' ' + (xs[k + 1] - dx).toFixed(2) + ',' + (ys[k + 1] - dx * t[k + 1]).toFixed(2) +
+        ' ' + xs[k + 1].toFixed(2) + ',' + ys[k + 1].toFixed(2);
+    }
+    return d;
+  }
+
+  function smoothLine(opts) {
+    var values = (opts.values || []).filter(isNum);
+    var w = opts.w || 600, h = opts.h || 200;
+    var color = opts.color || 'currentColor';
+    if (values.length < 2) return open(w, h, 'chart-empty') + '</svg>';
+    var p = { l: 4, r: 12, t: 12, b: 4 };
+    var dom = extent(values);
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var xs = [], ys = [];
+    for (var i = 0; i < values.length; i++) { xs.push(x(i)); ys.push(y(values[i])); }
+    var d = monotonePath(xs, ys);
+    var gid = nextId('glow');
+    var lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
+
+    var s = open(w, h, 'chart-smooth');
+    s += '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" style="stop-color:' + color + ';stop-opacity:0.32"/>' +
+      '<stop offset="1" style="stop-color:' + color + ';stop-opacity:0"/></linearGradient></defs>';
+    s += '<path d="' + d + 'V' + (h - p.b).toFixed(2) + 'H' + xs[0].toFixed(2) + 'Z" fill="url(#' + gid + ')" stroke="none"/>';
+    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
+      '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
+    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
+    return s + '</svg>';
+  }
+
   MP.geom = {
     sparkStep: sparkStep,
+    smoothLine: smoothLine,
+    monotonePath: monotonePath,
     stepChart: stepChart,
     columnChart: columnChart,
     scatterFit: scatterFit,

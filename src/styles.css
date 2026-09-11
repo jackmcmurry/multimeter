@@ -1,45 +1,84 @@
 /* ============================================================================
  * styles.css — Multimeter.
  *
- * Deliberately plain: a native system UI stack (no webfont request at all), a
- * sidebar, one number per screen, and hairlines instead of boxes. Navy ground,
- * white type, gold used only for the active nav item, the pinned strip and the
- * regression line.
+ * The page is a handheld digital multimeter in the classic field-instrument
+ * livery: a graphite body in a yellow rubber holster, a backlit dark display
+ * up top with a luminous readout, a rotary function switch in the middle and
+ * three input jacks along the bottom. The detail drawer beneath it is a dark
+ * card so the charts and tables read as the instrument's manual, not more
+ * instrument.
  *
- * SINGLE THEME BY CHOICE — the brief specifies navy with white text, so every
- * colour is painted explicitly rather than swapped with the viewer's theme.
+ * Type: IBM Plex Sans for the body and labels, IBM Plex Mono for the display
+ * annunciators. The big digits are seven-segment SVG, not a font.
+ *
+ * SINGLE THEME BY CHOICE — a physical object has one colour, so every colour
+ * is painted explicitly rather than swapped with the viewer's theme.
  * ========================================================================== */
 
 :root {
-  --navy: #0b1626;
-  --side: #091220;
-  --cell: #101f36;
-  --hover: #16294a;
-  --rule: #1e3152;
+  /* the bench it sits on */
+  --bg: #0b0d12;
 
-  --text: #f4f7fb;
-  --dim: #93a5c0;
+  /* holster and body */
+  --holster: #f6b71f;
+  --holster-dk: #c98f0c;
+  --holster-lt: #ffd35a;
+  --shell: #23272e;
+  --shell-dk: #15181d;
+  --shell-lt: #333942;
 
-  --gold: #d8ae55;
+  /* display */
+  --lcd: #0a1216;
+  --lcd-dk: #040709;
+  --lcd-ink: #e6fff5;
+  --lcd-dim: #6d8c86;
+  --lcd-ghost: #142026;
+  --up: #2ee59d;
+  --down: #ff6b6b;
 
-  --c-btc: #e0944c;
-  --c-idx: #6fb3dc;
-  --c-qqq: #8acfb4;
+  /* controls */
+  --knob: #14171c;
+  --knob-lt: #2c3139;
+  --knob-mark: #f6b71f;
+  --key: #333942;
+  --key-dk: #0f1215;
+  --key-text: #eef1f5;
+  --hold: #ef4a4a;
+  --hold-dk: #9c2323;
+  --jack: #07080a;
+  --jack-ring: #ef4a4a;
+  --led: #2ee59d;
+  --led-off: #26332e;
 
-  --pos: #4ec98a;
-  --neg: #f0776d;
+  /* the drawer card and everything printed on it */
+  --card: #14171d;
+  --text: #eef1f5;
+  --dim: #97a3b4;
+  --rule: #262b34;
+  --cell: #1b2028;
+  --hover: #232933;
+  --gold: #f6b71f;
 
-  /* Native stack: whatever the viewer's OS ships. No webfont, no download. */
-  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --c-btc: #f7931a;
+  --c-eth: #8c9eff;
+  --c-idx: #5eb1ff;
+  --c-spx: #ff9f43;
+  --c-qqq: #34d399;
+
+  --pos: #2ee59d;
+  --neg: #ff6b6b;
+
+  --f-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-lcd: "IBM Plex Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
 
-html { background: var(--navy); }
+html { background: var(--bg); }
 
 body {
   margin: 0;
-  background: var(--navy);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--f-ui);
   font-size: 15px;
@@ -49,97 +88,294 @@ body {
 
 .muted { color: var(--dim); }
 
-/* ---- frame --------------------------------------------------------------- */
-.app {
-  display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+/* ---- stage --------------------------------------------------------------- */
+.stage {
   min-height: 100vh;
-}
-
-.side {
-  background: var(--side);
-  padding: 22px 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 12px 48px;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
-.logo {
-  width: 30px; height: 30px; flex: none;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--text); color: var(--navy);
-  border-radius: 50%;
-  font-size: 18px; font-weight: 700; letter-spacing: -0.02em;
-}
-.brandname { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+/* ---- the meter body ------------------------------------------------------ */
+.meter { width: min(100%, 660px); }
 
-.nav { display: flex; flex-direction: column; gap: 2px; }
-.navitem {
+.holster {
+  background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
+  border-radius: 36px;
+  padding: 14px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 var(--holster-dk),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.shell {
+  background: linear-gradient(180deg, var(--shell-lt), var(--shell) 12%, var(--shell) 90%, var(--shell-dk));
+  border-radius: 26px;
+  padding: 16px 18px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px 12px;
+}
+.brand { font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: var(--text); }
+.model { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); }
+
+/* ---- display ------------------------------------------------------------- */
+.lcd {
   display: block;
-  padding: 10px 14px;
-  border-radius: 9px;
+  width: 100%;
+  background: radial-gradient(120% 90% at 50% 0%, #10201f 0%, var(--lcd) 60%);
+  color: var(--lcd-ink);
+  border: 3px solid var(--lcd-dk);
+  border-radius: 12px;
+  padding: 14px 18px 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 4px 14px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
+  font-family: var(--f-lcd);
+  cursor: pointer;
+  text-align: left;
+}
+.lcd:focus-visible { outline: 3px solid var(--holster); outline-offset: 3px; }
+
+.lcd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 18px;
+}
+.ann {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--lcd-dim);
+}
+.ann-hold { opacity: 0.18; }
+.ann-hold.is-on { opacity: 1; color: var(--holster); }
+
+.lcd-chart { display: block; width: 100%; min-height: 60px; margin: 8px 0 2px; }
+.lcd-chart .chart { display: block; width: 100%; height: auto; color: inherit; }
+
+.lcd-main { display: flex; align-items: flex-end; gap: 12px; margin: 6px 0 6px; }
+.lcd-digits { flex: 1; min-width: 0; }
+.lcd-seg { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 5px rgba(46, 229, 157, 0.22)); }
+.seg { fill: var(--lcd-ghost); }
+.seg.on { fill: var(--lcd-ink); }
+.lcd-unit {
+  flex: none;
+  width: 48px;
+  padding-bottom: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--lcd-dim);
+}
+
+.lcd-foot { margin-top: 2px; }
+.lcd-chg {
+  min-width: 84px;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart { opacity: 0.1; }
+.lcd.is-off .lcd-chart { min-height: 120px; }
+.lcd.is-off .lcd-seg { filter: none; }
+
+/* a change of stop refreshes the readout with a short fade */
+.lcd.is-swap .lcd-chart, .lcd.is-swap .lcd-digits, .lcd.is-swap .lcd-foot, .lcd.is-swap #lcdMode {
+  animation: lcd-swap 260ms ease-out;
+}
+@keyframes lcd-swap {
+  from { opacity: 0.15; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- keys ---------------------------------------------------------------- */
+.keys { display: flex; justify-content: space-between; margin: 16px 6px 4px; }
+.key {
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--key-text);
+  background: linear-gradient(180deg, var(--shell-lt), var(--key));
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 24px;
+  box-shadow: 0 3px 0 var(--key-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.key:active, .key.is-on { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-dk); }
+.key.is-on { color: var(--holster); }
+.key:focus-visible { outline: 3px solid var(--holster); outline-offset: 2px; }
+.key-hold {
+  color: var(--key-text);
+  background: linear-gradient(180deg, #ff6e6e, var(--hold));
+  box-shadow: 0 3px 0 var(--hold-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+}
+.key-hold:active, .key-hold.is-held {
+  background: var(--hold-dk);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--hold-dk);
+}
+
+/* ---- dial ---------------------------------------------------------------- */
+.dial {
+  position: relative;
+  width: 86%;
+  aspect-ratio: 1 / 1;
+  margin: 4px auto 6px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.dial-plate { display: block; width: 100%; height: 100%; }
+.dial-face { fill: var(--shell-dk); stroke: var(--key-dk); stroke-width: 1.2; }
+.dial-arc { fill: none; stroke: var(--dim); stroke-width: 1.2; opacity: 0.45; }
+.dial-tick { stroke: var(--text); stroke-width: 2.5; }
+.dial-hit { fill: transparent; pointer-events: all; cursor: pointer; transition: fill 200ms ease; }
+.dial-lab {
+  fill: var(--text);
+  font-family: var(--f-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  transition: fill 200ms ease;
+}
+.dial-stop.is-on .dial-lab { fill: var(--holster); }
+.dial-stop.is-on .dial-hit { fill: var(--holster); fill-opacity: 0.16; }
+
+.knob {
+  position: absolute;
+  inset: 27%;   /* radius ≈ 85 of the plate's 184 half-width: inside the 92 face ring */
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, var(--knob-lt), var(--knob) 68%);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.5);
+  /* a spring: overshoots the detent a touch, then settles */
+  transition: transform 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: grab;
+}
+.knob:active { cursor: grabbing; }
+.knob::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  width: 6.5%;
+  height: 34%;
+  margin-left: -3.25%;
+  border-radius: 4px;
+  background: var(--knob-mark);
+  box-shadow: 0 0 8px rgba(246, 183, 31, 0.5);
+}
+.knob::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+}
+.knob.is-detent { animation: detent 240ms ease-out; }
+@keyframes detent {
+  0% { scale: 1; }
+  35% { scale: 0.965; }
+  100% { scale: 1; }
+}
+.knob:focus-visible { outline: 3px solid var(--holster); outline-offset: 5px; }
+
+/* ---- jacks --------------------------------------------------------------- */
+.jacks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 26px;
+  padding-top: 4px;
+}
+.jack {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--jack);
+  border: 4px solid var(--jack-ring);
+  box-shadow: inset 0 0 0 3px var(--shell-lt), 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.jack-com { border-color: var(--knob-lt); }
+.jack-com.is-closed { background: var(--led-off); }
+.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt), 0 0 14px var(--led); }
+.jack-text {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--dim);
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
 }
-.navitem:hover { background: var(--hover); color: var(--text); }
-.navitem.is-on { background: var(--cell); color: var(--gold); font-weight: 600; }
-.navitem:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 
-.side-foot {
-  margin-top: auto;
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 8px;
-  font-size: 13px; color: var(--dim);
+/* ---- drawer -------------------------------------------------------------- */
+.drawer {
+  width: min(100%, 660px);
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 18px 20px 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
-.dot.is-open { background: var(--pos); }
-.dot.is-closed { background: var(--dim); }
-
-.main { padding: 20px clamp(16px, 3vw, 36px) 48px; min-width: 0; }
-
-.topbar {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 16px; padding-bottom: 18px; margin-bottom: 22px;
+.drawer-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--rule);
 }
-.topbar h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
-.topbar .muted { font-size: 13px; }
-
-/* ---- pinned strip -------------------------------------------------------- */
-.pinstrip {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 14px; margin-bottom: 26px;
-  background: var(--cell);
-  border-left: 3px solid var(--gold);
-  border-radius: 4px;
-  color: var(--text); text-decoration: none;
+.drawer-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--holster);
 }
-.pinstrip:hover { background: var(--hover); }
-.pinstrip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.pin-label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
-.pin-symbol { font-size: 15px; font-weight: 600; }
-.pin-go { margin-left: auto; color: var(--dim); font-size: 19px; line-height: 1; }
+.drawer-head .muted { font-size: 12px; }
 
-/* ---- hero ---------------------------------------------------------------- */
-.hero { margin-bottom: 18px; }
-.hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
-.hero-asset { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
-.hero-top .muted { font-size: 13px; }
+/* ---- hero (the weekly-pick panels) --------------------------------------- */
+.hero { margin-bottom: 14px; }
+.hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.hero-asset { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.hero-top .muted { font-size: 12px; }
 
 .hero-price {
-  font-size: clamp(38px, 6vw, 56px);
+  font-size: clamp(30px, 8vw, 40px);
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
 .hero-price.is-empty { color: var(--dim); }
 
 .hero-sub { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
-.hero-sub .muted { font-size: 13px; }
+.hero-sub .muted { font-size: 12px; }
 
 .chg {
   font-size: 15px;
@@ -151,18 +387,18 @@ body {
 .chg.is-flat { color: var(--dim); }
 
 /* ---- range pills --------------------------------------------------------- */
-.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 .pill {
   font-family: inherit;
-  font-size: 13px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
   color: var(--dim);
   background: none; border: 0;
-  padding: 7px 16px; border-radius: 999px;
+  padding: 6px 14px; border-radius: 999px;
   cursor: pointer;
 }
 .pill:hover { background: var(--hover); color: var(--text); }
-.pill.is-on { background: var(--cell); color: var(--text); }
-.pill:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pill.is-on { background: var(--cell); color: var(--holster); }
+.pill:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .pill[disabled] { opacity: 0.45; cursor: default; }
 
 /* ---- chart shell --------------------------------------------------------- */
@@ -180,36 +416,37 @@ body {
 .rows { list-style: none; margin: 0; padding: 0; }
 .rows li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px 150px 90px;
+  grid-template-columns: minmax(0, 1fr) 110px 96px 76px;
   align-items: center;
-  gap: 16px;
-  padding: 16px 4px;
+  gap: 12px;
+  padding: 14px 2px;
   border-bottom: 1px solid var(--rule);
 }
 .rows li:last-child { border-bottom: 0; }
 .row-name { min-width: 0; }
-.row-code { font-size: 15px; font-weight: 600; }
-.row-desc { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-px { font-size: 17px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.row-code { font-size: 14px; font-weight: 600; }
+.row-desc { font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-px { font-size: 15px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .row-chg { text-align: right; }
+.row-chg .chg { font-size: 13px; }
 .row-spark { min-width: 0; }
 
 /* ---- stat strip ---------------------------------------------------------- */
 .strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 22px 30px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 16px 20px;
+  margin-bottom: 18px;
 }
-.stat-label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; }
+.stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .stat-value {
-  margin-top: 3px;
-  font-size: 26px; font-weight: 600;
+  margin-top: 2px;
+  font-size: 22px; font-weight: 600;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.foot { margin: 8px 0 26px; font-size: 13px; color: var(--dim); }
+.foot { margin: 8px 0 22px; font-size: 12.5px; color: var(--dim); }
 
 /* ---- tables -------------------------------------------------------------- */
 .table-scroll, .table-host { overflow-x: auto; margin-top: 8px; }
@@ -217,17 +454,17 @@ body {
 table.data {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 table.data th, table.data td {
-  padding: 10px 12px 10px 0;
+  padding: 9px 10px 9px 0;
   text-align: right;
   border-bottom: 1px solid var(--rule);
   white-space: nowrap;
 }
 table.data thead th {
-  font-size: 12px; font-weight: 600; color: var(--dim);
+  font-size: 11px; font-weight: 600; color: var(--dim);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 table.data th[scope="row"], table.data thead th:first-child { text-align: left; }
@@ -235,17 +472,17 @@ table.data tbody tr:last-child th, table.data tbody tr:last-child td { border-bo
 .dim { color: var(--dim); }
 .neg { color: var(--neg); }
 tr.row-rule th {
-  text-align: left; padding-top: 18px;
-  font-size: 12px; font-weight: 600; color: var(--gold);
+  text-align: left; padding-top: 16px;
+  font-size: 11px; font-weight: 600; color: var(--gold);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .tag { font-size: 12px; color: var(--dim); }
 
 /* ---- notices ------------------------------------------------------------- */
 .notice {
-  margin: 14px 0;
-  padding: 10px 13px;
-  font-size: 13.5px;
+  margin: 12px 0;
+  padding: 9px 12px;
+  font-size: 13px;
   background: var(--cell);
   border-left: 3px solid var(--gold);
   border-radius: 4px;
@@ -256,34 +493,31 @@ tr.row-rule th {
 /* ---- about --------------------------------------------------------------- */
 .prose { max-width: 68ch; }
 .prose h2 {
-  margin: 30px 0 8px;
-  font-size: 13px; font-weight: 600; color: var(--gold);
-  text-transform: uppercase; letter-spacing: 0.07em;
+  margin: 26px 0 6px;
+  font-size: 12px; font-weight: 700; color: var(--holster);
+  text-transform: uppercase; letter-spacing: 0.1em;
 }
 .prose h2:first-child { margin-top: 0; }
-.prose p { margin: 0 0 12px; color: var(--dim); }
+.prose p { margin: 0 0 10px; font-size: 14px; color: var(--dim); }
 .prose b { color: var(--text); font-weight: 600; }
 .prose a {
   color: var(--text);
-  text-decoration-color: var(--gold);
+  text-decoration-color: var(--holster);
   text-underline-offset: 3px;
 }
-.prose a:hover { color: var(--gold); }
-.prose a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.prose a:hover { color: var(--holster); }
+.prose a:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 
 /* ---- responsive ---------------------------------------------------------- */
-@media (max-width: 820px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
-  .side {
-    flex-direction: row; align-items: center; gap: 14px;
-    padding: 12px 14px; overflow-x: auto;
-  }
-  .brand { padding: 0; }
-  .brandname { display: none; }
-  .nav { flex-direction: row; gap: 4px; }
-  .navitem { padding: 8px 12px; white-space: nowrap; }
-  .side-foot { margin-top: 0; margin-left: auto; white-space: nowrap; }
-  .rows li { grid-template-columns: minmax(0, 1fr) 110px; row-gap: 8px; }
+@media (max-width: 480px) {
+  .stage { padding: 10px 6px 32px; gap: 12px; }
+  .holster { border-radius: 28px; padding: 10px; }
+  .shell { border-radius: 20px; padding: 12px 12px 14px; }
+  .lcd { padding: 12px 14px 10px; }
+  .drawer { border-radius: 14px; padding: 14px 12px 18px; }
+  .dial { width: 100%; }
+  .dial-lab { font-size: 13.5px; }
+  .rows li { grid-template-columns: minmax(0, 1fr) 84px 64px; }
   .row-spark { display: none; }
 }
 
