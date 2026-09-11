@@ -1,11 +1,11 @@
-# Multimeter
+﻿# Multimeter
 
 A live bitcoin-vs-Nasdaq tracker with the statistics that make the comparison
 mean something: correlation and beta across three windows, rolling realized
 volatility for both legs, and a drawdown table with recovery times, plus a
 Stock of the Week that a weekly job rewrites.
 
-**Live:** https://GITHUB_USER.github.io/multimeter/
+**Live:** https://jackmcmurry.github.io/multimeter/
 
 Built by Jack McMurry with Claude Code.
 
@@ -18,7 +18,7 @@ A sidebar and seven views, one screen each:
 | Home | Pinned stock-of-the-week strip, BTC hero price, chart, 24H/1W/1M/1Y pills |
 | Markets | BTC, ^IXIC and QQQ as rows: price, change, sparkline, as-of time |
 | Weekly | The stock of the week in full |
-| Coupling | Corr / beta / R², return scatter, rolling correlation, table |
+| Coupling | Corr / beta / RÂ², return scatter, rolling correlation, table |
 | Volatility | Current 30d vols and the rolling column chart |
 | Drawdown | Current and worst drawdowns, underwater curves, episode table |
 | About | Method, sources, and the not-advice line |
@@ -65,13 +65,13 @@ table (`src/lib/session.js`), with no API call.
 
 ## Setup
 
-1. **Secrets.** In the repository: Settings → Secrets and variables → Actions →
+1. **Secrets.** In the repository: Settings â†’ Secrets and variables â†’ Actions â†’
    New repository secret.
    - `FMP_API_KEY`: required. Free at financialmodelingprep.com.
    - `ALPHAVANTAGE_API_KEY`: optional, for QQQ. Free at alphavantage.co.
-2. **Pages.** Settings → Pages → Build and deployment → Source: **GitHub
+2. **Pages.** Settings â†’ Pages â†’ Build and deployment â†’ Source: **GitHub
    Actions**.
-3. **First run.** Actions → Site → Run workflow (force: `all`). That fills
+3. **First run.** Actions â†’ Site â†’ Run workflow (force: `all`). That fills
    every snapshot and deploys. After that the schedule takes over.
 
 A run whose data step fails still deploys the site; the failure shows as a
@@ -143,10 +143,10 @@ docs/                        what GitHub Pages serves
 - **Beta.** `cov(btc, ixic) / var(ixic)`, BTC regressed on the index. It is
   the slope drawn through the return scatter, so chart and table agree.
 - **Volatility.** Sample standard deviation of the 30-session window,
-  annualized by √252.
+  annualized by âˆš252.
 - **Drawdown.** Computed on each instrument's own history. An episode opens
   when price falls below the running peak and closes when it regains it.
-- **R² alongside beta.** A high beta with a low R² is a loose relationship.
+- **RÂ² alongside beta.** A high beta with a low RÂ² is a loose relationship.
 
 ## Maintenance
 
