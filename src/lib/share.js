@@ -70,7 +70,7 @@
       document.fonts.load('700 88px "Space Grotesk"'),
       document.fonts.load('600 30px "Space Grotesk"'),
       document.fonts.load('600 22px "JetBrains Mono"'),
-      document.fonts.load('800 26px "Unbounded"')
+      document.fonts.load('900 28px "Inter Tight"')
     ]).then(function () { return document.fonts.ready; }).catch(function () { /* system fonts then */ });
   }
 
@@ -104,7 +104,7 @@
       ctx.fillText(String(meta.mode || '').toUpperCase(), 80, 74);
       ctx.textAlign = 'right';
       ctx.fillStyle = token('--holster');
-      ctx.font = '800 26px "Unbounded", "Space Grotesk", sans-serif';   /* the wordmark, as on the meter */
+      ctx.font = '900 28px "Neue Haas Grotesk Display Pro", "Helvetica Neue", "Inter Tight", sans-serif';   /* the wordmark, as on the meter */
       ctx.fillText('MULTIMETER', W - 80, 70);
       ctx.textAlign = 'left';
 

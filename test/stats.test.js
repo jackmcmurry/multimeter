@@ -283,6 +283,14 @@
       M.setSkin('gold');
       ok('gold needs no attribute', !document.documentElement.hasAttribute('data-skin'));
       M.setSkin(skinBefore);
+      if (M.toggleSkins) {
+        eq('the palette opens', M.toggleSkins(true), true);
+        ok('the open palette holds every skin', !document.getElementById('skins').hidden &&
+          document.querySelectorAll('#skins .skin[data-skin]').length === M.SKINS.length);
+        eq('the palette icon says it is open', document.getElementById('skinBtn').getAttribute('aria-expanded'), 'true');
+        eq('the palette closes', M.toggleSkins(false), false);
+        ok('the palette icon names the skin', /^Skin: /.test(document.getElementById('skinBtn').getAttribute('aria-label')));
+      }
       eq('the reading hash routes', R ? R.parseHash('#reading') : '', 'note');
       eq('the probe hash routes', R ? R.parseHash('#probe') : '', 'probe');
     }
@@ -557,6 +565,7 @@
       var stopC = M.clickParams('stop', 500, fixed(0.5));
       ok('the end stop is lower and longer', stopC.thockHz < mid.thockHz && stopC.dur > mid.dur);
       ok('the settle tap is quieter than a detent', M.clickParams('settle', 500, fixed(0.5)).gain < mid.gain);
+      ok('a key press springs back up, unless the spin is fast', mid.upGain > 0 && fastC.upGain === 0 && stopC.upGain === 0);
 
       var soundBefore = M.soundOn();
       M.setSound(false);

@@ -8,8 +8,10 @@
  * card so the charts and tables read as the instrument's manual, not more
  * instrument.
  *
- * Type: Space Grotesk for the body, the labels and the big price, JetBrains
- * Mono for the display's small annunciators.
+ * Type: outside the screen, Neue Haas Grotesk (see --f-body for the
+ * fallbacks) for the name, the labels, the keys and the drawer. On the
+ * screen, Space Grotesk for the big figures and JetBrains Mono for the
+ * small annunciators.
  *
  * SINGLE THEME BY CHOICE. A physical object has one colour, so every colour
  * is painted explicitly rather than swapped with the viewer's theme.
@@ -73,7 +75,10 @@
 
   --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --f-lcd: "JetBrains Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
-  --f-brand: "Unbounded", "Space Grotesk", -apple-system, "Segoe UI", sans-serif;   /* the wordmark only */
+  /* Everything outside the screen. Neue Haas Grotesk where it is installed,
+   * Helvetica Neue (its descendant, on every Apple device) next, and Inter
+   * Tight, a free near-match from Google Fonts, everywhere else. */
+  --f-body: "Neue Haas Grotesk Display Pro", "Neue Haas Grotesk Text Pro", "NHaasGroteskDSPro", "NHaasGroteskTXPro", "Helvetica Neue", "Inter Tight", Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -84,7 +89,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--f-ui);
+  font-family: var(--f-body);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -136,10 +141,10 @@ body {
  * heavy, in the skin's accent, lifted off the body with a light edge above,
  * a shadow below and a faint glow. */
 .brand {
-  font-family: var(--f-brand);
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-family: var(--f-body);
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
   line-height: 1;
   color: var(--holster);
   text-shadow:
@@ -199,14 +204,6 @@ body {
 .ann-bell b { font-weight: 700; }
 .ann-bell.is-on { opacity: 1; color: var(--holster); }
 .ann-bell:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
-.ann-live { display: inline-flex; align-items: center; gap: 6px; opacity: 0.18; }
-.ann-live .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.ann-live.is-on { opacity: 1; color: var(--up); }
-.ann-live.is-on .dot { animation: live-pulse 1.2s ease-in-out infinite; }
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
 
 /* the chart has the top of the screen to itself; a fixed aspect keeps the
  * screen the same height whether or not a series has arrived */
@@ -326,7 +323,7 @@ body {
 /* ---- keys ---------------------------------------------------------------- */
 .keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; }
 .key {
-  font-family: var(--f-ui);
+  font-family: var(--f-body);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -373,7 +370,7 @@ body {
 .dial-hit { fill: transparent; pointer-events: all; cursor: pointer; transition: fill 200ms ease; }
 .dial-lab {
   fill: var(--text);
-  font-family: var(--f-ui);
+  font-family: var(--f-body);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -448,7 +445,7 @@ body {
 }
 .jack-com { border-color: var(--knob-lt); }
 .jack-com.is-closed { background: var(--led-off); }
-.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt), 0 0 14px var(--led); }
+.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt); }
 .jack-text {
   flex-basis: 100%;
   text-align: center;
@@ -523,20 +520,72 @@ body {
 
 .head { align-items: center; }
 .head-right { display: flex; align-items: center; gap: 14px; }
-.skins { display: flex; align-items: center; gap: 8px; }
-.skin {
-  width: 16px;
-  height: 16px;
+/* the palette icon, painted in the skin's own colour */
+.skin-picker { position: relative; display: inline-flex; }
+.skin-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
   padding: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--holster);
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+  transition: transform 140ms ease, background 140ms ease;
 }
-.skin:hover { transform: scale(1.18); }
-.skin[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
-.skin:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.skin-toggle:hover { transform: rotate(-10deg) scale(1.08); }
+.skin-toggle[aria-expanded="true"] { background: rgba(255, 255, 255, 0.07); }
+.skin-toggle:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+
+/* the open palette: white, with a dab of every colour */
+.skin-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -6px;
+  width: 216px;
+  height: 198px;
+  z-index: 20;
+  transform-origin: 88% 0;
+  animation: palette-in 200ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes palette-in {
+  from { opacity: 0; transform: scale(0.82) rotate(-6deg); }
+  to { opacity: 1; transform: none; }
+}
+.skin-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: #fbfaf6;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55));
+}
+.skin {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50% 46% 52% 48%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18), inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.skin:hover { transform: translate(-50%, -50%) scale(1.12); }
+.skin[aria-pressed="true"] { box-shadow: 0 0 0 3px #fbfaf6, 0 0 0 5px #1b1f26, inset 0 -3px 0 rgba(0, 0, 0, 0.18); }
+.skin:focus-visible { outline: 2px solid #1b1f26; outline-offset: 4px; }
+/* where each dab sits on the board, in the board's own proportions */
+.skin[data-skin="gold"] { left: 21%; top: 53%; }
+.skin[data-skin="blue"] { left: 26%; top: 32%; }
+.skin[data-skin="pink"] { left: 39%; top: 20%; }
+.skin[data-skin="green"] { left: 56%; top: 18%; }
+.skin[data-skin="red"] { left: 72%; top: 25%; }
+.skin[data-skin="purple"] { left: 84%; top: 40%; }
+.skin[data-skin="silver"] { left: 55%; top: 46%; }
 .skin[data-skin="gold"] { background: #f6b71f; }
 .skin[data-skin="blue"] { background: #3b82f6; }
 .skin[data-skin="pink"] { background: #f472b6; }
@@ -546,9 +595,8 @@ body {
 .skin[data-skin="silver"] { background: #cbd5e1; }
 @media (max-width: 480px) {
   .model { display: none; }
-  .skins { gap: 4px; }
-  .brand { font-size: 16px; letter-spacing: 0; }
-  .skin { width: 13px; height: 13px; }
+  .brand { font-size: 21px; }
+  .skin-menu { right: -10px; }
 }
 
 /* ---- the daily reading ---------------------------------------------------- */
@@ -668,7 +716,7 @@ body {
 /* the probe jack's search and results */
 .probe-search {
   display: block; width: 100%;
-  font-family: var(--f-ui); font-size: 15px; font-weight: 500;
+  font-family: var(--f-body); font-size: 15px; font-weight: 500;
   color: var(--text); background: var(--cell);
   border: 1px solid var(--rule); border-radius: 10px;
   padding: 12px 14px; margin: 4px 0 6px;

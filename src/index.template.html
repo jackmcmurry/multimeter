@@ -25,7 +25,7 @@
 <meta name="apple-mobile-web-app-title" content="Multimeter">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap">
 <script>
 /* A saved skin goes on before the first paint, so the page never flashes gold first. */
 try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
@@ -48,14 +48,20 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
         <div class="head">
           <span class="brand">MULTIMETER</span>
           <span class="head-right">
-            <span class="skins" id="skins" role="group" aria-label="Skin">
-              <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
-              <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
+            <span class="skin-picker">
+              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: gold. Choose a colour.">
+                <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
+              </button>
+              <span class="skin-menu" id="skins" role="group" aria-label="Skin" hidden>
+                <svg class="skin-board" viewBox="0 0 24 22" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM9.6 14.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 1 0 0-2.8z"/></svg>
+                <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
+                <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
+              </span>
             </span>
             <span class="model" aria-hidden="true">MM-10</span>
           </span>
@@ -65,7 +71,6 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
           <div class="lcd-row">
             <span class="ann" id="lcdMode"></span>
             <span class="ann-group">
-              <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
               <span class="ann ann-rel" id="lcdRel">REL</span>
               <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
               <button type="button" class="ann ann-sound is-on" id="lcdSound" aria-pressed="true" aria-label="Sound on. Press to mute."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
@@ -260,7 +265,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
 
       <h2>Skins</h2>
-      <p>The coloured dots beside the brand pick the skin: gold, blue, pink, green, red, purple or silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
+      <p>The palette beside the name opens the skins: gold, blue, pink, green, red, purple and silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
 
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>

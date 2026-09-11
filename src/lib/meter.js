@@ -169,7 +169,7 @@
   var detentTimer = null;
   var audio = null;
   var master = null;     /* every sound goes through this */
-  var noise = null;      /* 30 ms of white noise, made once, for the tick */
+  var noise = null;      /* 80 ms of white noise, made once, for the tick and the tock */
   var lastClickAt = 0;
   var SOUND_KEY = 'sound';
   var soundIsOn = readSound();
@@ -191,8 +191,15 @@
       try { audio = new AC({ latencyHint: 'interactive' }); } catch (e1) { audio = new AC(); }
       master = audio.createGain();
       master.gain.value = 1;
-      master.connect(audio.destination);
-      var n = Math.floor(audio.sampleRate * 0.03);
+      /* a gentle limiter, so presses that overlap on a fast spin never clip */
+      var limiter = audio.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.ratio.value = 4;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.05;
+      master.connect(limiter);
+      limiter.connect(audio.destination);
+      var n = Math.floor(audio.sampleRate * 0.08);
       noise = audio.createBuffer(1, n, audio.sampleRate);
       var ch = noise.getChannelData(0);
       for (var i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
@@ -203,12 +210,15 @@
     return soundIsOn && !!audio && !!master && !!noise && audio.state === 'running';
   }
 
-  /* The click's recipe, pure so the tests can hold it to account. A
-   * mechanical detent is two layers: a bright tick (filtered noise) and a
-   * low thock (a sine whose pitch falls). Every click varies a little, so a
-   * spin never repeats itself. Clicks closer than FAST_MS apart come shorter
-   * and softer, so a fast spin purrs. The end stop is lower and longer; the
-   * settle tap is a quiet echo of a detent.
+  /* The click's recipe, pure so the tests can hold it to account. Each
+   * detent sounds like a key on a mechanical keyboard: a sharp tick as the
+   * cap lands (high-passed noise), the hollow tock of the plastic (noise in
+   * a narrow band around 520 Hz), a low thump as the switch bottoms out (a
+   * sine whose pitch falls), and a softer upstroke as the key springs back.
+   * Every press varies a little, so a spin never repeats itself. Presses
+   * closer than FAST_MS apart come shorter and softer and skip the
+   * upstroke, so a fast spin purrs. The end stop is a deeper, longer
+   * bottom-out; the settle tap is a whisper.
    * kind: 'detent' | 'stop' | 'settle'; sinceMs: time since the last click;
    * rand: a function returning [0, 1). */
   var FAST_MS = 45;
@@ -217,22 +227,31 @@
     var pitch = 1 + (r() * 2 - 1) * 0.04;
     var level = 1 + (r() * 2 - 1) * 0.08;
     var p = {
-      tickHz: 3800 * pitch, tickQ: 1.2, tickDur: 0.005, tickGain: 0.22,
-      thockHz: 210 * pitch, thockEndHz: 120 * pitch, thockDur: 0.035, thockGain: 0.2
+      tickHz: 2400 * pitch, tickDur: 0.003, tickGain: 0.14,
+      bodyHz: 520 * pitch, bodyQ: 3.5, bodyDur: 0.028, bodyGain: 2.6,
+      thockHz: 150 * pitch, thockEndHz: 95 * pitch, thockDur: 0.03, thockGain: 0.2,
+      upDelay: 0.055, upGain: 0.35
     };
     if (kind === 'stop') {
-      p.tickHz = 2600 * pitch; p.tickDur = 0.007; p.tickGain = 0.26;
-      p.thockHz = 105 * pitch; p.thockEndHz = 60 * pitch; p.thockDur = 0.07; p.thockGain = 0.3;
+      p.tickGain = 0.18;
+      p.bodyHz = 300 * pitch; p.bodyQ = 2.5; p.bodyDur = 0.045; p.bodyGain = 3.2;
+      p.thockHz = 90 * pitch; p.thockEndHz = 55 * pitch; p.thockDur = 0.06; p.thockGain = 0.32;
+      p.upGain = 0;
     } else if (kind === 'settle') {
-      p.tickHz = 4600 * pitch; p.tickDur = 0.003; p.tickGain = 0.07;
-      p.thockHz = 260 * pitch; p.thockEndHz = 170 * pitch; p.thockDur = 0.02; p.thockGain = 0.06;
+      p.tickGain = 0.05;
+      p.bodyHz = 760 * pitch; p.bodyDur = 0.012; p.bodyGain = 0.8;
+      p.thockGain = 0;
+      p.upGain = 0;
     } else if (typeof sinceMs === 'number' && sinceMs < FAST_MS) {
-      p.tickDur *= 0.6; p.thockDur *= 0.6; p.tickGain *= 0.6; p.thockGain *= 0.6;
+      p.tickDur *= 0.6; p.bodyDur *= 0.6; p.thockDur *= 0.6;
+      p.tickGain *= 0.6; p.bodyGain *= 0.6; p.thockGain *= 0.6;
+      p.upGain = 0;
     }
     p.tickGain *= level;
+    p.bodyGain *= level;
     p.thockGain *= level;
-    p.dur = Math.max(p.tickDur, p.thockDur);
-    p.gain = Math.max(p.tickGain, p.thockGain);
+    p.dur = Math.max(p.tickDur, p.bodyDur, p.thockDur);
+    p.gain = Math.max(p.tickGain, p.bodyGain, p.thockGain);
     return p;
   }
 
@@ -242,7 +261,37 @@
     g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
   }
 
-  /* One click, `delay` seconds from now. */
+  /* A burst of filtered noise: the tick and the tock. */
+  function noiseHit(t, type, freq, q, peak, attack, decay) {
+    if (!(peak > 0)) return;
+    var src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+    src.buffer = noise;
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    envelope(g, t, peak, attack, decay);
+    src.connect(f);
+    f.connect(g);
+    g.connect(master);
+    src.start(t, Math.random() * 0.02);   /* a different stretch of noise each press */
+    src.stop(t + attack + decay + 0.01);
+  }
+
+  /* A falling sine: the thump as the switch bottoms out. */
+  function sineHit(t, f0, f1, peak, attack, decay) {
+    if (!(peak > 0)) return;
+    var osc = audio.createOscillator(), g = audio.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f1, t + decay * 0.85);
+    envelope(g, t, peak, attack, decay);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(t);
+    osc.stop(t + attack + decay + 0.01);
+  }
+
+  /* One key press, `delay` seconds from now. */
   function click(kind, delay) {
     if (!canPlay()) return;
     var now = Date.now(), since = now - lastClickAt;
@@ -250,28 +299,14 @@
     var p = clickParams(kind || 'detent', since);
     try {
       var t = audio.currentTime + (delay || 0);
-
-      var src = audio.createBufferSource(), band = audio.createBiquadFilter(), tg = audio.createGain();
-      src.buffer = noise;
-      band.type = 'bandpass';
-      band.frequency.value = p.tickHz;
-      band.Q.value = p.tickQ;
-      envelope(tg, t, p.tickGain, 0.0005, p.tickDur);
-      src.connect(band);
-      band.connect(tg);
-      tg.connect(master);
-      src.start(t);
-      src.stop(t + p.tickDur + 0.01);
-
-      var osc = audio.createOscillator(), og = audio.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(p.thockHz, t);
-      osc.frequency.exponentialRampToValueAtTime(p.thockEndHz, t + p.thockDur * 0.85);
-      envelope(og, t, p.thockGain, 0.001, p.thockDur);
-      osc.connect(og);
-      og.connect(master);
-      osc.start(t);
-      osc.stop(t + p.thockDur + 0.01);
+      noiseHit(t, 'highpass', p.tickHz, 0.7, p.tickGain, 0.0003, p.tickDur);
+      noiseHit(t, 'bandpass', p.bodyHz, p.bodyQ, p.bodyGain, 0.0008, p.bodyDur);
+      sineHit(t, p.thockHz, p.thockEndHz, p.thockGain, 0.001, p.thockDur);
+      if (p.upGain > 0) {
+        var u = t + p.upDelay;   /* the key springs back up */
+        noiseHit(u, 'highpass', p.tickHz * 1.15, 0.7, p.tickGain * p.upGain, 0.0003, p.tickDur);
+        noiseHit(u, 'bandpass', p.bodyHz * 1.25, p.bodyQ, p.bodyGain * p.upGain, 0.0008, p.bodyDur * 0.7);
+      }
     } catch (e) { /* no sound is fine */ }
   }
 
@@ -774,8 +809,6 @@
         modeEl.textContent = off ? '' : r.mode || '';
       }
     }
-    var live = el('lcdLive');
-    if (live) live.classList.toggle('is-on', !off && !!r.live);
 
     var chart = el('lcdChart');
     if (chart) {
@@ -906,6 +939,20 @@
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-skin') === cur ? 'true' : 'false');
     }
+    var btn = el('skinBtn');
+    if (btn) btn.setAttribute('aria-label', 'Skin: ' + cur + '. Choose a colour.');
+  }
+
+  /* The palette: a small icon in the skin's colour opens a white palette
+   * with a dab of every colour. open: true, false, or undefined to toggle.
+   * Returns whether it is open. */
+  function toggleSkins(open) {
+    var menu = el('skins'), btn = el('skinBtn');
+    if (!menu) return false;
+    var show = open === undefined ? menu.hidden : !!open;
+    menu.hidden = !show;
+    if (btn) btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    return show;
   }
 
   /* Unknown names are ignored. Returns the skin in force. */
@@ -929,6 +976,30 @@
       if (!b) return;
       primeAudio();
       if (setSkin(b.getAttribute('data-skin'))) tickSound();
+    });
+
+    /* the palette stays open while colours are tried; a click elsewhere or
+     * Escape puts it away */
+    var btn = el('skinBtn');
+    if (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        primeAudio();
+        if (toggleSkins()) {
+          var on = host.querySelector('.skin[aria-pressed="true"]');
+          if (on && on.focus) on.focus({ preventScroll: true });
+        }
+      });
+    }
+    document.addEventListener('click', function (ev) {
+      if (host.hidden) return;
+      if (ev.target.closest && ev.target.closest('.skin-picker')) return;
+      toggleSkins(false);
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape' || host.hidden) return;
+      toggleSkins(false);
+      if (btn) btn.focus();
     });
   }
 
@@ -977,6 +1048,7 @@
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
     clickParams: clickParams,
+    toggleSkins: toggleSkins,
     setSound: setSound,
     soundOn: soundOn,
     hint: hint,

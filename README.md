@@ -22,7 +22,7 @@ screen, opens a drawer beneath the meter with the charts and tables behind
 the number. HOLD freezes the display. The COM jack lights while the US
 market is open.
 
-The coloured dots beside the brand pick the skin: gold (the default), blue,
+The palette beside the name opens the skins: gold (the default), blue,
 pink, green, red, purple or silver. A skin recolours the holster and the
 accents. The choice is stored in this browser (`mm.skin`) and applied before
 the first paint.
@@ -150,10 +150,10 @@ fetches the BTC chart per range.
 **Ticks, from Coinbase.** Coinbase Exchange's public WebSocket feed streams
 BTC-USD, ETH-USD, the probe coin and, while the switch is on crypto, the two
 crypto movers, each when Coinbase lists it. While a
-tick is under a minute old the screen shows LIVE and paints Coinbase's last
+tick is under a minute old the screen paints Coinbase's last
 trade; when the feed is quiet or blocked the polled CoinGecko price takes
 over. The two sources differ by a few dollars, which is why the price can
-step when the lamp goes out. One subscription per product, so a coin Coinbase
+step when the feed goes quiet. One subscription per product, so a coin Coinbase
 does not carry fails alone. The drawer's rows always follow the poll.
 
 **Everything else, from snapshot files.** Financial Modeling Prep and Alpha
@@ -255,7 +255,7 @@ package.json                 the data job's one dependency (Anthropic SDK)
 src/
   index.template.html        page shell with two @inject markers
   findings.template.html     the write-up, with data-f slots for the numbers
-  styles.css                 the meter body, display, dial and drawer; single theme, Space Grotesk + JetBrains Mono via Google Fonts
+  styles.css                 the meter body, display, dial and drawer; single theme; Neue Haas Grotesk outside the screen (Helvetica Neue, then Inter Tight, where it is not installed), Space Grotesk and JetBrains Mono on it
   lib/
     stats.js                 statistics (pure)
     format.js                display formatting

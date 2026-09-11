@@ -25,7 +25,7 @@
 <meta name="apple-mobile-web-app-title" content="Multimeter">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap">
 <script>
 /* A saved skin goes on before the first paint, so the page never flashes gold first. */
 try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
@@ -42,8 +42,10 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
  * card so the charts and tables read as the instrument's manual, not more
  * instrument.
  *
- * Type: Space Grotesk for the body, the labels and the big price, JetBrains
- * Mono for the display's small annunciators.
+ * Type: outside the screen, Neue Haas Grotesk (see --f-body for the
+ * fallbacks) for the name, the labels, the keys and the drawer. On the
+ * screen, Space Grotesk for the big figures and JetBrains Mono for the
+ * small annunciators.
  *
  * SINGLE THEME BY CHOICE. A physical object has one colour, so every colour
  * is painted explicitly rather than swapped with the viewer's theme.
@@ -107,7 +109,10 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
 
   --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --f-lcd: "JetBrains Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
-  --f-brand: "Unbounded", "Space Grotesk", -apple-system, "Segoe UI", sans-serif;   /* the wordmark only */
+  /* Everything outside the screen. Neue Haas Grotesk where it is installed,
+   * Helvetica Neue (its descendant, on every Apple device) next, and Inter
+   * Tight, a free near-match from Google Fonts, everywhere else. */
+  --f-body: "Neue Haas Grotesk Display Pro", "Neue Haas Grotesk Text Pro", "NHaasGroteskDSPro", "NHaasGroteskTXPro", "Helvetica Neue", "Inter Tight", Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -118,7 +123,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--f-ui);
+  font-family: var(--f-body);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -170,10 +175,10 @@ body {
  * heavy, in the skin's accent, lifted off the body with a light edge above,
  * a shadow below and a faint glow. */
 .brand {
-  font-family: var(--f-brand);
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-family: var(--f-body);
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
   line-height: 1;
   color: var(--holster);
   text-shadow:
@@ -233,14 +238,6 @@ body {
 .ann-bell b { font-weight: 700; }
 .ann-bell.is-on { opacity: 1; color: var(--holster); }
 .ann-bell:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
-.ann-live { display: inline-flex; align-items: center; gap: 6px; opacity: 0.18; }
-.ann-live .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.ann-live.is-on { opacity: 1; color: var(--up); }
-.ann-live.is-on .dot { animation: live-pulse 1.2s ease-in-out infinite; }
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
 
 /* the chart has the top of the screen to itself; a fixed aspect keeps the
  * screen the same height whether or not a series has arrived */
@@ -360,7 +357,7 @@ body {
 /* ---- keys ---------------------------------------------------------------- */
 .keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; }
 .key {
-  font-family: var(--f-ui);
+  font-family: var(--f-body);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -407,7 +404,7 @@ body {
 .dial-hit { fill: transparent; pointer-events: all; cursor: pointer; transition: fill 200ms ease; }
 .dial-lab {
   fill: var(--text);
-  font-family: var(--f-ui);
+  font-family: var(--f-body);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -482,7 +479,7 @@ body {
 }
 .jack-com { border-color: var(--knob-lt); }
 .jack-com.is-closed { background: var(--led-off); }
-.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt), 0 0 14px var(--led); }
+.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt); }
 .jack-text {
   flex-basis: 100%;
   text-align: center;
@@ -557,20 +554,72 @@ body {
 
 .head { align-items: center; }
 .head-right { display: flex; align-items: center; gap: 14px; }
-.skins { display: flex; align-items: center; gap: 8px; }
-.skin {
-  width: 16px;
-  height: 16px;
+/* the palette icon, painted in the skin's own colour */
+.skin-picker { position: relative; display: inline-flex; }
+.skin-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
   padding: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--holster);
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+  transition: transform 140ms ease, background 140ms ease;
 }
-.skin:hover { transform: scale(1.18); }
-.skin[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
-.skin:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.skin-toggle:hover { transform: rotate(-10deg) scale(1.08); }
+.skin-toggle[aria-expanded="true"] { background: rgba(255, 255, 255, 0.07); }
+.skin-toggle:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+
+/* the open palette: white, with a dab of every colour */
+.skin-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -6px;
+  width: 216px;
+  height: 198px;
+  z-index: 20;
+  transform-origin: 88% 0;
+  animation: palette-in 200ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes palette-in {
+  from { opacity: 0; transform: scale(0.82) rotate(-6deg); }
+  to { opacity: 1; transform: none; }
+}
+.skin-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: #fbfaf6;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55));
+}
+.skin {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50% 46% 52% 48%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18), inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.skin:hover { transform: translate(-50%, -50%) scale(1.12); }
+.skin[aria-pressed="true"] { box-shadow: 0 0 0 3px #fbfaf6, 0 0 0 5px #1b1f26, inset 0 -3px 0 rgba(0, 0, 0, 0.18); }
+.skin:focus-visible { outline: 2px solid #1b1f26; outline-offset: 4px; }
+/* where each dab sits on the board, in the board's own proportions */
+.skin[data-skin="gold"] { left: 21%; top: 53%; }
+.skin[data-skin="blue"] { left: 26%; top: 32%; }
+.skin[data-skin="pink"] { left: 39%; top: 20%; }
+.skin[data-skin="green"] { left: 56%; top: 18%; }
+.skin[data-skin="red"] { left: 72%; top: 25%; }
+.skin[data-skin="purple"] { left: 84%; top: 40%; }
+.skin[data-skin="silver"] { left: 55%; top: 46%; }
 .skin[data-skin="gold"] { background: #f6b71f; }
 .skin[data-skin="blue"] { background: #3b82f6; }
 .skin[data-skin="pink"] { background: #f472b6; }
@@ -580,9 +629,8 @@ body {
 .skin[data-skin="silver"] { background: #cbd5e1; }
 @media (max-width: 480px) {
   .model { display: none; }
-  .skins { gap: 4px; }
-  .brand { font-size: 16px; letter-spacing: 0; }
-  .skin { width: 13px; height: 13px; }
+  .brand { font-size: 21px; }
+  .skin-menu { right: -10px; }
 }
 
 /* ---- the daily reading ---------------------------------------------------- */
@@ -702,7 +750,7 @@ body {
 /* the probe jack's search and results */
 .probe-search {
   display: block; width: 100%;
-  font-family: var(--f-ui); font-size: 15px; font-weight: 500;
+  font-family: var(--f-body); font-size: 15px; font-weight: 500;
   color: var(--text); background: var(--cell);
   border: 1px solid var(--rule); border-radius: 10px;
   padding: 12px 14px; margin: 4px 0 6px;
@@ -987,14 +1035,20 @@ tr.row-rule th {
         <div class="head">
           <span class="brand">MULTIMETER</span>
           <span class="head-right">
-            <span class="skins" id="skins" role="group" aria-label="Skin">
-              <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
-              <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
-              <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
+            <span class="skin-picker">
+              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: gold. Choose a colour.">
+                <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
+              </button>
+              <span class="skin-menu" id="skins" role="group" aria-label="Skin" hidden>
+                <svg class="skin-board" viewBox="0 0 24 22" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM9.6 14.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 1 0 0-2.8z"/></svg>
+                <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
+                <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
+              </span>
             </span>
             <span class="model" aria-hidden="true">MM-10</span>
           </span>
@@ -1004,7 +1058,6 @@ tr.row-rule th {
           <div class="lcd-row">
             <span class="ann" id="lcdMode"></span>
             <span class="ann-group">
-              <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
               <span class="ann ann-rel" id="lcdRel">REL</span>
               <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
               <button type="button" class="ann ann-sound is-on" id="lcdSound" aria-pressed="true" aria-label="Sound on. Press to mute."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
@@ -1199,7 +1252,7 @@ tr.row-rule th {
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
 
       <h2>Skins</h2>
-      <p>The coloured dots beside the brand pick the skin: gold, blue, pink, green, red, purple or silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
+      <p>The palette beside the name opens the skins: gold, blue, pink, green, red, purple and silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
 
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
@@ -3348,7 +3401,7 @@ tr.row-rule th {
   var detentTimer = null;
   var audio = null;
   var master = null;     /* every sound goes through this */
-  var noise = null;      /* 30 ms of white noise, made once, for the tick */
+  var noise = null;      /* 80 ms of white noise, made once, for the tick and the tock */
   var lastClickAt = 0;
   var SOUND_KEY = 'sound';
   var soundIsOn = readSound();
@@ -3370,8 +3423,15 @@ tr.row-rule th {
       try { audio = new AC({ latencyHint: 'interactive' }); } catch (e1) { audio = new AC(); }
       master = audio.createGain();
       master.gain.value = 1;
-      master.connect(audio.destination);
-      var n = Math.floor(audio.sampleRate * 0.03);
+      /* a gentle limiter, so presses that overlap on a fast spin never clip */
+      var limiter = audio.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.ratio.value = 4;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.05;
+      master.connect(limiter);
+      limiter.connect(audio.destination);
+      var n = Math.floor(audio.sampleRate * 0.08);
       noise = audio.createBuffer(1, n, audio.sampleRate);
       var ch = noise.getChannelData(0);
       for (var i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
@@ -3382,12 +3442,15 @@ tr.row-rule th {
     return soundIsOn && !!audio && !!master && !!noise && audio.state === 'running';
   }
 
-  /* The click's recipe, pure so the tests can hold it to account. A
-   * mechanical detent is two layers: a bright tick (filtered noise) and a
-   * low thock (a sine whose pitch falls). Every click varies a little, so a
-   * spin never repeats itself. Clicks closer than FAST_MS apart come shorter
-   * and softer, so a fast spin purrs. The end stop is lower and longer; the
-   * settle tap is a quiet echo of a detent.
+  /* The click's recipe, pure so the tests can hold it to account. Each
+   * detent sounds like a key on a mechanical keyboard: a sharp tick as the
+   * cap lands (high-passed noise), the hollow tock of the plastic (noise in
+   * a narrow band around 520 Hz), a low thump as the switch bottoms out (a
+   * sine whose pitch falls), and a softer upstroke as the key springs back.
+   * Every press varies a little, so a spin never repeats itself. Presses
+   * closer than FAST_MS apart come shorter and softer and skip the
+   * upstroke, so a fast spin purrs. The end stop is a deeper, longer
+   * bottom-out; the settle tap is a whisper.
    * kind: 'detent' | 'stop' | 'settle'; sinceMs: time since the last click;
    * rand: a function returning [0, 1). */
   var FAST_MS = 45;
@@ -3396,22 +3459,31 @@ tr.row-rule th {
     var pitch = 1 + (r() * 2 - 1) * 0.04;
     var level = 1 + (r() * 2 - 1) * 0.08;
     var p = {
-      tickHz: 3800 * pitch, tickQ: 1.2, tickDur: 0.005, tickGain: 0.22,
-      thockHz: 210 * pitch, thockEndHz: 120 * pitch, thockDur: 0.035, thockGain: 0.2
+      tickHz: 2400 * pitch, tickDur: 0.003, tickGain: 0.14,
+      bodyHz: 520 * pitch, bodyQ: 3.5, bodyDur: 0.028, bodyGain: 2.6,
+      thockHz: 150 * pitch, thockEndHz: 95 * pitch, thockDur: 0.03, thockGain: 0.2,
+      upDelay: 0.055, upGain: 0.35
     };
     if (kind === 'stop') {
-      p.tickHz = 2600 * pitch; p.tickDur = 0.007; p.tickGain = 0.26;
-      p.thockHz = 105 * pitch; p.thockEndHz = 60 * pitch; p.thockDur = 0.07; p.thockGain = 0.3;
+      p.tickGain = 0.18;
+      p.bodyHz = 300 * pitch; p.bodyQ = 2.5; p.bodyDur = 0.045; p.bodyGain = 3.2;
+      p.thockHz = 90 * pitch; p.thockEndHz = 55 * pitch; p.thockDur = 0.06; p.thockGain = 0.32;
+      p.upGain = 0;
     } else if (kind === 'settle') {
-      p.tickHz = 4600 * pitch; p.tickDur = 0.003; p.tickGain = 0.07;
-      p.thockHz = 260 * pitch; p.thockEndHz = 170 * pitch; p.thockDur = 0.02; p.thockGain = 0.06;
+      p.tickGain = 0.05;
+      p.bodyHz = 760 * pitch; p.bodyDur = 0.012; p.bodyGain = 0.8;
+      p.thockGain = 0;
+      p.upGain = 0;
     } else if (typeof sinceMs === 'number' && sinceMs < FAST_MS) {
-      p.tickDur *= 0.6; p.thockDur *= 0.6; p.tickGain *= 0.6; p.thockGain *= 0.6;
+      p.tickDur *= 0.6; p.bodyDur *= 0.6; p.thockDur *= 0.6;
+      p.tickGain *= 0.6; p.bodyGain *= 0.6; p.thockGain *= 0.6;
+      p.upGain = 0;
     }
     p.tickGain *= level;
+    p.bodyGain *= level;
     p.thockGain *= level;
-    p.dur = Math.max(p.tickDur, p.thockDur);
-    p.gain = Math.max(p.tickGain, p.thockGain);
+    p.dur = Math.max(p.tickDur, p.bodyDur, p.thockDur);
+    p.gain = Math.max(p.tickGain, p.bodyGain, p.thockGain);
     return p;
   }
 
@@ -3421,7 +3493,37 @@ tr.row-rule th {
     g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
   }
 
-  /* One click, `delay` seconds from now. */
+  /* A burst of filtered noise: the tick and the tock. */
+  function noiseHit(t, type, freq, q, peak, attack, decay) {
+    if (!(peak > 0)) return;
+    var src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+    src.buffer = noise;
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    envelope(g, t, peak, attack, decay);
+    src.connect(f);
+    f.connect(g);
+    g.connect(master);
+    src.start(t, Math.random() * 0.02);   /* a different stretch of noise each press */
+    src.stop(t + attack + decay + 0.01);
+  }
+
+  /* A falling sine: the thump as the switch bottoms out. */
+  function sineHit(t, f0, f1, peak, attack, decay) {
+    if (!(peak > 0)) return;
+    var osc = audio.createOscillator(), g = audio.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f1, t + decay * 0.85);
+    envelope(g, t, peak, attack, decay);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(t);
+    osc.stop(t + attack + decay + 0.01);
+  }
+
+  /* One key press, `delay` seconds from now. */
   function click(kind, delay) {
     if (!canPlay()) return;
     var now = Date.now(), since = now - lastClickAt;
@@ -3429,28 +3531,14 @@ tr.row-rule th {
     var p = clickParams(kind || 'detent', since);
     try {
       var t = audio.currentTime + (delay || 0);
-
-      var src = audio.createBufferSource(), band = audio.createBiquadFilter(), tg = audio.createGain();
-      src.buffer = noise;
-      band.type = 'bandpass';
-      band.frequency.value = p.tickHz;
-      band.Q.value = p.tickQ;
-      envelope(tg, t, p.tickGain, 0.0005, p.tickDur);
-      src.connect(band);
-      band.connect(tg);
-      tg.connect(master);
-      src.start(t);
-      src.stop(t + p.tickDur + 0.01);
-
-      var osc = audio.createOscillator(), og = audio.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(p.thockHz, t);
-      osc.frequency.exponentialRampToValueAtTime(p.thockEndHz, t + p.thockDur * 0.85);
-      envelope(og, t, p.thockGain, 0.001, p.thockDur);
-      osc.connect(og);
-      og.connect(master);
-      osc.start(t);
-      osc.stop(t + p.thockDur + 0.01);
+      noiseHit(t, 'highpass', p.tickHz, 0.7, p.tickGain, 0.0003, p.tickDur);
+      noiseHit(t, 'bandpass', p.bodyHz, p.bodyQ, p.bodyGain, 0.0008, p.bodyDur);
+      sineHit(t, p.thockHz, p.thockEndHz, p.thockGain, 0.001, p.thockDur);
+      if (p.upGain > 0) {
+        var u = t + p.upDelay;   /* the key springs back up */
+        noiseHit(u, 'highpass', p.tickHz * 1.15, 0.7, p.tickGain * p.upGain, 0.0003, p.tickDur);
+        noiseHit(u, 'bandpass', p.bodyHz * 1.25, p.bodyQ, p.bodyGain * p.upGain, 0.0008, p.bodyDur * 0.7);
+      }
     } catch (e) { /* no sound is fine */ }
   }
 
@@ -3953,8 +4041,6 @@ tr.row-rule th {
         modeEl.textContent = off ? '' : r.mode || '';
       }
     }
-    var live = el('lcdLive');
-    if (live) live.classList.toggle('is-on', !off && !!r.live);
 
     var chart = el('lcdChart');
     if (chart) {
@@ -4085,6 +4171,20 @@ tr.row-rule th {
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-skin') === cur ? 'true' : 'false');
     }
+    var btn = el('skinBtn');
+    if (btn) btn.setAttribute('aria-label', 'Skin: ' + cur + '. Choose a colour.');
+  }
+
+  /* The palette: a small icon in the skin's colour opens a white palette
+   * with a dab of every colour. open: true, false, or undefined to toggle.
+   * Returns whether it is open. */
+  function toggleSkins(open) {
+    var menu = el('skins'), btn = el('skinBtn');
+    if (!menu) return false;
+    var show = open === undefined ? menu.hidden : !!open;
+    menu.hidden = !show;
+    if (btn) btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    return show;
   }
 
   /* Unknown names are ignored. Returns the skin in force. */
@@ -4108,6 +4208,30 @@ tr.row-rule th {
       if (!b) return;
       primeAudio();
       if (setSkin(b.getAttribute('data-skin'))) tickSound();
+    });
+
+    /* the palette stays open while colours are tried; a click elsewhere or
+     * Escape puts it away */
+    var btn = el('skinBtn');
+    if (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        primeAudio();
+        if (toggleSkins()) {
+          var on = host.querySelector('.skin[aria-pressed="true"]');
+          if (on && on.focus) on.focus({ preventScroll: true });
+        }
+      });
+    }
+    document.addEventListener('click', function (ev) {
+      if (host.hidden) return;
+      if (ev.target.closest && ev.target.closest('.skin-picker')) return;
+      toggleSkins(false);
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape' || host.hidden) return;
+      toggleSkins(false);
+      if (btn) btn.focus();
     });
   }
 
@@ -4156,6 +4280,7 @@ tr.row-rule th {
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
     clickParams: clickParams,
+    toggleSkins: toggleSkins,
     setSound: setSound,
     soundOn: soundOn,
     hint: hint,
@@ -4528,7 +4653,7 @@ tr.row-rule th {
       document.fonts.load('700 88px "Space Grotesk"'),
       document.fonts.load('600 30px "Space Grotesk"'),
       document.fonts.load('600 22px "JetBrains Mono"'),
-      document.fonts.load('800 26px "Unbounded"')
+      document.fonts.load('900 28px "Inter Tight"')
     ]).then(function () { return document.fonts.ready; }).catch(function () { /* system fonts then */ });
   }
 
@@ -4562,7 +4687,7 @@ tr.row-rule th {
       ctx.fillText(String(meta.mode || '').toUpperCase(), 80, 74);
       ctx.textAlign = 'right';
       ctx.fillStyle = token('--holster');
-      ctx.font = '800 26px "Unbounded", "Space Grotesk", sans-serif';   /* the wordmark, as on the meter */
+      ctx.font = '900 28px "Neue Haas Grotesk Display Pro", "Helvetica Neue", "Inter Tight", sans-serif';   /* the wordmark, as on the meter */
       ctx.fillText('MULTIMETER', W - 80, 70);
       ctx.textAlign = 'left';
 
