@@ -253,9 +253,13 @@ body {
 .lcd-chg {
   font-family: var(--f-ui);
   font-size: 19px;
+  line-height: 24px;   /* fixed, so a caption or a hint keeps the screen's height */
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--lcd-dim);
 }
 .lcd-chg.is-up { color: var(--up); }
@@ -304,6 +308,7 @@ body {
 .rng {
   font-family: var(--f-ui);
   font-size: 13px;
+  line-height: 16px;   /* fixed, so a row of arrows is as tall as a row of labels */
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--lcd-dim);
@@ -553,7 +558,8 @@ body {
 .skin[data-skin="silver"] { background: #cbd5e1; }
 @media (max-width: 480px) {
   .model { display: none; }
-  .skins { gap: 7px; }
+  .skins { gap: 4px; }
+  .brand { letter-spacing: 0.1em; }
 }
 
 /* ---- the daily reading ---------------------------------------------------- */
@@ -775,6 +781,102 @@ tr.row-rule th {
 .prose a:hover { color: var(--holster); }
 .prose a:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 
+/* ---- MOVER, LOSER and WATCH ------------------------------------------------- */
+/* the mode line carries the badge and the rank; it gives way before the
+ * annunciators do */
+#lcdMode { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lcd-row .ann-group { flex: none; }
+.lcd-badge {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 7px;
+  line-height: 14px;   /* 18px with the padding: the row's own height */
+  border-radius: 5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--lcd-dk);
+}
+.lcd-badge.is-up { background: var(--up); box-shadow: 0 0 12px rgba(46, 229, 157, 0.35); }
+.lcd-badge.is-down { background: var(--down); box-shadow: 0 0 12px rgba(255, 107, 107, 0.35); }
+.lcd-ticker {
+  font-size: 0.58em;
+  letter-spacing: 0.02em;
+  margin-right: 0.4em;
+  color: var(--lcd-ink);
+  vertical-align: 0.08em;
+}
+.lcd-price.is-up { color: var(--up); text-shadow: 0 0 22px rgba(46, 229, 157, 0.28); }
+.lcd-price.is-down { color: var(--down); text-shadow: 0 0 22px rgba(255, 107, 107, 0.28); }
+.lcd-ranges[data-kind="switch"] .rng.is-on { background: var(--holster); color: var(--lcd-dk); }
+.rng-step { padding-left: 14px; padding-right: 14px; font-size: 17px; line-height: 16px; }
+.rng[disabled] { opacity: 0.3; cursor: default; }
+
+.movers-kind { margin: 0 0 12px; }
+.mv-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 18px; }
+.mv-logo {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--cell);
+  object-fit: contain;
+  padding: 6px;
+}
+.mv-mono { display: grid; place-items: center; padding: 0; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; color: var(--holster); }
+.mv-id { flex: 1; min-width: 0; }
+.mv-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.mv-badge { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 6px; color: var(--lcd-dk); }
+.mv-badge.is-up { background: var(--up); }
+.mv-badge.is-down { background: var(--down); }
+.mv-title .pill { padding: 4px 12px; background: var(--cell); }
+.mv-name { margin-top: 2px; font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mv-move { flex: none; text-align: right; font-size: clamp(26px, 6vw, 36px); font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mv-move.is-up { color: var(--pos); }
+.mv-move.is-down { color: var(--neg); }
+.mv-move-label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+.mv-sub { margin: 22px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+
+.board { list-style: none; margin: 0 0 8px; padding: 0; }
+.board li {
+  display: grid;
+  grid-template-columns: 30px 64px minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13.5px;
+}
+.board li.is-pick { background: var(--cell); border-radius: 8px; border-bottom-color: transparent; }
+.board .b-rank { color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; }
+.board .b-sym { font-weight: 700; }
+.board .b-bar { height: 8px; border-radius: 4px; background: var(--cell); overflow: hidden; }
+.board .b-bar i { display: block; height: 100%; border-radius: 4px; }
+.board .is-up .b-bar i { background: var(--pos); }
+.board .is-down .b-bar i { background: var(--neg); }
+.board .b-chg { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.board .is-up .b-chg { color: var(--pos); }
+.board .is-down .b-chg { color: var(--neg); }
+.board li.b-gap { display: block; padding: 6px; text-align: center; font-size: 12px; color: var(--dim); }
+
+.watch-table .linkish {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.watch-table .linkish:hover, .watch-table tr.is-on .linkish { color: var(--holster); }
+.watch-table th .row-desc { max-width: 22ch; font-weight: 400; }
+.watch-table .pill { padding: 4px 10px; }
+.watch-table .chg { font-size: 13px; }
+@media (max-width: 480px) {
+  .board li { grid-template-columns: 26px 54px minmax(0, 1fr) 64px; gap: 8px; }
+  .mv-title { font-size: 20px; }
+}
+
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
   .stage { padding: 10px 6px 32px; gap: 12px; }
@@ -858,11 +960,11 @@ tr.row-rule th {
               <span class="ann" id="lcdMax"></span>
             </div>
           </div>
-          <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range">
-            <button type="button" class="rng is-on" data-days="1" aria-pressed="true">24H</button>
-            <button type="button" class="rng" data-days="7" aria-pressed="false">1W</button>
-            <button type="button" class="rng" data-days="30" aria-pressed="false">1M</button>
-            <button type="button" class="rng" data-days="365" aria-pressed="false">1Y</button>
+          <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range" data-kind="ranges" data-sig="ranges|1,7,30,365">
+            <button type="button" class="rng is-on" data-tab="ranges" data-value="1" aria-pressed="true">24H</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="7" aria-pressed="false">1W</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="30" aria-pressed="false">1M</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="365" aria-pressed="false">1Y</button>
           </div>
         </div>
 
@@ -878,7 +980,7 @@ tr.row-rule th {
         <div class="face face-dial">
 
         <div class="dial" id="dial">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="11" aria-valuenow="1"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="12" aria-valuenow="1"></div>
         </div>
 
         <div class="jacks">
@@ -925,47 +1027,26 @@ tr.row-rule th {
       <div id="marketNotice"></div>
     </section>
 
-    <!-- STOCK -->
-    <section class="view" data-panel="weekly" hidden>
-      <div class="hero">
-        <div class="hero-top">
-          <span class="hero-asset" id="spotSymbol">—</span>
-          <span class="muted" id="spotWeek">—</span>
-        </div>
-        <div class="hero-price" id="spotPx">—</div>
-        <div class="hero-sub">
-          <span class="chg is-flat" id="spotChg">—</span>
-          <span class="muted" id="spotName">—</span>
-        </div>
-      </div>
-
-      <div class="chartbox" id="spotSpark"></div>
-
-      <div class="strip" id="spotStrip"></div>
-      <p class="foot" id="spotRunner"></p>
-      <div id="spotNotice"></div>
+    <!-- MOVER / LOSER -->
+    <section class="view" data-panel="movers" hidden>
+      <div class="pills movers-kind" id="moversKind" role="group" aria-label="Stocks or crypto"></div>
+      <div class="mv-head" id="mvHead"></div>
+      <div class="strip" id="mvStrip"></div>
+      <div class="chartbox" id="mvChart"></div>
+      <p class="foot" id="mvChartFoot"></p>
+      <div id="mvBoard"></div>
+      <p class="foot" id="mvRunner"></p>
+      <p class="foot" id="mvRule"></p>
+      <div id="mvNotice"></div>
     </section>
 
-    <!-- CRYPTO -->
-    <section class="view" data-panel="crypto" hidden>
-      <div class="hero">
-        <div class="hero-top">
-          <span class="hero-asset" id="cryptoSymbol">—</span>
-          <span class="muted" id="cryptoWeek">—</span>
-        </div>
-        <div class="hero-price" id="cryptoPx">—</div>
-        <div class="hero-sub">
-          <span class="chg is-flat" id="cryptoChg">—</span>
-          <span class="muted" id="cryptoName">—</span>
-        </div>
-      </div>
-
-      <div class="chartbox" id="cryptoSpark"></div>
-      <p class="foot">Seven days, hourly.</p>
-
-      <div class="strip" id="cryptoStrip"></div>
-      <p class="foot" id="cryptoRunner"></p>
-      <div id="cryptoNotice"></div>
+    <!-- WATCH -->
+    <section class="view" data-panel="watch" hidden>
+      <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a Nasdaq-100 stock by symbol or name" aria-label="Add a Nasdaq-100 stock">
+      <ul class="rows picks" id="watchResults"></ul>
+      <div class="table-host" id="watchTable"></div>
+      <p class="foot">Daily closes from the data job, not live prices. Up to 8 stocks. The list stays in this browser.</p>
+      <div id="watchNotice"></div>
     </section>
 
     <!-- PROBE -->
@@ -1027,14 +1108,14 @@ tr.row-rule th {
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. For the coins, the tabs on the screen set the chart's range. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. The tabs on the screen set the chart's range for the coins, switch MOVER and LOSER between stocks and crypto, and step through WATCH. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
       <h2>Dial</h2>
       <p><b>BTC</b>, <b>ETH</b>: spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. Both trade every calendar day.</p>
       <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
-      <p><b>STOCK</b>: the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe and stores the name with the largest absolute five-session move.</p>
-      <p><b>CRYPTO</b>: the crypto of the week, chosen the same way from a fixed 15-name large-cap universe over seven days. Bitcoin and ether are left out because they have their own stops.</p>
-      <p>The picks rank by absolute move, not by gain, because a ranking of winners would read as a tip. They report what moved in either direction. They are not recommendations.</p>
+      <p><b>MOVER</b> and <b>LOSER</b>: the highest and the lowest move of the past week. For stocks, the data job keeps the daily closes of every Nasdaq-100 member it can price and ranks their five-session moves once it has them all, usually before Monday's open. For crypto, it ranks 15 large coins other than bitcoin and ether by their seven-day move. The tabs on the screen switch between the two, and the drawer shows the five highest and the five lowest together.</p>
+      <p>Both ends describe the past week. Neither is a recommendation.</p>
+      <p><b>WATCH</b>: up to eight Nasdaq-100 stocks you choose. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
       <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
       <p><b>NOTE</b>: the daily reading. After each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template. The drawer shows the figures it was given.</p>
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
@@ -1054,7 +1135,7 @@ tr.row-rule th {
       <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the Nasdaq-100 members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Company logos load from Financial Modeling Prep's public image service. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>
@@ -2017,6 +2098,7 @@ tr.row-rule th {
       supply: toNum(coin.circulating_supply),
       maxSupply: toNum(coin.max_supply),
       rank: toNum(coin.market_cap_rank),
+      image: typeof coin.image === 'string' ? coin.image : null,
       sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
       updatedAt: Date.parse(coin.last_updated) || null
     };
@@ -2635,19 +2717,22 @@ tr.row-rule th {
  *
  * Each stop is one reading on the meter's screen and one panel in the detail
  * drawer below it; several stops can share a panel (ETH and S&P both open
- * the markets panel). Only one panel is ever shown. Charts render into
- * hidden panels quite happily because every SVG carries a viewBox and sizes
- * from CSS, so nothing needs re-rendering on reveal.
+ * the markets panel, MOVER and LOSER the movers panel). Only one panel is
+ * ever shown. Charts render into hidden panels quite happily because every
+ * SVG carries a viewBox and sizes from CSS, so nothing needs re-rendering on
+ * reveal.
  *
  * Old section hashes are kept as aliases so links out in the world still land
- * somewhere sensible.
+ * somewhere sensible. #stock and #crypto named stops that became MOVER and
+ * LOSER: both land on MOVER, and aliasState() tells the page which side of
+ * the Stocks | Crypto switch they meant.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd', 'note'];
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'mover', 'loser', 'watch', 'probe', 'corr', 'vol', 'dd', 'note'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -2657,7 +2742,12 @@ tr.row-rule th {
     sp500: 'spx',
     home: 'btc',
     markets: 'btc',
-    weekly: 'stock',
+    stock: 'mover',
+    weekly: 'mover',
+    crypto: 'mover',
+    movers: 'mover',
+    losers: 'loser',
+    watchlist: 'watch',
     coupling: 'corr',
     beta: 'corr',
     volatility: 'vol',
@@ -2667,6 +2757,13 @@ tr.row-rule th {
     daily: 'note'
   };
 
+  /* What an alias meant beyond the stop it lands on. */
+  var ALIAS_STATE = {
+    stock: { movers: 'stocks' },
+    weekly: { movers: 'stocks' },
+    crypto: { movers: 'crypto' }
+  };
+
   /* Which drawer panel (.view[data-panel]) each stop opens. */
   var PANELS = {
     off: 'about',
@@ -2674,8 +2771,9 @@ tr.row-rule th {
     eth: 'markets',
     nasdaq: 'markets',
     spx: 'markets',
-    stock: 'weekly',
-    crypto: 'crypto',
+    mover: 'movers',
+    loser: 'movers',
+    watch: 'watch',
     probe: 'probe',
     corr: 'coupling',
     vol: 'volatility',
@@ -2689,8 +2787,9 @@ tr.row-rule th {
     eth: 'Ether',
     nasdaq: 'Nasdaq Composite',
     spx: 'S&P 500',
-    stock: 'Stock of the week',
-    crypto: 'Crypto of the week',
+    mover: 'Highest weekly move',
+    loser: 'Lowest weekly move',
+    watch: 'Watch list',
     probe: 'Probe',
     corr: 'Correlation',
     vol: 'Volatility',
@@ -2703,12 +2802,22 @@ tr.row-rule th {
 
   var DEFAULT_VIEW = 'btc';
 
+  function rawOf(hash) {
+    return String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+  }
+
   /* Pure: '#corr' -> 'corr', '#coupling' -> 'corr'; anything unrecognised ->
    * the default. */
   function parseHash(hash) {
-    var raw = String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+    var raw = rawOf(hash);
     raw = ALIASES[raw] || raw;
     return VIEWS.indexOf(raw) >= 0 ? raw : DEFAULT_VIEW;
+  }
+
+  /* Pure: '#crypto' -> { movers: 'crypto' }; a hash with nothing extra -> null. */
+  function aliasState(hash) {
+    var s = ALIAS_STATE[rawOf(hash)];
+    return s ? Object.assign({}, s) : null;
   }
 
   var current = null;
@@ -2775,6 +2884,7 @@ tr.row-rule th {
     TITLES: TITLES,
     DEFAULT_VIEW: DEFAULT_VIEW,
     parseHash: parseHash,
+    aliasState: aliasState,
     show: show,
     go: go,
     overridePanel: overridePanel,
@@ -2887,9 +2997,16 @@ tr.row-rule th {
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
 
+  /* An alert on a stop the dial no longer has (STOCK and CRYPTO became
+   * MOVER and LOSER) is dropped when the list loads. */
+  function live(stop) {
+    var views = MP.router && MP.router.VIEWS;
+    return !views || views.indexOf(stop) >= 0;
+  }
+
   function valid(a) {
     return a && typeof a === 'object' && typeof a.id === 'string' && typeof a.stop === 'string' &&
-      isNum(a.level) && (a.dir === 'above' || a.dir === 'below');
+      isNum(a.level) && (a.dir === 'above' || a.dir === 'below') && live(a.stop);
   }
 
   var list = null;   /* loaded lazily, then kept in memory */
@@ -2988,7 +3105,7 @@ tr.row-rule th {
 /* ============================================================================
  * meter.js: the instrument itself: the rotary dial, the knob, and the screen.
  *
- * The dial has twelve stops over 320 degrees, clockwise from OFF at the top,
+ * The dial has thirteen stops over 320 degrees, clockwise from OFF at the top,
  * with a dead zone at eleven o'clock like a real range switch. Each stop is
  * a router view; turning the knob navigates, and navigation turns the knob,
  * so the back button and a typed hash both move the dial.
@@ -3016,8 +3133,9 @@ tr.row-rule th {
     { id: 'eth', label: 'ETH' },
     { id: 'nasdaq', label: 'NASDAQ' },
     { id: 'spx', label: 'S&P' },
-    { id: 'stock', label: 'STOCK' },
-    { id: 'crypto', label: 'CRYPTO' },
+    { id: 'mover', label: 'MOVER' },      /* the week's highest move, stocks or crypto */
+    { id: 'loser', label: 'LOSER' },      /* and the lowest */
+    { id: 'watch', label: 'WATCH' },      /* the viewer's own Nasdaq-100 stocks */
     { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
     { id: 'corr', label: 'CORR' },
     { id: 'vol', label: 'VOL' },
@@ -3473,11 +3591,26 @@ tr.row-rule th {
     }
     if (ranges) {
       ranges.addEventListener('click', function (ev) {
-        var btn = ev.target.closest ? ev.target.closest('.rng[data-days]') : null;
-        if (!btn) return;
+        var btn = ev.target.closest ? ev.target.closest('.rng[data-tab]') : null;
+        if (!btn || btn.disabled) return;
         ev.stopPropagation();
-        var days = parseInt(btn.getAttribute('data-days'), 10);
-        if (days && MP.app && MP.app.setRange) MP.app.setRange(days);
+        var app = MP.app;
+        if (!app) return;
+        var tab = btn.getAttribute('data-tab'), value = btn.getAttribute('data-value');
+        primeAudio();
+        if (tab === 'ranges' && app.setRange) {
+          app.setRange(parseInt(value, 10));
+        } else if (tab === 'switch' && app.setMoversKind) {
+          app.setMoversKind(value);
+          tickSound();
+          swapScreen();
+        } else if (tab === 'step' && app.stepWatch) {
+          app.stepWatch(parseInt(value, 10));
+          tickSound();
+          swapScreen();
+        } else if (tab === 'watch' && app.setWatchRange) {
+          app.setWatchRange(parseInt(value, 10));
+        }
       });
     }
   }
@@ -3496,7 +3629,7 @@ tr.row-rule th {
   function changeText(c, unit) {
     if (!c) return MP.fmt.DASH;
     if (isNum(c.pct)) {
-      var abs = absText(c.abs, unit, c.dp);
+      var abs = absText(c.abs, c.usd ? 'USD' : unit, c.dp);   /* usd: a price move under a non-price headline */
       return (c.pct >= 0 ? UP : DOWN) + ' ' + (abs ? abs + ' ' : '') + '(' + Math.abs(c.pct).toFixed(2) + '%)';
     }
     if (isNum(c.delta)) {
@@ -3518,11 +3651,68 @@ tr.row-rule th {
     if (typeof r.note === 'string') {
       return title + ', session of ' + r.text + '. ' + r.note + ' ' + (r.caption || '') + '. Press to open the details.';
     }
+    if (r.say) return title + ': ' + r.say + '. Press to open the details.';
     var value = r.empty ? 'no reading yet' : r.text + (r.unit ? ' ' + r.unit : '');
     var c = r.change;
     var moved = c && (isNum(c.pct) || isNum(c.delta));
     var change = moved ? ', ' + changeText(c, r.unit).replace(UP, 'up').replace(DOWN, 'down') + ' over ' + c.label : '';
     return title + ': ' + value + change + '. Press to open the details.';
+  }
+
+  /* The row under the readout: the range tabs for the coins, the Stocks |
+   * Crypto switch for MOVER and LOSER, a stepper and ranges for WATCH. It
+   * keeps its height when idle, so the dial never moves under a dragging
+   * finger, and its buttons are rebuilt only when the kind of row changes. */
+  function tabsHtml(model) {
+    var html = '';
+    if (model.kind === 'watch') {
+      html += '<button type="button" class="rng rng-step" data-tab="step" data-value="-1" aria-label="Previous stock">‹</button>' +
+        '<button type="button" class="rng rng-step" data-tab="step" data-value="1" aria-label="Next stock">›</button>';
+    }
+    (model.options || []).forEach(function (o) {
+      html += '<button type="button" class="rng" data-tab="' + model.kind + '" data-value="' + escapeText(o[0]) +
+        '" aria-pressed="false">' + escapeText(o[1]) + '</button>';
+    });
+    return html;
+  }
+
+  function renderTabs(model) {
+    var host = el('lcdRanges');
+    if (!host) return;
+    var idle = !model;
+    host.classList.toggle('is-idle', idle);
+    host.setAttribute('aria-hidden', idle ? 'true' : 'false');
+    if (model) {
+      var sig = model.kind + '|' + (model.options || []).map(function (o) { return o[0]; }).join(',');
+      if (host.getAttribute('data-sig') !== sig) {
+        host.setAttribute('data-sig', sig);
+        host.setAttribute('data-kind', model.kind);
+        host.setAttribute('aria-label', model.label || 'Chart range');
+        host.innerHTML = tabsHtml(model);
+      }
+    }
+    var btns = host.querySelectorAll('.rng');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].tabIndex = idle ? -1 : 0;
+      if (btns[i].getAttribute('data-tab') === 'step') {
+        btns[i].disabled = !model || (model.count || 0) < 2;
+        continue;
+      }
+      var on = !!model && String(model.value) === btns[i].getAttribute('data-value');
+      btns[i].classList.toggle('is-on', on);
+      btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  /* The readout's short fade, for a change that is not a turn of the dial. */
+  function swapScreen() {
+    var lcd = el('lcd');
+    if (!lcd) return;
+    lcd.classList.remove('is-swap');
+    void lcd.offsetWidth;
+    lcd.classList.add('is-swap');
+    clearTimeout(detentTimer);
+    detentTimer = setTimeout(function () { lcd.classList.remove('is-swap'); }, DETENT_MS);
   }
 
   function paint(r) {
@@ -3533,7 +3723,15 @@ tr.row-rule th {
     var dir = direction(r.change, series);
 
     lcd.classList.toggle('is-off', off);
-    setText('lcdMode', off ? '' : r.mode || '');
+    var modeEl = el('lcdMode');
+    if (modeEl) {
+      if (!off && r.badge && r.badge.text) {
+        modeEl.innerHTML = '<b class="lcd-badge is-' + (r.badge.dir === 'down' ? 'down' : 'up') + '">' +
+          escapeText(r.badge.text) + '</b>' + escapeText(r.mode || '');
+      } else {
+        modeEl.textContent = off ? '' : r.mode || '';
+      }
+    }
     var live = el('lcdLive');
     if (live) live.classList.toggle('is-on', !off && !!r.live);
 
@@ -3543,17 +3741,25 @@ tr.row-rule th {
       chart.innerHTML = !off && typeof r.note === 'string'
         ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
         : !off && series.length > 1
-          ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+          ? G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
           : '';
     }
 
-    setText('lcdPrice', off ? '' : r.text || '');
+    var priceEl = el('lcdPrice');
+    if (priceEl) {
+      /* MOVER, LOSER and WATCH lead with the ticker; MOVER and LOSER colour
+       * the week's move by its sign */
+      if (!off && r.ticker) priceEl.innerHTML = '<span class="lcd-ticker">' + escapeText(r.ticker) + '</span>' + escapeText(r.text || '');
+      else priceEl.textContent = off ? '' : r.text || '';
+      priceEl.className = 'lcd-price' + (!off && r.headDir ? ' is-' + r.headDir : '');
+    }
     setText('lcdUnit', off ? '' : r.unit || '');
 
     var chg = el('lcdChange');
     if (chg) {
       var plain = r.caption || (r.empty && r.hint);
-      chg.textContent = off ? '' : (r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
+      var line = r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit);
+      chg.textContent = off ? '' : (r.lead && !r.empty ? r.lead + '   ' + line : line);
       chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
@@ -3578,23 +3784,7 @@ tr.row-rule th {
       bell.setAttribute('aria-label', n ? n + ' alert' + (n === 1 ? '' : 's') + ' armed. Open the list.' : 'No alerts. Open the list.');
     }
 
-    var ranges = el('lcdRanges');
-    if (ranges) {
-      /* kept in the layout even when idle: the screen must not change height
-       * between stops, or the dial would move under a dragging finger */
-      var idle = off || !r.ranges;
-      ranges.classList.toggle('is-idle', idle);
-      ranges.setAttribute('aria-hidden', idle ? 'true' : 'false');
-      var btns = ranges.querySelectorAll('.rng');
-      for (var b = 0; b < btns.length; b++) btns[b].tabIndex = idle ? -1 : 0;
-      var days = MP.app && MP.app.state ? MP.app.state.hero.days : 1;
-      var tabs = ranges.querySelectorAll('.rng[data-days]');
-      for (var i = 0; i < tabs.length; i++) {
-        var on = parseInt(tabs[i].getAttribute('data-days'), 10) === days;
-        tabs[i].classList.toggle('is-on', on);
-        tabs[i].setAttribute('aria-pressed', on ? 'true' : 'false');
-      }
-    }
+    renderTabs(off ? null : r.tabs || null);
 
     lcd.setAttribute('aria-label', describe(r, off));
   }
@@ -4195,10 +4385,12 @@ tr.row-rule th {
     var stop = MP.meter && MP.meter.current ? MP.meter.current() : null;
     if (!stop || stop === 'off' || !MP.app || !MP.app.reading) return Promise.resolve('off');
     var r = MP.app.reading(stop);
+    /* MOVER, LOSER and WATCH carry a badge, a ticker and a leading price */
+    var changeLine = MP.meter.changeText ? MP.meter.changeText(r.change, r.unit) : '';
     var meta = {
-      mode: r.mode,
-      dir: direction(r),
-      change: MP.meter.changeText ? MP.meter.changeText(r.change, r.unit) : '',
+      mode: (r.badge && r.badge.text ? r.badge.text + '  ' : '') + (r.ticker ? r.ticker + '  ' : '') + (r.mode || ''),
+      dir: r.headDir || direction(r),
+      change: r.lead && !r.empty ? r.lead + '  ' + changeLine : changeLine,
       label: r.change ? r.change.label : '',
       site: root.location.host + root.location.pathname.replace(/index\.html$/, ''),
       when: new Date().toUTCString().replace(/:\d\d GMT$/, ' UTC')
@@ -4254,20 +4446,99 @@ tr.row-rule th {
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
+/* ==== src/lib/watch.js ==================================================== */
+/* ============================================================================
+ * watch.js: the WATCH stop's list: up to eight Nasdaq-100 stocks the viewer
+ * picks from the data job's list.
+ *
+ * Pure helpers, plus the two calls that touch storage. The list holds
+ * tickers only; names, closes and changes come from data/stocks.json and each
+ * member's data/stocks/SYM.json.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var MAX = 8;
+  var KEY = 'watch';
+  var SEARCH_LIMIT = 8;
+
+  function clean(sym) {
+    return typeof sym === 'string' ? sym.trim().toUpperCase() : '';
+  }
+
+  function valid(sym) {
+    return !!sym && !!(MP.sources && MP.sources.stockPath(sym));
+  }
+
+  /* Whatever was stored -> a clean list: tickers only, no repeats, at most MAX. */
+  function read(v) {
+    var out = [];
+    (Array.isArray(v) ? v : []).forEach(function (s) {
+      var sym = clean(s);
+      if (valid(sym) && out.indexOf(sym) < 0 && out.length < MAX) out.push(sym);
+    });
+    return out;
+  }
+
+  /* A new list with `sym` at the end; unchanged when it is there already,
+   * not a ticker, or the list is full. */
+  function add(list, sym) {
+    var s = clean(sym), cur = read(list);
+    if (!valid(s) || cur.indexOf(s) >= 0 || cur.length >= MAX) return cur;
+    return cur.concat([s]);
+  }
+
+  function remove(list, sym) {
+    var s = clean(sym);
+    return read(list).filter(function (x) { return x !== s; });
+  }
+
+  /* rows: stocks.json rows. The exact ticker first, then other tickers that
+   * start with the query, then names that contain it, each group by ticker. */
+  function search(rows, query, limit) {
+    var q = String(query || '').trim().toLowerCase();
+    if (!q) return [];
+    var head = [], rest = [];
+    (rows || []).forEach(function (r) {
+      if (!r || typeof r.symbol !== 'string') return;
+      var sym = r.symbol.toLowerCase(), name = String(r.name || '').toLowerCase();
+      if (sym.indexOf(q) === 0) head.push(r);
+      else if (name.indexOf(q) >= 0) rest.push(r);
+    });
+    function bySymbol(a, b) { return a.symbol < b.symbol ? -1 : a.symbol > b.symbol ? 1 : 0; }
+    head.sort(function (a, b) {
+      var ea = a.symbol.toLowerCase() === q, eb = b.symbol.toLowerCase() === q;
+      if (ea !== eb) return ea ? -1 : 1;
+      return bySymbol(a, b);
+    });
+    return head.concat(rest.sort(bySymbol)).slice(0, limit || SEARCH_LIMIT);
+  }
+
+  function load() { return read(MP.store ? MP.store.get(KEY, []) : []); }
+
+  function save(list) {
+    var c = read(list);
+    if (MP.store) MP.store.set(KEY, c);
+    return c;
+  }
+
+  MP.watch = { MAX: MAX, KEY: KEY, read: read, add: add, remove: remove, search: search, load: load, save: save };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
 /* ==== src/lib/spotlight.js ================================================ */
 /* ============================================================================
- * spotlight.js: "Stock of the Week": the pinned panel at the top of the page.
+ * spotlight.js: MOVER and LOSER: the week's highest and lowest move, among
+ * the Nasdaq-100 or among 15 large coins.
  *
- * Selection is mechanical and descriptive, never advisory: the largest
- * ABSOLUTE 5-session move across a fixed Nasdaq-100 universe. Absolute rather
- * than largest gain, so the panel reports what actually moved instead of
- * reading like a tip.
- *
- * The data job (src/lib/pipeline.js) runs the scan once a week with this
- * module's selectSpotlight() and publishes the pick, its daily closes and its
- * multi-horizon change in data/spotlight.json. The pick's quote refreshes with
- * the Nasdaq quotes in data/quotes.json, so the price is never as stale as
- * the pick.
+ * Selection is mechanical and descriptive. The data job (src/lib/pipeline.js)
+ * ranks the week with selectMovers() and publishes both ends, the next name
+ * at each end and the five names at each end of the board in
+ * data/spotlight.json. The page shows one kind at a time: the switch on the
+ * screen picks stocks or crypto, and the choice stays in this browser. Stock
+ * prices come from the job's quotes (data/quotes.json picks) or, failing
+ * those, the last close; crypto prices come from the page's CoinGecko poll.
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -4279,9 +4550,8 @@ tr.row-rule th {
   var STOCK_RULE = 'Highest and lowest five-session move among the Nasdaq-100 members the data job could price.';
   var BOARD_SIZE = 5;   /* names at each end of the leaderboard */
 
-  /* The crypto of the week draws from the large caps beyond BTC and ETH, which
-   * have dial stops of their own. CoinGecko ids, so the page and the data job
-   * ask for exactly these. */
+  /* The large caps beyond BTC and ETH, which have dial stops of their own.
+   * CoinGecko ids, so the page and the data job ask for exactly these. */
   var CRYPTO_UNIVERSE = [
     { id: 'solana', symbol: 'SOL', name: 'Solana' },
     { id: 'ripple', symbol: 'XRP', name: 'XRP' },
@@ -4301,6 +4571,13 @@ tr.row-rule th {
   ];
 
   var CRYPTO_RULE = 'Highest and lowest seven-day move across a fixed 15-name large-cap universe, BTC and ETH excluded.';
+
+  var KINDS = ['stocks', 'crypto'];
+  var KIND_KEY = 'movers';
+  var SCREEN_SESSIONS = 30;    /* the screen charts six weeks of a stock's closes */
+  var DRAWER_SESSIONS = 63;    /* the drawer, three months */
+  var LOGO_URL = 'https://financialmodelingprep.com/image-stock/';
+  var BADGE = { mover: 'MOVER ▲', loser: 'LOSER ▼' };
 
   /* ---- pure selection ----------------------------------------------------- */
 
@@ -4362,233 +4639,290 @@ tr.row-rule th {
     return fallback || symbol;
   }
 
-  /* ---- rendering ---------------------------------------------------------- */
-  var view = {
-    pick: null,      /* the week's pick */
-    quote: null,     /* latest quote for the pick's symbol */
-    change: null,    /* multi-horizon change for the pick's symbol */
-    series: null,    /* daily closes for the sparkline */
-    history: [],     /* previous weeks */
-    notice: null,
-    crypto: null,        /* the week's crypto pick */
-    cryptoQuote: null,   /* its live CoinGecko reading, with the 7-day sparkline */
-    cryptoHistory: [],
-    cryptoNotice: null
-  };
+  /* ---- state -------------------------------------------------------------- */
+  function readKind(v) { return KINDS.indexOf(v) >= 0 ? v : 'stocks'; }
 
+  var view = {
+    movers: null,    /* spotlight.json movers (version 2), normalized */
+    kind: readKind(MP.store ? MP.store.get(KIND_KEY, 'stocks') : 'stocks'),
+    picks: null,     /* { mover, loser }: the stock movers' quotes, from data/quotes.json */
+    coins: {},       /* CoinGecko id -> coinSpot, for the crypto movers */
+    notice: null
+  };
+  var failedLogos = {};
+
+  function kind() { return view.kind; }
+
+  function setKind(k) {
+    view.kind = readKind(k);
+    if (MP.store) MP.store.set(KIND_KEY, view.kind);
+    render();
+    return view.kind;
+  }
+
+  function setOf(k) { return view.movers ? view.movers[k || view.kind] || null : null; }
+
+  function entryFor(which, k) {
+    var set = setOf(k);
+    return set ? (which === 'loser' ? set.loser : set.mover) : null;
+  }
+
+  function idsOf(set, key) {
+    var out = [];
+    if (set) [set.mover, set.loser].forEach(function (e) { if (e && e[key] && out.indexOf(e[key]) < 0) out.push(e[key]); });
+    return out;
+  }
+
+  /* The CoinGecko ids the page polls alongside BTC and ETH. */
+  function cryptoIds() { return idsOf(setOf('crypto'), 'id'); }
+
+  /* The stock files the screens need. */
+  function stockSymbols() { return idsOf(setOf('stocks'), 'symbol'); }
+
+  /* Coinbase products for the live feed, while the switch is on crypto. */
+  function products() {
+    if (view.kind !== 'crypto' || !MP.sources) return [];
+    return idsOf(setOf('crypto'), 'symbol').map(MP.sources.coinbaseWs.productFor).filter(Boolean);
+  }
+
+  function productFor(which) {
+    if (view.kind !== 'crypto' || !MP.sources) return null;
+    var e = entryFor(which);
+    return e ? MP.sources.coinbaseWs.productFor(e.symbol) : null;
+  }
+
+  /* A stock's latest price: the job's quote when it is for this symbol,
+   * otherwise its last close from stocks.json. */
+  function stockPrice(sym) {
+    var p = view.picks, q = null;
+    if (p && p.mover && p.mover.symbol === sym) q = p.mover;
+    else if (p && p.loser && p.loser.symbol === sym) q = p.loser;
+    if (q && S.isNum(q.price)) {
+      return { price: q.price, changePct: S.isNum(q.changePct) ? q.changePct : NaN, marketCap: q.marketCap, name: q.name, source: 'quote' };
+    }
+    var row = MP.app && MP.app.stockRow ? MP.app.stockRow(sym) : null;
+    if (row && S.isNum(row.close)) {
+      return { price: row.close, changePct: row.change1d, marketCap: NaN, name: row.name, source: 'close', date: row.date };
+    }
+    return null;
+  }
+
+  function coinPrice(id) {
+    var c = id ? view.coins[id] : null;
+    return c && S.isNum(c.price) ? c : null;
+  }
+
+  function priceOf(e, k) { return e ? (k === 'crypto' ? coinPrice(e.id) : stockPrice(e.symbol)) : null; }
+
+  /* The chart: a stock's closes, or a coin's seven days of hourly prices. */
+  function seriesOf(e, k, sessions) {
+    if (!e) return null;
+    if (k === 'crypto') {
+      var c = coinPrice(e.id);
+      return c && c.sparkline && c.sparkline.length > 2 ? c.sparkline : null;
+    }
+    var s = MP.app && MP.app.stockSeries ? MP.app.stockSeries(e.symbol) : null;
+    return s && s.length > 1 ? S.tail(s, sessions).map(function (p) { return p.price; }) : null;
+  }
+
+  /* ---- the screen ----------------------------------------------------------- */
+
+  /* MOVER or LOSER on the screen: a badge, the ticker and the week's move as
+   * the headline, the price and its day change beneath, and the rank on the
+   * mode line. No value, so REL, MIN/MAX and ALERT pass it by. */
+  function reading(which) {
+    var k = view.kind, set = setOf(k), e = entryFor(which, k);
+    var r = {
+      text: F.DASH, value: NaN, dp: 2, unit: k === 'crypto' ? '7D' : '5D', mode: '',
+      badge: { text: BADGE[which] || BADGE.mover, dir: which === 'loser' ? 'down' : 'up' },
+      ticker: '', lead: '', headDir: null, symbol: null, say: '',
+      change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: k === 'crypto' ? '24H' : '1D', dp: 2, usd: true },
+      spark: null, empty: true, ranges: false, coin: null
+    };
+    if (!e) {
+      r.hint = k === 'crypto' ? 'Appears after the weekly crypto scan' : 'Appears after a full pass over the Nasdaq-100';
+      return r;
+    }
+    r.empty = false;
+    r.symbol = e.symbol;
+    r.ticker = e.symbol;
+    r.text = F.signedPctPoints(e.change, 2);
+    r.headDir = e.change < 0 ? 'down' : 'up';
+    /* the switch below names the kind, so the mode line holds only the rank */
+    r.mode = S.isNum(e.rank) && S.isNum(set.scanned) ? 'Rank ' + e.rank + ' of ' + set.scanned : '';
+    var px = priceOf(e, k);
+    if (px) {
+      var dp = Math.abs(px.price) < 10 ? 4 : 2;
+      r.lead = F.usd(px.price, dp);
+      r.change.dp = dp;
+      if (S.isNum(px.changePct)) {
+        r.change.pct = px.changePct;
+        r.change.abs = px.price - px.price / (1 + px.changePct / 100);
+      }
+    }
+    r.spark = seriesOf(e, k, SCREEN_SESSIONS);
+    r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
+      e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');
+    return r;
+  }
+
+  /* ---- the drawer ----------------------------------------------------------- */
   function el(id) { return document.getElementById(id); }
   function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
   function setHtml(id, html) { var n = el(id); if (n) n.innerHTML = html; }
 
-  function statStrip(items) {
-    return items.map(function (it) {
-      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
-        '<div class="stat-value">' + F.escapeHtml(it[1]) + '</div></div>';
-    }).join('');
-  }
-
-  function noticeHtml() {
-    return view.notice
-      ? '<p class="notice notice-' + view.notice.level + '">' + F.escapeHtml(view.notice.text) + '</p>'
-      : '';
+  function noticeHtml(n) {
+    return n ? '<p class="notice notice-' + n.level + '">' + F.escapeHtml(n.text) + '</p>' : '';
   }
 
   function repaint() {
     if (MP.meter && MP.meter.refresh) MP.meter.refresh();
   }
 
-  /* What the meter shows at the STOCK stop, or null before a pick exists.
-   * The live quote's day change is preferred; before it arrives the scan's
-   * own five-session move stands in, labelled as such. */
-  function reading() {
-    var pick = view.pick, q = view.quote;
-    if (!pick) return null;
-    var live = q && S.isNum(q.changePct);
-    return {
-      price: q && S.isNum(q.price) ? q.price : NaN,
-      changePct: live ? q.changePct : pick.changePct5d,
-      changeLabel: live ? '1D' : '5D',
-      mode: pick.symbol,
-      series: view.series && view.series.length > 2
-        ? view.series.map(function (p) { return p.price; })
-        : null
-    };
+  function which() {
+    var v = MP.router && MP.router.currentView ? MP.router.currentView() : null;
+    return v === 'loser' ? 'loser' : 'mover';
   }
 
-  /* What the meter shows at the CRYPTO stop, or null before a pick exists. */
-  function cryptoReading() {
-    var pick = view.crypto, q = view.cryptoQuote;
-    if (!pick) return null;
-    var live = q && S.isNum(q.changePct);
-    return {
-      price: q && S.isNum(q.price) ? q.price : NaN,
-      changePct: live ? q.changePct : pick.changePct7d,
-      changeLabel: live ? '24H' : '7D',
-      mode: pick.symbol,
-      series: q && q.sparkline && q.sparkline.length > 2 ? q.sparkline : null
-    };
+  /* A company logo from FMP's public images, a coin's from CoinGecko; a
+   * monogram when there is none or it fails to load. */
+  function logoHtml(e, k) {
+    var mono = F.escapeHtml(e.symbol.slice(0, 4));
+    var coin = k === 'crypto' ? coinPrice(e.id) : null;
+    var src = k === 'crypto' ? (coin && coin.image) : LOGO_URL + encodeURIComponent(e.symbol) + '.png';
+    if (!src || failedLogos[src]) return '<span class="mv-logo mv-mono" aria-hidden="true">' + mono + '</span>';
+    return '<img class="mv-logo" alt="" loading="lazy" referrerpolicy="no-referrer" src="' + F.escapeHtml(src) + '" data-mono="' + mono + '">';
   }
 
-  function renderCrypto() {
-    var pick = view.crypto, q = view.cryptoQuote;
-    var notice = view.cryptoNotice
-      ? '<p class="notice notice-' + view.cryptoNotice.level + '">' + F.escapeHtml(view.cryptoNotice.text) + '</p>'
-      : '';
+  function strip(items) {
+    return items.map(function (it) {
+      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
+        '<div class="stat-value">' + F.escapeHtml(it[1]) + '</div></div>';
+    }).join('');
+  }
 
-    if (!pick) {
-      setText('cryptoSymbol', '—');
-      setText('cryptoWeek', '');
-      setText('cryptoName', 'No pick yet');
-      setText('cryptoRunner', '');
-      setHtml('cryptoStrip', '');
-      setHtml('cryptoSpark', '');
-      setHtml('cryptoNotice', notice);
-      return;
+  /* Both ends of the week, always together: the highest five and the lowest
+   * five, each with a bar in proportion to its move. */
+  function boardHtml(set, pick, k) {
+    var all = set.top.concat(set.bottom);
+    var max = all.reduce(function (m, e) { return Math.max(m, Math.abs(e.change)); }, 0) || 1;
+    function li(e) {
+      var d = e.change < 0 ? 'down' : 'up';
+      var width = Math.max(2, Math.round(Math.abs(e.change) / max * 100));
+      return '<li class="is-' + d + (e.symbol === pick ? ' is-pick' : '') + '" title="' + F.escapeHtml(e.name || e.symbol) + '">' +
+        '<span class="b-rank">' + (S.isNum(e.rank) ? e.rank : '') + '</span>' +
+        '<span class="b-sym">' + F.escapeHtml(e.symbol) + '</span>' +
+        '<span class="b-bar"><i style="width:' + width + '%"></i></span>' +
+        '<span class="b-chg">' + F.escapeHtml(F.signedPctPoints(e.change, 1)) + '</span></li>';
     }
-
-    setText('cryptoSymbol', pick.symbol);
-    setText('cryptoWeek', 'Week of ' + F.shortDate(pick.weekOf));
-    setText('cryptoName', (q && q.name) || pick.name || pick.symbol);
-
-    var px = el('cryptoPx');
-    if (px) {
-      px.textContent = q && S.isNum(q.price) ? F.usd(q.price, q.price < 10 ? 4 : 2) : F.DASH;
-      px.classList.toggle('is-empty', !(q && S.isNum(q.price)));
-    }
-    var chg = el('cryptoChg');
-    if (chg) {
-      if (q && S.isNum(q.changePct)) {
-        chg.textContent = F.signedPctPoints(q.changePct);
-        chg.className = 'chg ' + (q.changePct >= 0 ? 'is-up' : 'is-down');
-      } else {
-        chg.textContent = F.DASH;
-        chg.className = 'chg is-flat';
-      }
-    }
-
-    setHtml('cryptoSpark', q && q.sparkline && q.sparkline.length > 2
-      ? G.sparkStep({ values: q.sparkline, w: 900, h: 200, color: 'var(--gold)', area: true, strokeWidth: 1.8 })
-      : '');
-
-    setHtml('cryptoStrip', statStrip([
-      ['7d move', F.signedPctPoints(pick.changePct7d, 1)],
-      ['24h', q && S.isNum(q.changePct) ? F.signedPctPoints(q.changePct, 2) : F.DASH],
-      ['Market cap', q && S.isNum(q.marketCap) && q.marketCap > 0 ? F.compact(q.marketCap) : F.DASH]
-    ]));
-
-    var bits = [];
-    if (pick.runnerUp) {
-      bits.push('Runner-up ' + pick.runnerUp.symbol + ' ' + F.signedPctPoints(pick.runnerUp.changePct7d, 1));
-    }
-    if (view.cryptoHistory.length) {
-      bits.push('before: ' + view.cryptoHistory.map(function (h) { return h.symbol; }).join(', '));
-    }
-    setText('cryptoRunner', bits.join(' · '));
-    setHtml('cryptoNotice', notice);
+    var between = S.isNum(set.scanned) ? set.scanned - set.top.length - set.bottom.length : 0;
+    return '<h3 class="mv-sub">' + (k === 'crypto' ? 'Seven-day moves, ' + set.scanned + ' coins' : 'Five-session moves, ' + set.scanned + ' Nasdaq-100 members') + '</h3>' +
+      '<ol class="board">' + set.top.map(li).join('') +
+      (between > 0 ? '<li class="b-gap">' + between + ' more in between</li>' : '') +
+      set.bottom.slice().reverse().map(li).join('') + '</ol>';
   }
 
   function render() {
-    var pick = view.pick, q = view.quote, ch = view.change;
-    renderCrypto();
+    var w = which(), k = view.kind, set = setOf(k), e = entryFor(w, k);
+    setHtml('moversKind', KINDS.map(function (kk) {
+      return '<button type="button" class="pill' + (kk === k ? ' is-on' : '') + '" data-movers-kind="' + kk + '" aria-pressed="' + (kk === k) + '">' +
+        (kk === 'crypto' ? 'Crypto' : 'Stocks') + '</button>';
+    }).join(''));
 
-    if (!pick) {
-      setText('spotSymbol', '—');
-      setText('spotWeek', '');
-      setText('spotName', 'No pick yet');
-      setText('spotRunner', '');
-      setHtml('spotStrip', '');
-      setHtml('spotNotice', noticeHtml());
+    if (!e) {
+      ['mvHead', 'mvStrip', 'mvChart', 'mvBoard'].forEach(function (id) { setHtml(id, ''); });
+      ['mvChartFoot', 'mvRunner', 'mvRule'].forEach(function (id) { setText(id, ''); });
+      setHtml('mvNotice', noticeHtml(view.notice || {
+        level: 'quiet',
+        text: k === 'crypto' ? 'The crypto movers appear after the weekly scan.' : 'The stock movers appear once the data job has priced the Nasdaq-100 for a full week.'
+      }));
       repaint();
       return;
     }
 
-    setText('spotSymbol', pick.symbol);
-    setText('spotWeek', 'Week of ' + F.shortDate(pick.weekOf));
-    setText('spotName', (q && q.name) || pick.name || nameFor(pick.symbol));
+    var px = priceOf(e, k);
+    var dir = e.change < 0 ? 'down' : 'up';
+    var watching = MP.app && MP.app.isWatched ? MP.app.isWatched(e.symbol) : false;
+    var watchBtn = k === 'stocks'
+      ? '<button type="button" class="pill" data-watch-add="' + F.escapeHtml(e.symbol) + '"' + (watching ? ' disabled' : '') + '>' + (watching ? 'Watching' : 'Watch') + '</button>'
+      : '';
+    setHtml('mvHead', logoHtml(e, k) +
+      '<div class="mv-id"><div class="mv-title">' + F.escapeHtml(e.symbol) +
+      '<span class="mv-badge is-' + (w === 'loser' ? 'down' : 'up') + '">' + BADGE[w] + '</span>' + watchBtn + '</div>' +
+      '<div class="mv-name">' + F.escapeHtml((px && px.name) || e.name || e.symbol) + '</div></div>' +
+      '<div class="mv-move is-' + dir + '">' + F.escapeHtml(F.signedPctPoints(e.change, 2)) +
+      '<span class="mv-move-label">' + (k === 'crypto' ? '7 days' : '5 sessions') + '</span></div>');
 
-    var px = el('spotPx');
-    if (px) {
-      px.textContent = q && S.isNum(q.price) ? F.usd(q.price, 2) : F.DASH;
-      px.classList.toggle('is-empty', !(q && S.isNum(q.price)));
-    }
-    var chg = el('spotChg');
-    if (chg) {
-      if (q && S.isNum(q.changePct)) {
-        chg.textContent = F.signedPctPoints(q.changePct);
-        chg.className = 'chg ' + (q.changePct >= 0 ? 'is-up' : 'is-down');
-      } else {
-        chg.textContent = F.DASH;
-        chg.className = 'chg is-flat';
-      }
-    }
+    var row = k === 'stocks' && MP.app && MP.app.stockRow ? MP.app.stockRow(e.symbol) : null;
+    var items = [
+      [px && px.source === 'close' ? 'Last close' : 'Price', px ? F.usd(px.price, Math.abs(px.price) < 10 ? 4 : 2) : F.DASH],
+      [k === 'crypto' ? '24 hours' : '1 day', px && S.isNum(px.changePct) ? F.signedPctPoints(px.changePct, 2) : F.DASH]
+    ];
+    if (k === 'stocks') items.push(['1 month', row && S.isNum(row.change1m) ? F.signedPctPoints(row.change1m, 1) : F.DASH]);
+    items.push(['Market cap', px && S.isNum(px.marketCap) && px.marketCap > 0 ? F.compact(px.marketCap) : F.DASH]);
+    setHtml('mvStrip', strip(items));
 
-    if (view.series && view.series.length > 2) {
-      setHtml('spotSpark', G.sparkStep({
-        values: S.tail(view.series, 60).map(function (p) { return p.price; }),
-        w: 900, h: 200, color: 'var(--gold)', area: true, strokeWidth: 1.8
-      }));
-    } else {
-      setHtml('spotSpark', '');
-    }
+    var vals = seriesOf(e, k, DRAWER_SESSIONS);
+    setHtml('mvChart', vals && vals.length > 1
+      ? G.sparkStep({ values: vals, w: 900, h: 200, color: dir === 'down' ? 'var(--neg)' : 'var(--pos)', area: true, strokeWidth: 1.8 })
+      : '');
+    setText('mvChartFoot', k === 'crypto' ? 'Seven days, hourly.' : vals ? 'Daily closes, the last three months.' : 'The closes load with the stock’s file.');
 
-    setHtml('spotStrip', statStrip([
-      ['5d move', F.signedPctPoints(pick.changePct5d, 1)],
-      ['1 month', ch && S.isNum(ch.m1) ? F.signedPctPoints(ch.m1, 1) : F.DASH],
-      ['Market cap', q && S.isNum(q.marketCap) && q.marketCap > 0 ? F.compact(q.marketCap) : F.DASH]
-    ]));
+    setHtml('mvBoard', boardHtml(set, e.symbol, k));
 
     var bits = [];
-    if (pick.runnerUp) {
-      bits.push('Runner-up ' + pick.runnerUp.symbol + ' ' + F.signedPctPoints(pick.runnerUp.changePct5d, 1));
+    var nxt = w === 'loser' ? set.loserNext : set.moverNext;
+    if (nxt) bits.push((w === 'loser' ? 'Next lowest: ' : 'Next highest: ') + nxt.symbol + ' ' + F.signedPctPoints(nxt.change, 1) + '.');
+    var past = ((view.movers && view.movers.history) || []).filter(function (h) {
+      return h.kind === k && h.weekOf !== set.weekOf;
+    }).slice(0, 3);
+    if (past.length) {
+      bits.push('Earlier weeks: ' + past.map(function (h) {
+        return F.shortDate(h.weekOf) + ' ' + (h.loser ? h.mover.symbol + ' and ' + h.loser.symbol : h.mover.symbol + ' (largest move either way)');
+      }).join('; ') + '.');
     }
-    if (view.history.length) {
-      bits.push('before: ' + view.history.map(function (h) { return h.symbol; }).join(', '));
-    }
-    setText('spotRunner', bits.join(' · '));
-    setHtml('spotNotice', noticeHtml());
+    setText('mvRunner', bits.join(' '));
+    setText('mvRule', set.rule + (set.measuredTo ? ' Measured to the close of ' + F.shortDate(set.measuredTo) + '.' : '') +
+      ' This ranks the past week. It is not advice.');
+    setHtml('mvNotice', noticeHtml(view.notice));
     repaint();
+  }
+
+  /* A logo that fails to load becomes the monogram, and stays one. */
+  function wire() {
+    if (!root.document) return;
+    document.addEventListener('error', function (ev) {
+      var img = ev.target;
+      if (!img || img.tagName !== 'IMG' || !img.classList || !img.classList.contains('mv-logo')) return;
+      failedLogos[img.getAttribute('src')] = true;
+      var span = document.createElement('span');
+      span.className = 'mv-logo mv-mono';
+      span.setAttribute('aria-hidden', 'true');
+      span.textContent = img.getAttribute('data-mono') || '';
+      if (img.parentNode) img.parentNode.replaceChild(span, img);
+    }, true);
   }
 
   /* ---- data in ------------------------------------------------------------ */
 
-  /* snap: MP.sources.normalizeSpotlightSnapshot output. */
+  /* snap: MP.sources.normalizeSpotlightSnapshot output. A version 1 file has
+   * no movers; the panels say so until the job rewrites it. */
   function applySnapshot(snap) {
     if (!snap) return;
-    var pick = snap.current;
-    view.pick = pick;
-    view.change = pick && snap.change && snap.change.symbol === pick.symbol ? snap.change : null;
-    view.series = pick ? snap.series : null;
-    if (view.quote && (!pick || view.quote.symbol !== pick.symbol)) view.quote = null;
-    view.history = (snap.history || []).filter(function (h) {
-      return !pick || h.weekOf !== pick.weekOf;
-    }).slice(0, 4);
-    view.notice = pick ? null : { level: 'quiet', text: 'This week’s pick appears after the Monday scan runs.' };
-
-    var crypto = snap.crypto || null;
-    view.crypto = crypto;
-    if (view.cryptoQuote && (!crypto || view.cryptoQuote.id !== crypto.id)) view.cryptoQuote = null;
-    view.cryptoHistory = (snap.cryptoHistory || []).filter(function (h) {
-      return !crypto || h.weekOf !== crypto.weekOf;
-    }).slice(0, 4);
-    view.cryptoNotice = crypto ? null : { level: 'quiet', text: 'This week’s crypto pick appears after the Monday scan runs.' };
+    view.movers = snap.movers || null;
+    view.notice = null;
     render();
   }
 
-  /* The CoinGecko id the page should ask for alongside BTC and ETH. */
-  function cryptoId() {
-    return view.crypto ? view.crypto.id : null;
-  }
-
-  /* q: a coinSpot from MP.sources.coinsMarkets, for the current crypto pick. */
-  function setCryptoQuote(q) {
-    view.cryptoQuote = q && (!view.crypto || q.id === view.crypto.id) ? q : null;
+  /* picks: quotes.json picks, { mover, loser }. */
+  function setPicks(picks) {
+    view.picks = picks || null;
     render();
   }
 
-  /* q: a normalized quote from data/quotes.json. Kept only if it is for the
-   * current pick; before the pick has loaded, kept provisionally. */
-  function setQuote(q) {
-    view.quote = q && (!view.pick || q.symbol === view.pick.symbol) ? q : null;
+  /* coins: CoinGecko id -> coinSpot for the crypto movers. */
+  function setCoinQuotes(coins) {
+    view.coins = coins || {};
     render();
   }
 
@@ -4602,18 +4936,24 @@ tr.row-rule th {
     CRYPTO_UNIVERSE: CRYPTO_UNIVERSE,
     CRYPTO_RULE: CRYPTO_RULE,
     BOARD_SIZE: BOARD_SIZE,
+    KINDS: KINDS,
     selectMovers: selectMovers,
     weekOf: weekOf,
     nameFor: nameFor,
-    applySnapshot: applySnapshot,
-    setQuote: setQuote,
-    setCryptoQuote: setCryptoQuote,
-    cryptoId: cryptoId,
-    setNotice: setNotice,
-    reading: reading,
-    cryptoReading: cryptoReading,
     view: view,
-    render: render
+    kind: kind,
+    setKind: setKind,
+    reading: reading,
+    render: render,
+    wire: wire,
+    applySnapshot: applySnapshot,
+    setPicks: setPicks,
+    setCoinQuotes: setCoinQuotes,
+    setNotice: setNotice,
+    cryptoIds: cryptoIds,
+    stockSymbols: stockSymbols,
+    products: products,
+    productFor: productFor
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -4622,10 +4962,10 @@ tr.row-rule th {
 /* ============================================================================
  * app.js: state, data wiring, analytics assembly, rendering.
  *
- * One number per screen. Bitcoin, ether and the crypto of the week come
- * straight from CoinGecko's public API on a 45s poll. The index quotes, daily
- * history and the two weekly picks come from snapshot files under data/ that
- * a scheduled GitHub Action rewrites (scripts/update-data.js). Daily history
+ * One number per screen. Bitcoin, ether and the crypto movers come straight
+ * from CoinGecko's public API on a 45s poll. The index quotes, daily history,
+ * the weekly movers and the Nasdaq-100 closes come from snapshot files under
+ * data/ that a scheduled GitHub Action rewrites (scripts/update-data.js). Daily history
  * drives the coupling, volatility and drawdown panels; the BTC chart fetches
  * per range, on demand, and caches.
  * ========================================================================== */
@@ -4663,7 +5003,7 @@ tr.row-rule th {
   };
 
   /* CoinGecko ids for the live coins; the probe (a coin the viewer chose) and
-   * the crypto of the week join them once known. */
+   * the two crypto movers join them once known. */
   var COINS = { btc: 'bitcoin', eth: 'ethereum' };
 
   var STAT_COINS = ['btc', 'eth', 'crypto', 'probe'];
@@ -4701,6 +5041,11 @@ tr.row-rule th {
     search: { query: '', results: null, pending: false, notice: null },
     /* the daily reading, from data/note.json */
     note: { data: null, notice: null },
+    /* the Nasdaq-100 from data/stocks.json, and members' closes loaded on demand */
+    stocks: { list: null, rowsBy: {}, files: {}, pending: {}, notice: null },
+    /* the WATCH stop: the viewer's tickers, the one on screen, the range in sessions */
+    watch: { list: MP.watch ? MP.watch.load() : [], index: 0, sessions: 21, query: '', results: [], notice: null },
+    coinIdsAsked: '',
     snapshot: { generatedAt: null, notice: null },
     session: { data: null },
     history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
@@ -4713,7 +5058,7 @@ tr.row-rule th {
   };
 
   var LIVE_FRESH_MS = 60000;   /* a tick older than this yields to the poll */
-  var LIVE_STOPS = ['btc', 'eth', 'crypto', 'probe'];
+  var LIVE_STOPS = ['btc', 'eth', 'probe'];   /* plus the crypto movers, from spotlight.js */
 
   function el(id) { return document.getElementById(id); }
   function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
@@ -4939,9 +5284,16 @@ tr.row-rule th {
   /* Coins carry the screen's range tabs: the chart and the change follow the
    * chosen range, the price stays live spot. Until the range has loaded, the
    * 24-hour change from the quote stands in. */
+  var RANGE_TABS = [[1, '24H'], [7, '1W'], [30, '1M'], [365, '1Y']];
+
+  function rangeTabs() {
+    return { kind: 'ranges', label: 'Chart range', options: RANGE_TABS, value: state.hero.days };
+  }
+
   function withRange(r, coinId) {
     if (!coinId) return r;
     r.ranges = true;
+    r.tabs = rangeTabs();
     r.coin = coinId;
     r.change.label = RANGE_LABELS[state.hero.days] || '24H';
     var series = rangeSeries(coinId);
@@ -4956,27 +5308,27 @@ tr.row-rule th {
     return r;
   }
 
-  /* The two weekly picks share a shape: { price, changePct, changeLabel,
-   * mode, series } from spotlight.js, or null before the scan has run. */
-  function pickReading(r, fallbackMode) {
-    if (!r) return noReading('USD', fallbackMode, '1D');
-    var pct = r.changePct;
-    var dp = S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2;
-    return {
-      text: money(r.price), value: r.price, dp: dp,
-      unit: 'USD', mode: r.mode,
-      change: {
-        pct: pct,
-        abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
-        delta: NaN, suffix: '', label: r.changeLabel, dp: dp
-      },
-      spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
-      empty: !S.isNum(r.price), ranges: false, coin: null
-    };
-  }
+  /* MOVER and LOSER: spotlight.js builds the reading. The Stocks | Crypto
+   * switch rides in the tabs row, and a fresh Coinbase tick updates a crypto
+   * mover's price and 24-hour change. */
+  var MOVER_TABS = [['stocks', 'STOCKS'], ['crypto', 'CRYPTO']];
 
-  function stockReading() {
-    return pickReading(MP.spotlight && MP.spotlight.reading ? MP.spotlight.reading() : null, 'STOCK');
+  function moverReading(stop) {
+    var SP = MP.spotlight;
+    var r = SP && SP.reading ? SP.reading(stop) : noReading('', stop === 'loser' ? 'LOSER' : 'MOVER', '');
+    r.tabs = { kind: 'switch', label: 'Stocks or crypto', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks' };
+    var tick = r.empty ? null : freshTick(productForStop(stop));
+    if (tick && S.isNum(tick.price)) {
+      r.lead = money(tick.price);
+      if (S.isNum(tick.pct24h)) {
+        r.change.pct = tick.pct24h;
+        r.change.abs = tick.price - tick.open24h;
+        r.change.label = '24H';
+      }
+      r.live = true;
+      if (r.spark && r.spark.length) r.spark = r.spark.concat([tick.price]);
+    }
+    return r;
   }
 
   function probeReading() {
@@ -4988,9 +5340,61 @@ tr.row-rule th {
     return applyLive(withRange(quoteReading('probe', 'USD', state.probe.symbol + ' / USD', '24H'), state.probe.id), 'probe');
   }
 
-  function cryptoReading() {
-    var r = pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
-    return withRange(r, coinForStop('crypto'));
+  /* WATCH: one stock at a time from the viewer's list, as its last daily
+   * close. The tabs row steps through the list and slices the closes. No
+   * value either: a close is not a level worth an alert. */
+  var WATCH_RANGES = [[5, '1W'], [21, '1M'], [63, '3M'], [252, '1Y']];
+
+  function sessionsLabel(n) {
+    for (var i = 0; i < WATCH_RANGES.length; i++) if (WATCH_RANGES[i][0] === n) return WATCH_RANGES[i][1];
+    return '';
+  }
+
+  function watchSymbol() {
+    var w = state.watch;
+    if (!w.list.length) return null;
+    if (w.index >= w.list.length) w.index = w.list.length - 1;
+    if (w.index < 0) w.index = 0;
+    return w.list[w.index];
+  }
+
+  function watchReading() {
+    var w = state.watch, sym = watchSymbol();
+    var r = noReading('CLOSE', 'WATCH', sessionsLabel(w.sessions));
+    r.change.usd = true;
+    if (!sym) {
+      r.hint = 'Press DATA to add stocks';
+      return r;
+    }
+    r.tabs = { kind: 'watch', label: 'Watch list', options: WATCH_RANGES, value: w.sessions, count: w.list.length };
+    r.symbol = sym;
+    r.ticker = sym;
+    r.mode = 'WATCH ' + (w.index + 1) + '/' + w.list.length;
+    var series = stockSeries(sym), row = stockRow(sym);
+    var last = series ? series[series.length - 1] : row && S.isNum(row.close) ? { date: row.date, price: row.close } : null;
+    if (!last) {
+      r.hint = state.stocks.list && !row ? sym + ' is not in the current list' : 'Loading ' + sym;
+      return r;
+    }
+    r.dp = Math.abs(last.price) < 10 ? 4 : 2;
+    r.text = money(last.price);
+    r.empty = false;
+    if (last.date) r.mode += ' · ' + F.shortDate(last.date);
+    if (series && series.length > 1) {
+      var slice = S.tail(series, w.sessions + 1);
+      var first = slice[0].price;
+      r.spark = slice.map(function (p) { return p.price; });
+      if (first > 0) {
+        r.change.pct = (last.price / first - 1) * 100;
+        r.change.abs = last.price - first;
+        r.change.dp = r.dp;
+      }
+    } else if (row && S.isNum(row.change1d)) {
+      r.change.pct = row.change1d;
+      r.change.label = '1D';
+    }
+    r.say = sym + ' closed at ' + r.text + (last.date ? ' on ' + F.shortDate(last.date) : '');
+    return r;
   }
 
   function entryValues(entries) {
@@ -5045,8 +5449,8 @@ tr.row-rule th {
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
-      case 'stock': return stockReading();
-      case 'crypto': return applyLive(cryptoReading(), stop);
+      case 'mover': case 'loser': return moverReading(stop);
+      case 'watch': return watchReading();
       case 'probe': return probeReading();
       case 'note': return noteReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
@@ -5061,10 +5465,7 @@ tr.row-rule th {
     var cb = SRC.coinbaseWs;
     if (stop === 'btc') return 'BTC-USD';
     if (stop === 'eth') return 'ETH-USD';
-    if (stop === 'crypto') {
-      var pick = MP.spotlight && MP.spotlight.view ? MP.spotlight.view.crypto : null;
-      return pick && pick.symbol ? cb.productFor(pick.symbol) : null;
-    }
+    if (stop === 'mover' || stop === 'loser') return MP.spotlight && MP.spotlight.productFor ? MP.spotlight.productFor(stop) : null;
     if (stop === 'probe') return state.probe && state.probe.symbol ? cb.productFor(state.probe.symbol) : null;
     return null;
   }
@@ -5072,10 +5473,11 @@ tr.row-rule th {
   function liveProducts() {
     var unsupported = (state.live.status && state.live.status.unsupported) || [];
     var out = [];
-    LIVE_STOPS.forEach(function (stop) {
-      var p = productForStop(stop);
-      if (p && out.indexOf(p) < 0 && unsupported.indexOf(p) < 0) out.push(p);
-    });
+    LIVE_STOPS.map(productForStop)
+      .concat(MP.spotlight && MP.spotlight.products ? MP.spotlight.products() : [])
+      .forEach(function (p) {
+        if (p && out.indexOf(p) < 0 && unsupported.indexOf(p) < 0) out.push(p);
+      });
     return out;
   }
 
@@ -5147,7 +5549,7 @@ tr.row-rule th {
     if (stop === 'btc') return COINS.btc;
     if (stop === 'eth') return COINS.eth;
     if (stop === 'probe') return state.probe ? state.probe.id : null;
-    if (stop === 'crypto') return MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    /* the movers have no range tabs: their switch takes the row */
     return null;
   }
 
@@ -5312,14 +5714,17 @@ tr.row-rule th {
 
   function coinIds() {
     var ids = coinKeys().map(liveCoinId);
-    var pick = MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
-    if (pick && ids.indexOf(pick) < 0) ids.push(pick);
+    (MP.spotlight && MP.spotlight.cryptoIds ? MP.spotlight.cryptoIds() : []).forEach(function (id) {
+      if (id && ids.indexOf(id) < 0) ids.push(id);
+    });
     return ids;
   }
 
-  /* One CoinGecko call covers bitcoin, ether, the probe and the crypto of the week. */
+  /* One CoinGecko call covers bitcoin, ether, the probe and both crypto movers. */
   function loadCoins() {
-    var spec = SRC.coinsMarkets(coinIds());
+    var ids = coinIds();
+    state.coinIdsAsked = ids.join(',');
+    var spec = SRC.coinsMarkets(ids);
     return fetchJson(spec.url).then(function (payload) {
       var coins = spec.normalize(payload);
       if (!coins || !coins[COINS.btc]) throw emptyError();
@@ -5332,9 +5737,10 @@ tr.row-rule th {
         slot.stamp = now;
         slot.notice = null;
       });
-      if (MP.spotlight && MP.spotlight.setCryptoQuote) {
-        var pick = MP.spotlight.cryptoId();
-        MP.spotlight.setCryptoQuote(pick && coins[pick] ? coins[pick] : null);
+      if (MP.spotlight && MP.spotlight.setCoinQuotes) {
+        var picked = {};
+        MP.spotlight.cryptoIds().forEach(function (id) { if (coins[id]) picked[id] = coins[id]; });
+        MP.spotlight.setCoinQuotes(picked);
       }
     }).catch(function (err) {
       state.quotes.btc.notice = liveNotice('CoinGecko', err);
@@ -5362,7 +5768,7 @@ tr.row-rule th {
       applySnapshotQuote('qqq', snap.qqq);
       state.snapshot.generatedAt = snap.generatedAt;
       state.snapshot.notice = staleNotice(snap.generatedAt);
-      if (MP.spotlight) MP.spotlight.setQuote(snap.spotlight);
+      if (MP.spotlight && MP.spotlight.setPicks) MP.spotlight.setPicks(snap.picks);
     }).catch(function (err) {
       state.snapshot.notice = snapshotNotice(err, 'Nasdaq data');
       throw err;
@@ -5394,10 +5800,16 @@ tr.row-rule th {
 
   /* Which coin and index the statistics measure, as the labels the panels
    * print: coin symbol, index code (^IXIC) and its short form (NDQ). */
+  /* The statistics' 'crypto' coin is the week's crypto mover. */
+  function cryptoMover() {
+    var m = MP.spotlight && MP.spotlight.view ? MP.spotlight.view.movers : null;
+    return m && m.crypto ? m.crypto.mover : null;
+  }
+
   function statsCoinId(coinKey) {
     if (coinKey === 'btc') return COINS.btc;
     if (coinKey === 'eth') return COINS.eth;
-    if (coinKey === 'crypto') return MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    if (coinKey === 'crypto') { var cm = cryptoMover(); return cm && cm.id ? cm.id : null; }
     if (coinKey === 'probe') return state.probe ? state.probe.id : null;
     return null;
   }
@@ -5405,10 +5817,7 @@ tr.row-rule th {
   function statsCoinSymbol(coinKey) {
     if (coinKey === 'btc') return 'BTC';
     if (coinKey === 'eth') return 'ETH';
-    if (coinKey === 'crypto') {
-      var pick = MP.spotlight && MP.spotlight.view ? MP.spotlight.view.crypto : null;
-      return pick ? pick.symbol : null;
-    }
+    if (coinKey === 'crypto') { var cm = cryptoMover(); return cm ? cm.symbol : null; }
     if (coinKey === 'probe') return state.probe ? state.probe.symbol : null;
     return null;
   }
@@ -5521,7 +5930,7 @@ tr.row-rule th {
     if (!hosts.length) return;
     var coinPills = STAT_COINS.map(function (key) {
       var sym = statsCoinSymbol(key);
-      var label = key === 'crypto' ? (sym ? sym + ' · week' : 'CRYPTO') : key === 'probe' ? (sym ? sym + ' · probe' : 'PROBE') : sym;
+      var label = key === 'crypto' ? (sym ? sym + ' · mover' : 'MOVER') : key === 'probe' ? (sym ? sym + ' · probe' : 'PROBE') : sym;
       return '<button type="button" class="pill' + (state.stats.coin === key ? ' is-on' : '') + '" data-stat-coin="' + key + '"' +
         (sym ? '' : ' disabled') + '>' + F.escapeHtml(label) + '</button>';
     }).join('');
@@ -5830,10 +6239,235 @@ tr.row-rule th {
       var snap = SRC.normalizeSpotlightSnapshot(payload);
       if (!snap) throw emptyError();
       MP.spotlight.applySnapshot(snap);
-      syncLive();   /* the crypto pick may have changed */
+      syncLive();   /* the crypto movers may have changed */
+      ensureMoverFiles();
+      /* new crypto movers are priced now rather than at the next poll */
+      if (coinIds().join(',') !== state.coinIdsAsked) loadCoins().catch(function () { /* shown as a notice */ });
     }).catch(function (err) {
-      MP.spotlight.setNotice(snapshotNotice(err, 'This week’s pick'));
+      MP.spotlight.setNotice(snapshotNotice(err, 'The movers list'));
       throw err;
+    });
+  }
+
+  /* ---- the Nasdaq-100: the list and members' closes ------------------------ */
+
+  /* data/stocks.json: every member's last close and its 1-day, 5-day and
+   * 1-month change. It names the WATCH search's choices; a member's closes
+   * load from its own file when a screen needs them. */
+  function loadStocks() {
+    return fetchJson(snapshotUrl(SRC.SNAPSHOT.stocks)).then(function (payload) {
+      var list = SRC.normalizeStocksSnapshot(payload);
+      if (!list) throw emptyError();
+      state.stocks.list = list;
+      state.stocks.rowsBy = {};
+      list.rows.forEach(function (r) { state.stocks.rowsBy[r.symbol] = r; });
+      state.stocks.notice = null;
+      ensureMoverFiles();
+      ensureStock(watchSymbol());
+    }).catch(function (err) {
+      if (!state.stocks.list) {
+        state.stocks.notice = err && err.status === 404
+          ? { level: 'quiet', text: 'The Nasdaq-100 list appears after the first scheduled update.' }
+          : snapshotNotice(err, 'Nasdaq-100 list');
+      }
+      throw err;
+    }).then(function () {
+      renderWatch();
+      if (MP.spotlight) MP.spotlight.render();
+      repaint();
+    }, function (err) {
+      renderWatch();
+      throw err;
+    });
+  }
+
+  /* One member's closes, fetched once per published session. A failure is
+   * remembered for that session, so a missing file is not asked for again
+   * on every screen change. */
+  function ensureStock(sym) {
+    var path = sym ? SRC.stockPath(sym) : null;
+    if (!path) return;
+    var st = state.stocks, have = st.files[sym];
+    var session = st.list ? st.list.session : null;
+    if ((have && (have.session === session || !session)) || st.pending[sym]) return;
+    st.pending[sym] = true;
+    fetchJson(snapshotUrl(path)).then(function (payload) {
+      var f = SRC.normalizeStockFile(payload);
+      if (!f) throw emptyError();
+      st.files[sym] = { series: f.series, name: f.name, session: session };
+    }).catch(function () {
+      if (have) have.session = session;
+      else st.files[sym] = { series: null, name: null, session: session };
+    }).then(function () {
+      delete st.pending[sym];
+      renderWatch();
+      if (MP.spotlight) MP.spotlight.render();
+      repaint();
+    });
+  }
+
+  function stockSeries(sym) {
+    var f = sym ? state.stocks.files[sym] : null;
+    return f && f.series ? f.series : null;
+  }
+
+  function stockRow(sym) {
+    return (sym && state.stocks.rowsBy[sym]) || null;
+  }
+
+  function ensureMoverFiles() {
+    (MP.spotlight && MP.spotlight.stockSymbols ? MP.spotlight.stockSymbols() : []).forEach(ensureStock);
+  }
+
+  /* ---- MOVER and LOSER ----------------------------------------------------- */
+
+  function setMoversKind(k) {
+    if (!MP.spotlight) return;
+    MP.spotlight.setKind(k);
+    syncLive();
+    ensureMoverFiles();
+    repaint();
+  }
+
+  /* An old #stock or #crypto link sets the switch; landing on a stop loads
+   * the closes its screen needs. */
+  function onStopChange(view) {
+    var st = MP.router && MP.router.aliasState ? MP.router.aliasState(root.location && root.location.hash) : null;
+    if (st && st.movers && MP.spotlight && MP.spotlight.kind() !== st.movers) setMoversKind(st.movers);
+    if (view === 'mover' || view === 'loser') {
+      ensureMoverFiles();
+      if (MP.spotlight) MP.spotlight.render();
+    }
+    if (view === 'watch') ensureStock(watchSymbol());
+  }
+
+  /* ---- WATCH --------------------------------------------------------------- */
+
+  function isWatched(sym) { return state.watch.list.indexOf(String(sym || '').toUpperCase()) >= 0; }
+
+  function afterWatchChange() {
+    ensureStock(watchSymbol());
+    renderWatch();
+    if (MP.spotlight) MP.spotlight.render();
+    repaint();
+  }
+
+  function addWatch(sym) {
+    var w = state.watch, s = String(sym || '').trim().toUpperCase();
+    if (!MP.watch || !s) return;
+    if (w.list.indexOf(s) < 0) {
+      if (w.list.length >= MP.watch.MAX) {
+        w.notice = { level: 'warn', text: 'The watch list holds ' + MP.watch.MAX + ' stocks. Remove one to add another.' };
+        renderWatch();
+        return;
+      }
+      w.list = MP.watch.save(MP.watch.add(w.list, s));
+    }
+    w.index = Math.max(0, w.list.indexOf(s));
+    w.notice = null;
+    w.query = '';
+    w.results = [];
+    var input = el('watchSearch');
+    if (input) input.value = '';
+    afterWatchChange();
+  }
+
+  function removeWatch(sym) {
+    var w = state.watch;
+    if (!MP.watch) return;
+    w.list = MP.watch.save(MP.watch.remove(w.list, sym));
+    if (w.index >= w.list.length) w.index = Math.max(0, w.list.length - 1);
+    w.notice = null;
+    afterWatchChange();
+  }
+
+  function stepWatch(by) {
+    var w = state.watch;
+    if (w.list.length < 2) return;
+    w.index = (w.index + (by < 0 ? -1 : 1) + w.list.length) % w.list.length;
+    afterWatchChange();
+  }
+
+  function setWatchRange(n) {
+    if (!sessionsLabel(n)) return;
+    state.watch.sessions = n;
+    repaint();
+  }
+
+  function searchWatch(q) {
+    var w = state.watch;
+    w.query = String(q || '').trim();
+    var rows = state.stocks.list ? state.stocks.list.rows : [];
+    w.results = MP.watch ? MP.watch.search(rows, w.query, 16).filter(function (r) {
+      return w.list.indexOf(r.symbol) < 0;
+    }).slice(0, 8) : [];
+    renderWatch();
+  }
+
+  function renderWatch() {
+    var w = state.watch;
+    var res = el('watchResults');
+    if (res) {
+      res.innerHTML = w.results.map(function (r) {
+        return '<li><button type="button" class="pick" data-watch-add="' + F.escapeHtml(r.symbol) + '">' +
+          '<span class="row-code">' + F.escapeHtml(r.symbol) + '</span>' +
+          '<span class="row-desc">' + F.escapeHtml(r.name + (S.isNum(r.close) ? ' · ' + money(r.close) : '')) + '</span></button></li>';
+      }).join('') + (w.query && !w.results.length && state.stocks.list
+        ? '<li class="row-desc">No Nasdaq-100 stock matches "' + F.escapeHtml(w.query) + '".</li>' : '');
+    }
+
+    var host = el('watchTable');
+    if (host) {
+      host.innerHTML = w.list.length
+        ? '<table class="data watch-table"><thead><tr><th scope="col">Stock</th><th scope="col">Close</th><th scope="col">Date</th>' +
+          '<th scope="col">1D</th><th scope="col">5D</th><th scope="col" aria-label="Remove"></th></tr></thead><tbody>' +
+          w.list.map(function (sym, i) {
+            var row = stockRow(sym);
+            function pctCell(v) {
+              return '<td><span class="' + changeClass(v) + '">' + (S.isNum(v) ? F.signedPctPoints(v, 2) : F.DASH) + '</span></td>';
+            }
+            return '<tr' + (i === w.index ? ' class="is-on"' : '') + '>' +
+              '<th scope="row"><button type="button" class="linkish" data-watch-pick="' + i + '">' + F.escapeHtml(sym) + '</button>' +
+              '<div class="row-desc">' + F.escapeHtml(row ? row.name : (state.stocks.list ? 'not in the current list' : '')) + '</div></th>' +
+              '<td>' + (row && S.isNum(row.close) ? money(row.close) : F.DASH) + '</td>' +
+              '<td class="dim">' + (row && row.date ? F.shortDate(row.date) : F.DASH) + '</td>' +
+              pctCell(row ? row.change1d : NaN) + pctCell(row ? row.change5d : NaN) +
+              '<td><button type="button" class="pill" data-watch-del="' + F.escapeHtml(sym) + '" aria-label="Remove ' + F.escapeHtml(sym) + '">✕</button></td></tr>';
+          }).join('') + '</tbody></table>'
+        : '<p class="row-desc">Nothing on the watch list yet. Search above to add up to ' + (MP.watch ? MP.watch.MAX : 8) + ' Nasdaq-100 stocks.</p>';
+    }
+    setHtml('watchNotice', noticeHtml(w.notice || state.stocks.notice));
+  }
+
+  function wireWatch() {
+    var input = el('watchSearch');
+    if (input) {
+      input.addEventListener('input', function () { searchWatch(input.value); });
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter') return;
+        ev.preventDefault();
+        var first = document.querySelector('#watchResults [data-watch-add]');
+        if (first) first.click();
+      });
+    }
+    var drawer = el('drawer');
+    if (!drawer) return;
+    drawer.addEventListener('click', function (ev) {
+      var t = ev.target && ev.target.closest ? ev.target : null;
+      if (!t) return;
+      var add = t.closest('[data-watch-add]');
+      if (add) { if (!add.disabled) addWatch(add.getAttribute('data-watch-add')); return; }
+      var del = t.closest('[data-watch-del]');
+      if (del) { removeWatch(del.getAttribute('data-watch-del')); return; }
+      var pick = t.closest('[data-watch-pick]');
+      if (pick) {
+        state.watch.index = parseInt(pick.getAttribute('data-watch-pick'), 10) || 0;
+        if (MP.router && MP.router.currentView() !== 'watch') MP.router.go('watch');
+        afterWatchChange();
+        return;
+      }
+      var kindBtn = t.closest('[data-movers-kind]');
+      if (kindBtn) setMoversKind(kindBtn.getAttribute('data-movers-kind'));
     });
   }
 
@@ -5937,12 +6571,16 @@ tr.row-rule th {
     if (MP.meter) MP.meter.init();
     if (MP.router) {
       MP.router.onChange(ensureRange);
+      MP.router.onChange(onStopChange);
       MP.router.start();
     }
     tickSession();
     wireAlerts();
     renderAlerts();
     wireProbe();
+    wireWatch();
+    renderWatch();
+    if (MP.spotlight && MP.spotlight.wire) MP.spotlight.wire();
     if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
     renderProbe();
     renderNote();
@@ -5964,6 +6602,7 @@ tr.row-rule th {
     poll(loadNote, NOTE_REFRESH_MS);
     ensureCoinHistory();
     poll(loadSpotlight, DAILY_REFRESH_MS);
+    poll(loadStocks, DAILY_REFRESH_MS);
     poll(function () {
       ensureCoinHistory();   /* a failed statistics leg gets another try */
       return loadRange(coinForStop(currentStop()), state.hero.days, true);
@@ -6021,6 +6660,17 @@ tr.row-rule th {
     productForStop: productForStop,
     setRange: setRange,
     ensureRange: ensureRange,
+    setMoversKind: setMoversKind,
+    stepWatch: stepWatch,
+    setWatchRange: setWatchRange,
+    addWatch: addWatch,
+    removeWatch: removeWatch,
+    isWatched: isWatched,
+    renderWatch: renderWatch,
+    stockSeries: stockSeries,
+    stockRow: stockRow,
+    ensureStock: ensureStock,
+    loadStocks: loadStocks,
     RANGE_LABELS: RANGE_LABELS,
     INSTRUMENTS: INSTRUMENTS,
     config: {

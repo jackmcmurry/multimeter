@@ -82,6 +82,7 @@
       supply: toNum(coin.circulating_supply),
       maxSupply: toNum(coin.max_supply),
       rank: toNum(coin.market_cap_rank),
+      image: typeof coin.image === 'string' ? coin.image : null,
       sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
       updatedAt: Date.parse(coin.last_updated) || null
     };

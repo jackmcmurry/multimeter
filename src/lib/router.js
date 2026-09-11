@@ -3,19 +3,22 @@
  *
  * Each stop is one reading on the meter's screen and one panel in the detail
  * drawer below it; several stops can share a panel (ETH and S&P both open
- * the markets panel). Only one panel is ever shown. Charts render into
- * hidden panels quite happily because every SVG carries a viewBox and sizes
- * from CSS, so nothing needs re-rendering on reveal.
+ * the markets panel, MOVER and LOSER the movers panel). Only one panel is
+ * ever shown. Charts render into hidden panels quite happily because every
+ * SVG carries a viewBox and sizes from CSS, so nothing needs re-rendering on
+ * reveal.
  *
  * Old section hashes are kept as aliases so links out in the world still land
- * somewhere sensible.
+ * somewhere sensible. #stock and #crypto named stops that became MOVER and
+ * LOSER: both land on MOVER, and aliasState() tells the page which side of
+ * the Stocks | Crypto switch they meant.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd', 'note'];
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'mover', 'loser', 'watch', 'probe', 'corr', 'vol', 'dd', 'note'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -25,7 +28,12 @@
     sp500: 'spx',
     home: 'btc',
     markets: 'btc',
-    weekly: 'stock',
+    stock: 'mover',
+    weekly: 'mover',
+    crypto: 'mover',
+    movers: 'mover',
+    losers: 'loser',
+    watchlist: 'watch',
     coupling: 'corr',
     beta: 'corr',
     volatility: 'vol',
@@ -35,6 +43,13 @@
     daily: 'note'
   };
 
+  /* What an alias meant beyond the stop it lands on. */
+  var ALIAS_STATE = {
+    stock: { movers: 'stocks' },
+    weekly: { movers: 'stocks' },
+    crypto: { movers: 'crypto' }
+  };
+
   /* Which drawer panel (.view[data-panel]) each stop opens. */
   var PANELS = {
     off: 'about',
@@ -42,8 +57,9 @@
     eth: 'markets',
     nasdaq: 'markets',
     spx: 'markets',
-    stock: 'weekly',
-    crypto: 'crypto',
+    mover: 'movers',
+    loser: 'movers',
+    watch: 'watch',
     probe: 'probe',
     corr: 'coupling',
     vol: 'volatility',
@@ -57,8 +73,9 @@
     eth: 'Ether',
     nasdaq: 'Nasdaq Composite',
     spx: 'S&P 500',
-    stock: 'Stock of the week',
-    crypto: 'Crypto of the week',
+    mover: 'Highest weekly move',
+    loser: 'Lowest weekly move',
+    watch: 'Watch list',
     probe: 'Probe',
     corr: 'Correlation',
     vol: 'Volatility',
@@ -71,12 +88,22 @@
 
   var DEFAULT_VIEW = 'btc';
 
+  function rawOf(hash) {
+    return String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+  }
+
   /* Pure: '#corr' -> 'corr', '#coupling' -> 'corr'; anything unrecognised ->
    * the default. */
   function parseHash(hash) {
-    var raw = String(hash || '').replace(/^#\/?/, '').split('?')[0].split('&')[0].toLowerCase().trim();
+    var raw = rawOf(hash);
     raw = ALIASES[raw] || raw;
     return VIEWS.indexOf(raw) >= 0 ? raw : DEFAULT_VIEW;
+  }
+
+  /* Pure: '#crypto' -> { movers: 'crypto' }; a hash with nothing extra -> null. */
+  function aliasState(hash) {
+    var s = ALIAS_STATE[rawOf(hash)];
+    return s ? Object.assign({}, s) : null;
   }
 
   var current = null;
@@ -143,6 +170,7 @@
     TITLES: TITLES,
     DEFAULT_VIEW: DEFAULT_VIEW,
     parseHash: parseHash,
+    aliasState: aliasState,
     show: show,
     go: go,
     overridePanel: overridePanel,

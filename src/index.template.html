@@ -87,11 +87,11 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
               <span class="ann" id="lcdMax"></span>
             </div>
           </div>
-          <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range">
-            <button type="button" class="rng is-on" data-days="1" aria-pressed="true">24H</button>
-            <button type="button" class="rng" data-days="7" aria-pressed="false">1W</button>
-            <button type="button" class="rng" data-days="30" aria-pressed="false">1M</button>
-            <button type="button" class="rng" data-days="365" aria-pressed="false">1Y</button>
+          <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range" data-kind="ranges" data-sig="ranges|1,7,30,365">
+            <button type="button" class="rng is-on" data-tab="ranges" data-value="1" aria-pressed="true">24H</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="7" aria-pressed="false">1W</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="30" aria-pressed="false">1M</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="365" aria-pressed="false">1Y</button>
           </div>
         </div>
 
@@ -107,7 +107,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
         <div class="face face-dial">
 
         <div class="dial" id="dial">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="11" aria-valuenow="1"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="12" aria-valuenow="1"></div>
         </div>
 
         <div class="jacks">
@@ -154,47 +154,26 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <div id="marketNotice"></div>
     </section>
 
-    <!-- STOCK -->
-    <section class="view" data-panel="weekly" hidden>
-      <div class="hero">
-        <div class="hero-top">
-          <span class="hero-asset" id="spotSymbol">—</span>
-          <span class="muted" id="spotWeek">—</span>
-        </div>
-        <div class="hero-price" id="spotPx">—</div>
-        <div class="hero-sub">
-          <span class="chg is-flat" id="spotChg">—</span>
-          <span class="muted" id="spotName">—</span>
-        </div>
-      </div>
-
-      <div class="chartbox" id="spotSpark"></div>
-
-      <div class="strip" id="spotStrip"></div>
-      <p class="foot" id="spotRunner"></p>
-      <div id="spotNotice"></div>
+    <!-- MOVER / LOSER -->
+    <section class="view" data-panel="movers" hidden>
+      <div class="pills movers-kind" id="moversKind" role="group" aria-label="Stocks or crypto"></div>
+      <div class="mv-head" id="mvHead"></div>
+      <div class="strip" id="mvStrip"></div>
+      <div class="chartbox" id="mvChart"></div>
+      <p class="foot" id="mvChartFoot"></p>
+      <div id="mvBoard"></div>
+      <p class="foot" id="mvRunner"></p>
+      <p class="foot" id="mvRule"></p>
+      <div id="mvNotice"></div>
     </section>
 
-    <!-- CRYPTO -->
-    <section class="view" data-panel="crypto" hidden>
-      <div class="hero">
-        <div class="hero-top">
-          <span class="hero-asset" id="cryptoSymbol">—</span>
-          <span class="muted" id="cryptoWeek">—</span>
-        </div>
-        <div class="hero-price" id="cryptoPx">—</div>
-        <div class="hero-sub">
-          <span class="chg is-flat" id="cryptoChg">—</span>
-          <span class="muted" id="cryptoName">—</span>
-        </div>
-      </div>
-
-      <div class="chartbox" id="cryptoSpark"></div>
-      <p class="foot">Seven days, hourly.</p>
-
-      <div class="strip" id="cryptoStrip"></div>
-      <p class="foot" id="cryptoRunner"></p>
-      <div id="cryptoNotice"></div>
+    <!-- WATCH -->
+    <section class="view" data-panel="watch" hidden>
+      <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a Nasdaq-100 stock by symbol or name" aria-label="Add a Nasdaq-100 stock">
+      <ul class="rows picks" id="watchResults"></ul>
+      <div class="table-host" id="watchTable"></div>
+      <p class="foot">Daily closes from the data job, not live prices. Up to 8 stocks. The list stays in this browser.</p>
+      <div id="watchNotice"></div>
     </section>
 
     <!-- PROBE -->
@@ -256,14 +235,14 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. For the coins, the tabs on the screen set the chart's range. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. The tabs on the screen set the chart's range for the coins, switch MOVER and LOSER between stocks and crypto, and step through WATCH. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
       <h2>Dial</h2>
       <p><b>BTC</b>, <b>ETH</b>: spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. Both trade every calendar day.</p>
       <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
-      <p><b>STOCK</b>: the stock of the week. A job runs each Monday before the open, scans a fixed 15-name Nasdaq-100 universe and stores the name with the largest absolute five-session move.</p>
-      <p><b>CRYPTO</b>: the crypto of the week, chosen the same way from a fixed 15-name large-cap universe over seven days. Bitcoin and ether are left out because they have their own stops.</p>
-      <p>The picks rank by absolute move, not by gain, because a ranking of winners would read as a tip. They report what moved in either direction. They are not recommendations.</p>
+      <p><b>MOVER</b> and <b>LOSER</b>: the highest and the lowest move of the past week. For stocks, the data job keeps the daily closes of every Nasdaq-100 member it can price and ranks their five-session moves once it has them all, usually before Monday's open. For crypto, it ranks 15 large coins other than bitcoin and ether by their seven-day move. The tabs on the screen switch between the two, and the drawer shows the five highest and the five lowest together.</p>
+      <p>Both ends describe the past week. Neither is a recommendation.</p>
+      <p><b>WATCH</b>: up to eight Nasdaq-100 stocks you choose. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
       <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
       <p><b>NOTE</b>: the daily reading. After each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template. The drawer shows the figures it was given.</p>
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
@@ -283,7 +262,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the Nasdaq-100 members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Company logos load from Financial Modeling Prep's public image service. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>

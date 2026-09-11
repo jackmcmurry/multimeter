@@ -155,10 +155,12 @@
     var stop = MP.meter && MP.meter.current ? MP.meter.current() : null;
     if (!stop || stop === 'off' || !MP.app || !MP.app.reading) return Promise.resolve('off');
     var r = MP.app.reading(stop);
+    /* MOVER, LOSER and WATCH carry a badge, a ticker and a leading price */
+    var changeLine = MP.meter.changeText ? MP.meter.changeText(r.change, r.unit) : '';
     var meta = {
-      mode: r.mode,
-      dir: direction(r),
-      change: MP.meter.changeText ? MP.meter.changeText(r.change, r.unit) : '',
+      mode: (r.badge && r.badge.text ? r.badge.text + '  ' : '') + (r.ticker ? r.ticker + '  ' : '') + (r.mode || ''),
+      dir: r.headDir || direction(r),
+      change: r.lead && !r.empty ? r.lead + '  ' + changeLine : changeLine,
       label: r.change ? r.change.label : '',
       site: root.location.host + root.location.pathname.replace(/index\.html$/, ''),
       when: new Date().toUTCString().replace(/:\d\d GMT$/, ' UTC')

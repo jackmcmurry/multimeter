@@ -2,8 +2,9 @@
 
 A live bitcoin-vs-Nasdaq tracker with the statistics that make the comparison
 mean something: correlation and beta across three windows, rolling realized
-volatility for both legs, and a drawdown table with recovery times, plus a
-Stock of the Week that a weekly job rewrites.
+volatility for both legs, and a drawdown table with recovery times, plus the
+week's highest and lowest movers among the Nasdaq-100 and among 15 large
+coins, and a watch list of Nasdaq-100 stocks you pick.
 
 **Live:** https://jackmcmurry.github.io/multimeter/
 
@@ -13,7 +14,8 @@ Built by Jack McMurry with Claude Code.
 
 The page is one handheld multimeter. The rotary dial picks a function and
 the screen shows that one reading: a tall chart, the price beneath it, the
-change, and range tabs for the coins. The DATA key, or a press on the
+change, and a row of tabs: the chart's range for the coins, a Stocks | Crypto
+switch for MOVER and LOSER, and a stepper for WATCH. The DATA key, or a press on the
 screen, opens a drawer beneath the meter with the charts and tables behind
 the number. HOLD freezes the display. The COM jack lights while the US
 market is open.
@@ -34,17 +36,28 @@ the window's height, so the screen and the dial are both in view.
 | ETH | spot price in USD, change over the chosen range | BTC, ETH, ^IXIC, ^GSPC (and QQQ with a key) as rows |
 | NASDAQ | ^IXIC level, day change | the same rows |
 | S&P | ^GSPC level, day change | the same rows |
-| STOCK | the stock of the week, day change | the pick in full: price, closes, 5d / 1m / market cap, runner-up |
-| CRYPTO | the crypto of the week, change over the chosen range | the pick in full: price, 7-day sparkline, 7d / 24h / market cap |
+| MOVER | the week's highest move: a badge, the ticker and the move, the price and day change, the rank | logo, price, 1d / 1m / market cap, the chart, and the week's board: the five highest and the five lowest |
+| LOSER | the week's lowest move, the same way | the same panel, from the other end |
+| WATCH | one of your stocks: its last close and the change over the chosen range | a search of the Nasdaq-100, and your list with close, date, 1d and 5d |
 | PROBE | a coin of your choosing, change over the chosen range | coin search (CoinGecko), the pick, its range chart |
 | CORR | coin–index 90-session correlation, 30-session change | pair selector, return scatter, rolling correlation, coupling table with beta and R² |
 | VOL | the coin's 30-session realized vol, annualized | pair selector, current vols and the rolling column chart |
 | DD | the coin's distance below its running peak | pair selector, underwater curves and the episode table |
 | NOTE | the daily reading: three sentences in place of the chart, the session date as the value | the full reading, who wrote it, and the exact figures it was given |
 
+MOVER and LOSER share a Stocks | Crypto switch in the tabs row, stored as
+`mm.movers`. For stocks they rank the five-session moves of every Nasdaq-100
+member the data job priced; for crypto, the seven-day moves of 15 large coins
+other than bitcoin and ether. Both ends always appear together, and the
+drawer says the ranking describes the past week and is not advice. WATCH
+holds up to eight Nasdaq-100 stocks (`mm.watch`). It shows daily closes from
+the data job, not live prices, because the page cannot call FMP. The old
+`#stock` and `#crypto` links land on MOVER with the matching side of the
+switch.
+
 The statistics measure one coin against one index. The pair defaults to
 bitcoin and the Nasdaq Composite; the selector at the top of those panels
-offers BTC, ETH, the crypto of the week and the probe coin against the Nasdaq
+offers BTC, ETH, the crypto mover and the probe coin against the Nasdaq
 or the S&P 500 (stored as `mm.stats`). Bitcoin's daily closes come from the
 data job; any other coin's come from its one-year CoinGecko chart, which the
 1Y range tab shares. CoinGecko stamps each daily point at 00:00 UTC, which is
@@ -129,11 +142,12 @@ The page is static: one HTML file on GitHub Pages. Numbers reach it two ways.
 
 **Crypto, live, from your browser.** CoinGecko's public API needs no key and
 allows cross-origin requests, so the page polls it directly every 45 seconds
-for bitcoin, ether and the crypto of the week in one call, and fetches the
-BTC chart per range.
+for bitcoin, ether, the probe coin and both crypto movers in one call, and
+fetches the BTC chart per range.
 
 **Ticks, from Coinbase.** Coinbase Exchange's public WebSocket feed streams
-BTC-USD, ETH-USD and, when Coinbase lists it, the week's crypto pick. While a
+BTC-USD, ETH-USD, the probe coin and, while the switch is on crypto, the two
+crypto movers, each when Coinbase lists it. While a
 tick is under a minute old the screen shows LIVE and paints Coinbase's last
 trade; when the feed is quiet or blocked the polled CoinGecko price takes
 over. The two sources differ by a few dollars, which is why the price can
@@ -149,16 +163,20 @@ files once a minute.
 
 | Snapshot | Holds | Refreshed |
 |---|---|---|
-| `quotes.json` | ^IXIC, ^GSPC and the spotlight name (FMP), QQQ (Alpha Vantage) | every 15 min while the market is open, then once after the close |
+| `quotes.json` | ^IXIC, ^GSPC and the two stock movers (FMP), QQQ (Alpha Vantage) | every 15 min while the market is open (the movers every 30), then once after the close |
 | `history.json` | ^IXIC, ^GSPC and BTCUSD daily closes (FMP), QQQ daily closes (Alpha Vantage) | once per session, an hour after the close |
-| `spotlight.json` | the stock of the week with its daily closes and multi-horizon change; the crypto of the week (CoinGecko scan) | Monday scans; stock detail once per session |
+| `stocks.json` | every Nasdaq-100 member's last close with its 1-day, 5-day and 1-month change, and the coverage count | after each close, as the members come in |
+| `stocks/SYM.json` | one member's daily closes, up to 300 sessions | a third of the members per run after each close |
+| `job.json` | the data job's ledger: when each member was fetched, and plan denials | whenever the members step runs |
+| `spotlight.json` | the week's movers: the stock mover and loser from `stocks.json`, the crypto ones from one CoinGecko scan, the five at each end, twelve weeks of history. Version 2; it still writes the old single-pick fields for pages built before it | once a week, when a pass over the members is complete |
 | `findings.json` | the write-up's statistics, computed from `history.json` | whenever history is rewritten |
 | `note.json` | the daily reading, its source (Claude or the template) and the figures it was given | once per session, after the close |
 
 Each run of the job works out for itself what is due (`src/lib/pipeline.js`),
 so a late or skipped cron tick heals on the next one. On the free plans it
-uses about 90 of FMP's 250 daily calls, 10 of Alpha Vantage's 25, and one
-keyless CoinGecko call a week.
+uses about 190 of FMP's 250 daily calls (the index quotes, the movers' quotes,
+three history calls, and one call per Nasdaq-100 member, at most 35 a run),
+10 of Alpha Vantage's 25, and one keyless CoinGecko call a week.
 
 The market-open dot is computed in the browser from NYSE hours and a holiday
 table (`src/lib/session.js`), with no API call.
@@ -169,8 +187,13 @@ table (`src/lib/session.js`), with no API call.
   it comes from Alpha Vantage. Alpha Vantage is optional: without its key the
   QQQ row and the "vs QQQ" coupling rows simply don't appear.
 - **^NDX** needs a paid FMP plan; QQQ stands in for it, and the page says so.
-- **AVGO** is denied on FMP's free plan. The weekly scan counts it as skipped
-  and never lets a denial win.
+- **Nasdaq-100 coverage.** FMP's free plan denies some members' daily closes;
+  AVGO is one. The job parks each denial for 35 days in `job.json`, counts it
+  in `stocks.json`, and ranks the movers among the members it could price.
+  Each run's log prints the coverage, for example
+  `universe: 35 fetched this run; 70 of 102 priced for 2026-09-11, 1 not on this plan`.
+- **The member list** is fixed in `src/lib/universe.js` and dated. The job
+  warns once it is more than 120 days old.
 
 ## Setup
 
@@ -183,7 +206,9 @@ table (`src/lib/session.js`), with no API call.
 2. **Pages.** Settings → Pages → Build and deployment → Source: **GitHub
    Actions**.
 3. **First run.** Actions → Site → Run workflow (force: `all`). That fills
-   every snapshot and deploys. After that the schedule takes over.
+   every snapshot and deploys. Then run it once more with force `universe`,
+   which prices every Nasdaq-100 member in one run instead of three and
+   prints the coverage. After that the schedule takes over.
 
 A run whose data step fails still deploys the site; the failure shows as a
 warning or error in the run summary. Keys never appear in logs: every URL is
@@ -202,16 +227,18 @@ tests run in a browser.
 Then, in the debug page's console:
 
 ```js
-MP.test.run()                        // statistics, spotlight rule, router
+MP.test.run()                        // statistics, the movers rule, router, dial labels, watch list
 MP.dataTest.run()                    // session clock and every payload normalizer
 await MP.dataTest.runPipeline()      // the data job against canned payloads
 MP.app.stop(); MP.debug.renderSynthetic(7, 365)  // seeded walk through the real render path
 var stop = MP.debug.cycle(1200); stop()          // tour every dial stop, then halt the tour
 ```
 
-The pipeline suite replays a full Monday: pre-market first run, quiet runs,
-the hourly QQQ throttle, the final read after the close, the history grace, a
-late daily bar, a missing key, FMP down, and an Alpha Vantage rate limit.
+The pipeline suite replays a full Monday: pre-market first run, a pass over
+the Nasdaq-100 in three runs, the movers, the hourly QQQ throttle, the final
+read after the close, the history grace, a late daily bar, a split, FMP's
+daily limit, the old spotlight file's migration, a missing key, FMP down, and
+an Alpha Vantage rate limit.
 
 The build refuses to ship if an inject marker survives, if debug or data-job
 code leaks into the published page, if the page contains an `apikey=`
@@ -234,16 +261,18 @@ src/
     findings.js              the write-up's statistics and narrative (pure)
     findings-page.js         fills findings.html from findings.json
     note.js                  the daily reading's prompt, checker and fallback (data job)
+    universe.js              the Nasdaq-100 list and the rules for keeping its closes (data job)
     sources.js               endpoints + payload normalizers
     session.js               NYSE session clock
-    store.js                 guarded localStorage (alerts, probe, statistics pair)
+    store.js                 guarded localStorage (alerts, probe, statistics pair, skin, watch list, switch)
     router.js                hash routing between dial stops
     funcs.js                 REL and MIN/MAX
     alerts.js                alert levels and their evaluation
     meter.js                 the dial, the knob, the keys, and the screen paint
     live.js                  Coinbase WebSocket ticks
     share.js                 the share card
-    spotlight.js             stock- and crypto-of-the-week rules and panels
+    watch.js                 the WATCH list and its search
+    spotlight.js             MOVER and LOSER: the movers rule, the screen reading and the panel
     app.js                   state, polling, analytics, render
     pipeline.js              the data job's decisions (debug bundle + Node)
     debug.js                 synthetic-data render (debug bundle only)
@@ -259,6 +288,7 @@ docs/                        what GitHub Pages serves
   manifest.webmanifest       web app manifest (copied from src/)
   icons/                     app icons
   data/*.json                snapshots (written by the Action)
+  data/stocks/*.json         one file of daily closes per Nasdaq-100 member
 ```
 
 ## Method
@@ -280,6 +310,9 @@ docs/                        what GitHub Pages serves
 
 - **Holidays.** `src/lib/session.js` lists NYSE holidays through 2027. Add the
   next year's each December, then rebuild.
+- **Nasdaq-100 members.** `src/lib/universe.js` holds the list as of its
+  `AS_OF` date. Nasdaq rebalances each December; update the list then, or
+  when the job warns that it is old.
 - **Code changes.** Edit `src/`, run `.\build.ps1`, commit `docs/index.html`
   with the source. Pushing to `main` redeploys.
 

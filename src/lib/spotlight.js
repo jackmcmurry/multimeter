@@ -1,16 +1,14 @@
 /* ============================================================================
- * spotlight.js: "Stock of the Week": the pinned panel at the top of the page.
+ * spotlight.js: MOVER and LOSER: the week's highest and lowest move, among
+ * the Nasdaq-100 or among 15 large coins.
  *
- * Selection is mechanical and descriptive, never advisory: the largest
- * ABSOLUTE 5-session move across a fixed Nasdaq-100 universe. Absolute rather
- * than largest gain, so the panel reports what actually moved instead of
- * reading like a tip.
- *
- * The data job (src/lib/pipeline.js) runs the scan once a week with this
- * module's selectSpotlight() and publishes the pick, its daily closes and its
- * multi-horizon change in data/spotlight.json. The pick's quote refreshes with
- * the Nasdaq quotes in data/quotes.json, so the price is never as stale as
- * the pick.
+ * Selection is mechanical and descriptive. The data job (src/lib/pipeline.js)
+ * ranks the week with selectMovers() and publishes both ends, the next name
+ * at each end and the five names at each end of the board in
+ * data/spotlight.json. The page shows one kind at a time: the switch on the
+ * screen picks stocks or crypto, and the choice stays in this browser. Stock
+ * prices come from the job's quotes (data/quotes.json picks) or, failing
+ * those, the last close; crypto prices come from the page's CoinGecko poll.
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -22,9 +20,8 @@
   var STOCK_RULE = 'Highest and lowest five-session move among the Nasdaq-100 members the data job could price.';
   var BOARD_SIZE = 5;   /* names at each end of the leaderboard */
 
-  /* The crypto of the week draws from the large caps beyond BTC and ETH, which
-   * have dial stops of their own. CoinGecko ids, so the page and the data job
-   * ask for exactly these. */
+  /* The large caps beyond BTC and ETH, which have dial stops of their own.
+   * CoinGecko ids, so the page and the data job ask for exactly these. */
   var CRYPTO_UNIVERSE = [
     { id: 'solana', symbol: 'SOL', name: 'Solana' },
     { id: 'ripple', symbol: 'XRP', name: 'XRP' },
@@ -44,6 +41,13 @@
   ];
 
   var CRYPTO_RULE = 'Highest and lowest seven-day move across a fixed 15-name large-cap universe, BTC and ETH excluded.';
+
+  var KINDS = ['stocks', 'crypto'];
+  var KIND_KEY = 'movers';
+  var SCREEN_SESSIONS = 30;    /* the screen charts six weeks of a stock's closes */
+  var DRAWER_SESSIONS = 63;    /* the drawer, three months */
+  var LOGO_URL = 'https://financialmodelingprep.com/image-stock/';
+  var BADGE = { mover: 'MOVER ▲', loser: 'LOSER ▼' };
 
   /* ---- pure selection ----------------------------------------------------- */
 
@@ -105,233 +109,290 @@
     return fallback || symbol;
   }
 
-  /* ---- rendering ---------------------------------------------------------- */
-  var view = {
-    pick: null,      /* the week's pick */
-    quote: null,     /* latest quote for the pick's symbol */
-    change: null,    /* multi-horizon change for the pick's symbol */
-    series: null,    /* daily closes for the sparkline */
-    history: [],     /* previous weeks */
-    notice: null,
-    crypto: null,        /* the week's crypto pick */
-    cryptoQuote: null,   /* its live CoinGecko reading, with the 7-day sparkline */
-    cryptoHistory: [],
-    cryptoNotice: null
-  };
+  /* ---- state -------------------------------------------------------------- */
+  function readKind(v) { return KINDS.indexOf(v) >= 0 ? v : 'stocks'; }
 
+  var view = {
+    movers: null,    /* spotlight.json movers (version 2), normalized */
+    kind: readKind(MP.store ? MP.store.get(KIND_KEY, 'stocks') : 'stocks'),
+    picks: null,     /* { mover, loser }: the stock movers' quotes, from data/quotes.json */
+    coins: {},       /* CoinGecko id -> coinSpot, for the crypto movers */
+    notice: null
+  };
+  var failedLogos = {};
+
+  function kind() { return view.kind; }
+
+  function setKind(k) {
+    view.kind = readKind(k);
+    if (MP.store) MP.store.set(KIND_KEY, view.kind);
+    render();
+    return view.kind;
+  }
+
+  function setOf(k) { return view.movers ? view.movers[k || view.kind] || null : null; }
+
+  function entryFor(which, k) {
+    var set = setOf(k);
+    return set ? (which === 'loser' ? set.loser : set.mover) : null;
+  }
+
+  function idsOf(set, key) {
+    var out = [];
+    if (set) [set.mover, set.loser].forEach(function (e) { if (e && e[key] && out.indexOf(e[key]) < 0) out.push(e[key]); });
+    return out;
+  }
+
+  /* The CoinGecko ids the page polls alongside BTC and ETH. */
+  function cryptoIds() { return idsOf(setOf('crypto'), 'id'); }
+
+  /* The stock files the screens need. */
+  function stockSymbols() { return idsOf(setOf('stocks'), 'symbol'); }
+
+  /* Coinbase products for the live feed, while the switch is on crypto. */
+  function products() {
+    if (view.kind !== 'crypto' || !MP.sources) return [];
+    return idsOf(setOf('crypto'), 'symbol').map(MP.sources.coinbaseWs.productFor).filter(Boolean);
+  }
+
+  function productFor(which) {
+    if (view.kind !== 'crypto' || !MP.sources) return null;
+    var e = entryFor(which);
+    return e ? MP.sources.coinbaseWs.productFor(e.symbol) : null;
+  }
+
+  /* A stock's latest price: the job's quote when it is for this symbol,
+   * otherwise its last close from stocks.json. */
+  function stockPrice(sym) {
+    var p = view.picks, q = null;
+    if (p && p.mover && p.mover.symbol === sym) q = p.mover;
+    else if (p && p.loser && p.loser.symbol === sym) q = p.loser;
+    if (q && S.isNum(q.price)) {
+      return { price: q.price, changePct: S.isNum(q.changePct) ? q.changePct : NaN, marketCap: q.marketCap, name: q.name, source: 'quote' };
+    }
+    var row = MP.app && MP.app.stockRow ? MP.app.stockRow(sym) : null;
+    if (row && S.isNum(row.close)) {
+      return { price: row.close, changePct: row.change1d, marketCap: NaN, name: row.name, source: 'close', date: row.date };
+    }
+    return null;
+  }
+
+  function coinPrice(id) {
+    var c = id ? view.coins[id] : null;
+    return c && S.isNum(c.price) ? c : null;
+  }
+
+  function priceOf(e, k) { return e ? (k === 'crypto' ? coinPrice(e.id) : stockPrice(e.symbol)) : null; }
+
+  /* The chart: a stock's closes, or a coin's seven days of hourly prices. */
+  function seriesOf(e, k, sessions) {
+    if (!e) return null;
+    if (k === 'crypto') {
+      var c = coinPrice(e.id);
+      return c && c.sparkline && c.sparkline.length > 2 ? c.sparkline : null;
+    }
+    var s = MP.app && MP.app.stockSeries ? MP.app.stockSeries(e.symbol) : null;
+    return s && s.length > 1 ? S.tail(s, sessions).map(function (p) { return p.price; }) : null;
+  }
+
+  /* ---- the screen ----------------------------------------------------------- */
+
+  /* MOVER or LOSER on the screen: a badge, the ticker and the week's move as
+   * the headline, the price and its day change beneath, and the rank on the
+   * mode line. No value, so REL, MIN/MAX and ALERT pass it by. */
+  function reading(which) {
+    var k = view.kind, set = setOf(k), e = entryFor(which, k);
+    var r = {
+      text: F.DASH, value: NaN, dp: 2, unit: k === 'crypto' ? '7D' : '5D', mode: '',
+      badge: { text: BADGE[which] || BADGE.mover, dir: which === 'loser' ? 'down' : 'up' },
+      ticker: '', lead: '', headDir: null, symbol: null, say: '',
+      change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: k === 'crypto' ? '24H' : '1D', dp: 2, usd: true },
+      spark: null, empty: true, ranges: false, coin: null
+    };
+    if (!e) {
+      r.hint = k === 'crypto' ? 'Appears after the weekly crypto scan' : 'Appears after a full pass over the Nasdaq-100';
+      return r;
+    }
+    r.empty = false;
+    r.symbol = e.symbol;
+    r.ticker = e.symbol;
+    r.text = F.signedPctPoints(e.change, 2);
+    r.headDir = e.change < 0 ? 'down' : 'up';
+    /* the switch below names the kind, so the mode line holds only the rank */
+    r.mode = S.isNum(e.rank) && S.isNum(set.scanned) ? 'Rank ' + e.rank + ' of ' + set.scanned : '';
+    var px = priceOf(e, k);
+    if (px) {
+      var dp = Math.abs(px.price) < 10 ? 4 : 2;
+      r.lead = F.usd(px.price, dp);
+      r.change.dp = dp;
+      if (S.isNum(px.changePct)) {
+        r.change.pct = px.changePct;
+        r.change.abs = px.price - px.price / (1 + px.changePct / 100);
+      }
+    }
+    r.spark = seriesOf(e, k, SCREEN_SESSIONS);
+    r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
+      e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');
+    return r;
+  }
+
+  /* ---- the drawer ----------------------------------------------------------- */
   function el(id) { return document.getElementById(id); }
   function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
   function setHtml(id, html) { var n = el(id); if (n) n.innerHTML = html; }
 
-  function statStrip(items) {
-    return items.map(function (it) {
-      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
-        '<div class="stat-value">' + F.escapeHtml(it[1]) + '</div></div>';
-    }).join('');
-  }
-
-  function noticeHtml() {
-    return view.notice
-      ? '<p class="notice notice-' + view.notice.level + '">' + F.escapeHtml(view.notice.text) + '</p>'
-      : '';
+  function noticeHtml(n) {
+    return n ? '<p class="notice notice-' + n.level + '">' + F.escapeHtml(n.text) + '</p>' : '';
   }
 
   function repaint() {
     if (MP.meter && MP.meter.refresh) MP.meter.refresh();
   }
 
-  /* What the meter shows at the STOCK stop, or null before a pick exists.
-   * The live quote's day change is preferred; before it arrives the scan's
-   * own five-session move stands in, labelled as such. */
-  function reading() {
-    var pick = view.pick, q = view.quote;
-    if (!pick) return null;
-    var live = q && S.isNum(q.changePct);
-    return {
-      price: q && S.isNum(q.price) ? q.price : NaN,
-      changePct: live ? q.changePct : pick.changePct5d,
-      changeLabel: live ? '1D' : '5D',
-      mode: pick.symbol,
-      series: view.series && view.series.length > 2
-        ? view.series.map(function (p) { return p.price; })
-        : null
-    };
+  function which() {
+    var v = MP.router && MP.router.currentView ? MP.router.currentView() : null;
+    return v === 'loser' ? 'loser' : 'mover';
   }
 
-  /* What the meter shows at the CRYPTO stop, or null before a pick exists. */
-  function cryptoReading() {
-    var pick = view.crypto, q = view.cryptoQuote;
-    if (!pick) return null;
-    var live = q && S.isNum(q.changePct);
-    return {
-      price: q && S.isNum(q.price) ? q.price : NaN,
-      changePct: live ? q.changePct : pick.changePct7d,
-      changeLabel: live ? '24H' : '7D',
-      mode: pick.symbol,
-      series: q && q.sparkline && q.sparkline.length > 2 ? q.sparkline : null
-    };
+  /* A company logo from FMP's public images, a coin's from CoinGecko; a
+   * monogram when there is none or it fails to load. */
+  function logoHtml(e, k) {
+    var mono = F.escapeHtml(e.symbol.slice(0, 4));
+    var coin = k === 'crypto' ? coinPrice(e.id) : null;
+    var src = k === 'crypto' ? (coin && coin.image) : LOGO_URL + encodeURIComponent(e.symbol) + '.png';
+    if (!src || failedLogos[src]) return '<span class="mv-logo mv-mono" aria-hidden="true">' + mono + '</span>';
+    return '<img class="mv-logo" alt="" loading="lazy" referrerpolicy="no-referrer" src="' + F.escapeHtml(src) + '" data-mono="' + mono + '">';
   }
 
-  function renderCrypto() {
-    var pick = view.crypto, q = view.cryptoQuote;
-    var notice = view.cryptoNotice
-      ? '<p class="notice notice-' + view.cryptoNotice.level + '">' + F.escapeHtml(view.cryptoNotice.text) + '</p>'
-      : '';
+  function strip(items) {
+    return items.map(function (it) {
+      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
+        '<div class="stat-value">' + F.escapeHtml(it[1]) + '</div></div>';
+    }).join('');
+  }
 
-    if (!pick) {
-      setText('cryptoSymbol', '—');
-      setText('cryptoWeek', '');
-      setText('cryptoName', 'No pick yet');
-      setText('cryptoRunner', '');
-      setHtml('cryptoStrip', '');
-      setHtml('cryptoSpark', '');
-      setHtml('cryptoNotice', notice);
-      return;
+  /* Both ends of the week, always together: the highest five and the lowest
+   * five, each with a bar in proportion to its move. */
+  function boardHtml(set, pick, k) {
+    var all = set.top.concat(set.bottom);
+    var max = all.reduce(function (m, e) { return Math.max(m, Math.abs(e.change)); }, 0) || 1;
+    function li(e) {
+      var d = e.change < 0 ? 'down' : 'up';
+      var width = Math.max(2, Math.round(Math.abs(e.change) / max * 100));
+      return '<li class="is-' + d + (e.symbol === pick ? ' is-pick' : '') + '" title="' + F.escapeHtml(e.name || e.symbol) + '">' +
+        '<span class="b-rank">' + (S.isNum(e.rank) ? e.rank : '') + '</span>' +
+        '<span class="b-sym">' + F.escapeHtml(e.symbol) + '</span>' +
+        '<span class="b-bar"><i style="width:' + width + '%"></i></span>' +
+        '<span class="b-chg">' + F.escapeHtml(F.signedPctPoints(e.change, 1)) + '</span></li>';
     }
-
-    setText('cryptoSymbol', pick.symbol);
-    setText('cryptoWeek', 'Week of ' + F.shortDate(pick.weekOf));
-    setText('cryptoName', (q && q.name) || pick.name || pick.symbol);
-
-    var px = el('cryptoPx');
-    if (px) {
-      px.textContent = q && S.isNum(q.price) ? F.usd(q.price, q.price < 10 ? 4 : 2) : F.DASH;
-      px.classList.toggle('is-empty', !(q && S.isNum(q.price)));
-    }
-    var chg = el('cryptoChg');
-    if (chg) {
-      if (q && S.isNum(q.changePct)) {
-        chg.textContent = F.signedPctPoints(q.changePct);
-        chg.className = 'chg ' + (q.changePct >= 0 ? 'is-up' : 'is-down');
-      } else {
-        chg.textContent = F.DASH;
-        chg.className = 'chg is-flat';
-      }
-    }
-
-    setHtml('cryptoSpark', q && q.sparkline && q.sparkline.length > 2
-      ? G.sparkStep({ values: q.sparkline, w: 900, h: 200, color: 'var(--gold)', area: true, strokeWidth: 1.8 })
-      : '');
-
-    setHtml('cryptoStrip', statStrip([
-      ['7d move', F.signedPctPoints(pick.changePct7d, 1)],
-      ['24h', q && S.isNum(q.changePct) ? F.signedPctPoints(q.changePct, 2) : F.DASH],
-      ['Market cap', q && S.isNum(q.marketCap) && q.marketCap > 0 ? F.compact(q.marketCap) : F.DASH]
-    ]));
-
-    var bits = [];
-    if (pick.runnerUp) {
-      bits.push('Runner-up ' + pick.runnerUp.symbol + ' ' + F.signedPctPoints(pick.runnerUp.changePct7d, 1));
-    }
-    if (view.cryptoHistory.length) {
-      bits.push('before: ' + view.cryptoHistory.map(function (h) { return h.symbol; }).join(', '));
-    }
-    setText('cryptoRunner', bits.join(' · '));
-    setHtml('cryptoNotice', notice);
+    var between = S.isNum(set.scanned) ? set.scanned - set.top.length - set.bottom.length : 0;
+    return '<h3 class="mv-sub">' + (k === 'crypto' ? 'Seven-day moves, ' + set.scanned + ' coins' : 'Five-session moves, ' + set.scanned + ' Nasdaq-100 members') + '</h3>' +
+      '<ol class="board">' + set.top.map(li).join('') +
+      (between > 0 ? '<li class="b-gap">' + between + ' more in between</li>' : '') +
+      set.bottom.slice().reverse().map(li).join('') + '</ol>';
   }
 
   function render() {
-    var pick = view.pick, q = view.quote, ch = view.change;
-    renderCrypto();
+    var w = which(), k = view.kind, set = setOf(k), e = entryFor(w, k);
+    setHtml('moversKind', KINDS.map(function (kk) {
+      return '<button type="button" class="pill' + (kk === k ? ' is-on' : '') + '" data-movers-kind="' + kk + '" aria-pressed="' + (kk === k) + '">' +
+        (kk === 'crypto' ? 'Crypto' : 'Stocks') + '</button>';
+    }).join(''));
 
-    if (!pick) {
-      setText('spotSymbol', '—');
-      setText('spotWeek', '');
-      setText('spotName', 'No pick yet');
-      setText('spotRunner', '');
-      setHtml('spotStrip', '');
-      setHtml('spotNotice', noticeHtml());
+    if (!e) {
+      ['mvHead', 'mvStrip', 'mvChart', 'mvBoard'].forEach(function (id) { setHtml(id, ''); });
+      ['mvChartFoot', 'mvRunner', 'mvRule'].forEach(function (id) { setText(id, ''); });
+      setHtml('mvNotice', noticeHtml(view.notice || {
+        level: 'quiet',
+        text: k === 'crypto' ? 'The crypto movers appear after the weekly scan.' : 'The stock movers appear once the data job has priced the Nasdaq-100 for a full week.'
+      }));
       repaint();
       return;
     }
 
-    setText('spotSymbol', pick.symbol);
-    setText('spotWeek', 'Week of ' + F.shortDate(pick.weekOf));
-    setText('spotName', (q && q.name) || pick.name || nameFor(pick.symbol));
+    var px = priceOf(e, k);
+    var dir = e.change < 0 ? 'down' : 'up';
+    var watching = MP.app && MP.app.isWatched ? MP.app.isWatched(e.symbol) : false;
+    var watchBtn = k === 'stocks'
+      ? '<button type="button" class="pill" data-watch-add="' + F.escapeHtml(e.symbol) + '"' + (watching ? ' disabled' : '') + '>' + (watching ? 'Watching' : 'Watch') + '</button>'
+      : '';
+    setHtml('mvHead', logoHtml(e, k) +
+      '<div class="mv-id"><div class="mv-title">' + F.escapeHtml(e.symbol) +
+      '<span class="mv-badge is-' + (w === 'loser' ? 'down' : 'up') + '">' + BADGE[w] + '</span>' + watchBtn + '</div>' +
+      '<div class="mv-name">' + F.escapeHtml((px && px.name) || e.name || e.symbol) + '</div></div>' +
+      '<div class="mv-move is-' + dir + '">' + F.escapeHtml(F.signedPctPoints(e.change, 2)) +
+      '<span class="mv-move-label">' + (k === 'crypto' ? '7 days' : '5 sessions') + '</span></div>');
 
-    var px = el('spotPx');
-    if (px) {
-      px.textContent = q && S.isNum(q.price) ? F.usd(q.price, 2) : F.DASH;
-      px.classList.toggle('is-empty', !(q && S.isNum(q.price)));
-    }
-    var chg = el('spotChg');
-    if (chg) {
-      if (q && S.isNum(q.changePct)) {
-        chg.textContent = F.signedPctPoints(q.changePct);
-        chg.className = 'chg ' + (q.changePct >= 0 ? 'is-up' : 'is-down');
-      } else {
-        chg.textContent = F.DASH;
-        chg.className = 'chg is-flat';
-      }
-    }
+    var row = k === 'stocks' && MP.app && MP.app.stockRow ? MP.app.stockRow(e.symbol) : null;
+    var items = [
+      [px && px.source === 'close' ? 'Last close' : 'Price', px ? F.usd(px.price, Math.abs(px.price) < 10 ? 4 : 2) : F.DASH],
+      [k === 'crypto' ? '24 hours' : '1 day', px && S.isNum(px.changePct) ? F.signedPctPoints(px.changePct, 2) : F.DASH]
+    ];
+    if (k === 'stocks') items.push(['1 month', row && S.isNum(row.change1m) ? F.signedPctPoints(row.change1m, 1) : F.DASH]);
+    items.push(['Market cap', px && S.isNum(px.marketCap) && px.marketCap > 0 ? F.compact(px.marketCap) : F.DASH]);
+    setHtml('mvStrip', strip(items));
 
-    if (view.series && view.series.length > 2) {
-      setHtml('spotSpark', G.sparkStep({
-        values: S.tail(view.series, 60).map(function (p) { return p.price; }),
-        w: 900, h: 200, color: 'var(--gold)', area: true, strokeWidth: 1.8
-      }));
-    } else {
-      setHtml('spotSpark', '');
-    }
+    var vals = seriesOf(e, k, DRAWER_SESSIONS);
+    setHtml('mvChart', vals && vals.length > 1
+      ? G.sparkStep({ values: vals, w: 900, h: 200, color: dir === 'down' ? 'var(--neg)' : 'var(--pos)', area: true, strokeWidth: 1.8 })
+      : '');
+    setText('mvChartFoot', k === 'crypto' ? 'Seven days, hourly.' : vals ? 'Daily closes, the last three months.' : 'The closes load with the stock’s file.');
 
-    setHtml('spotStrip', statStrip([
-      ['5d move', F.signedPctPoints(pick.changePct5d, 1)],
-      ['1 month', ch && S.isNum(ch.m1) ? F.signedPctPoints(ch.m1, 1) : F.DASH],
-      ['Market cap', q && S.isNum(q.marketCap) && q.marketCap > 0 ? F.compact(q.marketCap) : F.DASH]
-    ]));
+    setHtml('mvBoard', boardHtml(set, e.symbol, k));
 
     var bits = [];
-    if (pick.runnerUp) {
-      bits.push('Runner-up ' + pick.runnerUp.symbol + ' ' + F.signedPctPoints(pick.runnerUp.changePct5d, 1));
+    var nxt = w === 'loser' ? set.loserNext : set.moverNext;
+    if (nxt) bits.push((w === 'loser' ? 'Next lowest: ' : 'Next highest: ') + nxt.symbol + ' ' + F.signedPctPoints(nxt.change, 1) + '.');
+    var past = ((view.movers && view.movers.history) || []).filter(function (h) {
+      return h.kind === k && h.weekOf !== set.weekOf;
+    }).slice(0, 3);
+    if (past.length) {
+      bits.push('Earlier weeks: ' + past.map(function (h) {
+        return F.shortDate(h.weekOf) + ' ' + (h.loser ? h.mover.symbol + ' and ' + h.loser.symbol : h.mover.symbol + ' (largest move either way)');
+      }).join('; ') + '.');
     }
-    if (view.history.length) {
-      bits.push('before: ' + view.history.map(function (h) { return h.symbol; }).join(', '));
-    }
-    setText('spotRunner', bits.join(' · '));
-    setHtml('spotNotice', noticeHtml());
+    setText('mvRunner', bits.join(' '));
+    setText('mvRule', set.rule + (set.measuredTo ? ' Measured to the close of ' + F.shortDate(set.measuredTo) + '.' : '') +
+      ' This ranks the past week. It is not advice.');
+    setHtml('mvNotice', noticeHtml(view.notice));
     repaint();
+  }
+
+  /* A logo that fails to load becomes the monogram, and stays one. */
+  function wire() {
+    if (!root.document) return;
+    document.addEventListener('error', function (ev) {
+      var img = ev.target;
+      if (!img || img.tagName !== 'IMG' || !img.classList || !img.classList.contains('mv-logo')) return;
+      failedLogos[img.getAttribute('src')] = true;
+      var span = document.createElement('span');
+      span.className = 'mv-logo mv-mono';
+      span.setAttribute('aria-hidden', 'true');
+      span.textContent = img.getAttribute('data-mono') || '';
+      if (img.parentNode) img.parentNode.replaceChild(span, img);
+    }, true);
   }
 
   /* ---- data in ------------------------------------------------------------ */
 
-  /* snap: MP.sources.normalizeSpotlightSnapshot output. */
+  /* snap: MP.sources.normalizeSpotlightSnapshot output. A version 1 file has
+   * no movers; the panels say so until the job rewrites it. */
   function applySnapshot(snap) {
     if (!snap) return;
-    var pick = snap.current;
-    view.pick = pick;
-    view.change = pick && snap.change && snap.change.symbol === pick.symbol ? snap.change : null;
-    view.series = pick ? snap.series : null;
-    if (view.quote && (!pick || view.quote.symbol !== pick.symbol)) view.quote = null;
-    view.history = (snap.history || []).filter(function (h) {
-      return !pick || h.weekOf !== pick.weekOf;
-    }).slice(0, 4);
-    view.notice = pick ? null : { level: 'quiet', text: 'This week’s pick appears after the Monday scan runs.' };
-
-    var crypto = snap.crypto || null;
-    view.crypto = crypto;
-    if (view.cryptoQuote && (!crypto || view.cryptoQuote.id !== crypto.id)) view.cryptoQuote = null;
-    view.cryptoHistory = (snap.cryptoHistory || []).filter(function (h) {
-      return !crypto || h.weekOf !== crypto.weekOf;
-    }).slice(0, 4);
-    view.cryptoNotice = crypto ? null : { level: 'quiet', text: 'This week’s crypto pick appears after the Monday scan runs.' };
+    view.movers = snap.movers || null;
+    view.notice = null;
     render();
   }
 
-  /* The CoinGecko id the page should ask for alongside BTC and ETH. */
-  function cryptoId() {
-    return view.crypto ? view.crypto.id : null;
-  }
-
-  /* q: a coinSpot from MP.sources.coinsMarkets, for the current crypto pick. */
-  function setCryptoQuote(q) {
-    view.cryptoQuote = q && (!view.crypto || q.id === view.crypto.id) ? q : null;
+  /* picks: quotes.json picks, { mover, loser }. */
+  function setPicks(picks) {
+    view.picks = picks || null;
     render();
   }
 
-  /* q: a normalized quote from data/quotes.json. Kept only if it is for the
-   * current pick; before the pick has loaded, kept provisionally. */
-  function setQuote(q) {
-    view.quote = q && (!view.pick || q.symbol === view.pick.symbol) ? q : null;
+  /* coins: CoinGecko id -> coinSpot for the crypto movers. */
+  function setCoinQuotes(coins) {
+    view.coins = coins || {};
     render();
   }
 
@@ -345,17 +406,23 @@
     CRYPTO_UNIVERSE: CRYPTO_UNIVERSE,
     CRYPTO_RULE: CRYPTO_RULE,
     BOARD_SIZE: BOARD_SIZE,
+    KINDS: KINDS,
     selectMovers: selectMovers,
     weekOf: weekOf,
     nameFor: nameFor,
-    applySnapshot: applySnapshot,
-    setQuote: setQuote,
-    setCryptoQuote: setCryptoQuote,
-    cryptoId: cryptoId,
-    setNotice: setNotice,
-    reading: reading,
-    cryptoReading: cryptoReading,
     view: view,
-    render: render
+    kind: kind,
+    setKind: setKind,
+    reading: reading,
+    render: render,
+    wire: wire,
+    applySnapshot: applySnapshot,
+    setPicks: setPicks,
+    setCoinQuotes: setCoinQuotes,
+    setNotice: setNotice,
+    cryptoIds: cryptoIds,
+    stockSymbols: stockSymbols,
+    products: products,
+    productFor: productFor
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -37,6 +37,7 @@ $libOrder = @(
     'src/lib/meter.js',
     'src/lib/live.js',
     'src/lib/share.js',
+    'src/lib/watch.js',
     'src/lib/spotlight.js',
     'src/lib/app.js'
 )

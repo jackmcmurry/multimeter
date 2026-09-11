@@ -16,9 +16,16 @@
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
 
+  /* An alert on a stop the dial no longer has (STOCK and CRYPTO became
+   * MOVER and LOSER) is dropped when the list loads. */
+  function live(stop) {
+    var views = MP.router && MP.router.VIEWS;
+    return !views || views.indexOf(stop) >= 0;
+  }
+
   function valid(a) {
     return a && typeof a === 'object' && typeof a.id === 'string' && typeof a.stop === 'string' &&
-      isNum(a.level) && (a.dir === 'above' || a.dir === 'below');
+      isNum(a.level) && (a.dir === 'above' || a.dir === 'below') && live(a.stop);
   }
 
   var list = null;   /* loaded lazily, then kept in memory */

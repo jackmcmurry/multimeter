@@ -158,56 +158,81 @@
       app.renderNote();
     }
 
-    /* pinned panel: same render path, synthetic pick */
-    if (MP.spotlight) {
-      var sv = MP.spotlight.view;
-      var spotSeries = data.qqq.map(function (p, i) {
-        return { date: p.date, price: Math.round((p.price * 0.42 + i * 0.1) * 100) / 100 };
+    /* MOVER, LOSER and WATCH: a synthetic slice of the Nasdaq-100 through the
+     * same render paths. The late sessions carry each name's weekly move. */
+    if (MP.spotlight && st.stocks) {
+      var rnd = prng((seed || 7) + 101);
+      var names = {
+        NVDA: 'NVIDIA Corporation', AMD: 'Advanced Micro Devices, Inc.', PLTR: 'Palantir Technologies Inc.',
+        TSLA: 'Tesla, Inc.', APP: 'AppLovin Corporation', AAPL: 'Apple Inc.', MSFT: 'Microsoft Corporation',
+        COST: 'Costco Wholesale Corporation', PEP: 'PepsiCo, Inc.', INTC: 'Intel Corporation',
+        NFLX: 'Netflix, Inc.', ADBE: 'Adobe Inc.', PYPL: 'PayPal Holdings, Inc.', WBD: 'Warner Bros. Discovery, Inc.'
+      };
+      var drifts = {
+        NVDA: 0.024, AMD: 0.018, PLTR: 0.014, TSLA: 0.011, APP: 0.009, AAPL: 0.003, MSFT: 0.001,
+        COST: 0, PEP: -0.002, INTC: -0.006, NFLX: -0.009, ADBE: -0.013, PYPL: -0.016, WBD: -0.021
+      };
+      var dates = data.ixic.map(function (p) { return p.date; });
+      var session = dates[dates.length - 1];
+      var rowsSyn = [];
+      st.stocks.files = {};
+      st.stocks.rowsBy = {};
+      Object.keys(names).forEach(function (sym, i) {
+        var px = 40 + i * 23, closes = [];
+        dates.forEach(function (d, j) {
+          px *= Math.exp((j >= dates.length - 5 ? drifts[sym] : 0.0004) + 0.012 * gauss(rnd));
+          closes.push({ date: d, price: Math.round(px * 100) / 100 });
+        });
+        st.stocks.files[sym] = { series: closes, name: names[sym], session: session };
+        var n = closes.length, last = closes[n - 1].price;
+        var row = {
+          symbol: sym, name: names[sym], close: last, date: session,
+          change1d: (last / closes[n - 2].price - 1) * 100,
+          change5d: (last / closes[n - 6].price - 1) * 100,
+          change1m: (last / closes[n - 22].price - 1) * 100
+        };
+        rowsSyn.push(row);
+        st.stocks.rowsBy[sym] = row;
       });
-      sv.pick = {
-        weekOf: MP.spotlight.weekOf(new Date()),
-        symbol: 'ADBE',
-        name: 'Adobe Inc.',
-        changePct5d: -9.34,
-        direction: 'down',
-        scanned: 14,
-        skipped: 1,
-        runnerUp: { symbol: 'AMD', changePct5d: 9.0 },
-        rule: MP.spotlight.STOCK_RULE
-      };
-      var lastSpot = spotSeries[spotSeries.length - 1].price;
-      sv.quote = {
-        symbol: 'ADBE', name: 'Adobe Inc.', price: lastSpot, changePct: -2.37,
-        dayLow: lastSpot * 0.99, dayHigh: lastSpot * 1.02,
-        prevClose: lastSpot * 1.024, marketCap: 98.9e9
-      };
-      sv.change = { d1: -2.37, d5: -9.34, m1: -8.84, m3: 6.62, ytd: -28.9 };
-      sv.series = spotSeries;
-      sv.history = [
-        { weekOf: '2026-08-31', symbol: 'INTC', changePct5d: 8.5 },
-        { weekOf: '2026-08-24', symbol: 'NFLX', changePct5d: -7.5 }
-      ];
+      st.stocks.list = { session: session, listAsOf: '2026-09-11', count: { listed: 102, priced: 101, denied: 1 }, complete: true, rows: rowsSyn };
+      st.stocks.notice = null;
 
-      /* crypto of the week: a synthetic SOL pick with a week of hourly prices */
-      var solSeries = data.btc.slice(-7).map(function (p) { return p.price * 0.00142; });
-      var hourly = [];
-      for (var hI = 0; hI < solSeries.length - 1; hI++) {
-        for (var k = 0; k < 24; k++) hourly.push(solSeries[hI] + (solSeries[hI + 1] - solSeries[hI]) * (k / 24));
-      }
-      hourly.push(solSeries[solSeries.length - 1]);
-      sv.crypto = {
-        weekOf: MP.spotlight.weekOf(new Date()), id: 'solana', symbol: 'SOL', name: 'Solana',
-        changePct7d: 18.4, direction: 'up', scanned: 14, skipped: 1,
-        runnerUp: { id: 'dogecoin', symbol: 'DOGE', changePct7d: -15.2 }, rule: MP.spotlight.CRYPTO_RULE
+      var weekSyn = MP.spotlight.weekOf(new Date());
+      var stockSel = MP.spotlight.selectMovers(rowsSyn, 'change5d');
+      var cryptoSel = MP.spotlight.selectMovers(MP.spotlight.CRYPTO_UNIVERSE.map(function (c, i) {
+        return { id: c.id, symbol: c.symbol, name: c.name, changePct7d: 22 - i * 3.1 };
+      }), 'changePct7d');
+      var sv = MP.spotlight.view;
+      sv.movers = {
+        stocks: Object.assign({ weekOf: weekSyn, measuredTo: session, listed: 102, rule: MP.spotlight.STOCK_RULE }, stockSel),
+        crypto: Object.assign({ weekOf: weekSyn, rule: MP.spotlight.CRYPTO_RULE }, cryptoSel),
+        history: [
+          { weekOf: '2026-09-07', kind: 'stocks', rule: 'gain-drop', mover: { symbol: 'AMD', change: 9.0 }, loser: { symbol: 'ADBE', change: -9.34 } },
+          { weekOf: '2026-09-07', kind: 'crypto', rule: 'gain-drop', mover: { symbol: 'SOL', id: 'solana', change: 18.4 }, loser: { symbol: 'DOGE', id: 'dogecoin', change: -15.2 } },
+          { weekOf: '2026-08-31', kind: 'stocks', rule: 'absolute', mover: { symbol: 'INTC', change: 8.5 }, loser: null }
+        ]
       };
-      sv.cryptoQuote = {
-        id: 'solana', symbol: 'SOL', name: 'Solana',
-        price: Math.round(hourly[hourly.length - 1] * 100) / 100, changePct: 3.21, change7d: 18.4,
-        marketCap: 61e9, sparkline: hourly.map(function (v) { return Math.round(v * 100) / 100; })
+      var quoteFor = function (e) {
+        var r = st.stocks.rowsBy[e.symbol];
+        return { symbol: e.symbol, name: e.name, price: r.close, changePct: r.change1d, marketCap: 2.1e11 + r.close * 1e8 };
       };
-      sv.cryptoHistory = [{ weekOf: '2026-08-31', id: 'ripple', symbol: 'XRP', changePct7d: -11.0 }];
-      sv.cryptoNotice = null;
+      sv.picks = { mover: quoteFor(stockSel.mover), loser: quoteFor(stockSel.loser) };
+      sv.coins = {};
+      [cryptoSel.mover, cryptoSel.loser].forEach(function (e, j) {
+        var base = j ? 0.21 : 187.4, hourlySyn = [];
+        for (var hS = 0; hS < 169; hS++) {
+          hourlySyn.push(Math.round(base * Math.exp((j ? -1 : 1) * 0.0011 * hS + 0.01 * gauss(rnd)) * 10000) / 10000);
+        }
+        sv.coins[e.id] = {
+          id: e.id, symbol: e.symbol, name: e.name, price: hourlySyn[hourlySyn.length - 1],
+          changePct: j ? -2.4 : 3.2, marketCap: j ? 3.1e10 : 9.1e10, sparkline: hourlySyn, image: null
+        };
+      });
+      sv.notice = null;
+      st.watch.list = ['AAPL', 'NVDA', 'WBD'];
+      st.watch.index = 0;
       MP.spotlight.render();
+      app.renderWatch();
     }
 
     var a = st.analytics;

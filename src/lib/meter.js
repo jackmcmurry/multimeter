@@ -1,7 +1,7 @@
 /* ============================================================================
  * meter.js: the instrument itself: the rotary dial, the knob, and the screen.
  *
- * The dial has twelve stops over 320 degrees, clockwise from OFF at the top,
+ * The dial has thirteen stops over 320 degrees, clockwise from OFF at the top,
  * with a dead zone at eleven o'clock like a real range switch. Each stop is
  * a router view; turning the knob navigates, and navigation turns the knob,
  * so the back button and a typed hash both move the dial.
@@ -29,8 +29,9 @@
     { id: 'eth', label: 'ETH' },
     { id: 'nasdaq', label: 'NASDAQ' },
     { id: 'spx', label: 'S&P' },
-    { id: 'stock', label: 'STOCK' },
-    { id: 'crypto', label: 'CRYPTO' },
+    { id: 'mover', label: 'MOVER' },      /* the week's highest move, stocks or crypto */
+    { id: 'loser', label: 'LOSER' },      /* and the lowest */
+    { id: 'watch', label: 'WATCH' },      /* the viewer's own Nasdaq-100 stocks */
     { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
     { id: 'corr', label: 'CORR' },
     { id: 'vol', label: 'VOL' },
@@ -486,11 +487,26 @@
     }
     if (ranges) {
       ranges.addEventListener('click', function (ev) {
-        var btn = ev.target.closest ? ev.target.closest('.rng[data-days]') : null;
-        if (!btn) return;
+        var btn = ev.target.closest ? ev.target.closest('.rng[data-tab]') : null;
+        if (!btn || btn.disabled) return;
         ev.stopPropagation();
-        var days = parseInt(btn.getAttribute('data-days'), 10);
-        if (days && MP.app && MP.app.setRange) MP.app.setRange(days);
+        var app = MP.app;
+        if (!app) return;
+        var tab = btn.getAttribute('data-tab'), value = btn.getAttribute('data-value');
+        primeAudio();
+        if (tab === 'ranges' && app.setRange) {
+          app.setRange(parseInt(value, 10));
+        } else if (tab === 'switch' && app.setMoversKind) {
+          app.setMoversKind(value);
+          tickSound();
+          swapScreen();
+        } else if (tab === 'step' && app.stepWatch) {
+          app.stepWatch(parseInt(value, 10));
+          tickSound();
+          swapScreen();
+        } else if (tab === 'watch' && app.setWatchRange) {
+          app.setWatchRange(parseInt(value, 10));
+        }
       });
     }
   }
@@ -509,7 +525,7 @@
   function changeText(c, unit) {
     if (!c) return MP.fmt.DASH;
     if (isNum(c.pct)) {
-      var abs = absText(c.abs, unit, c.dp);
+      var abs = absText(c.abs, c.usd ? 'USD' : unit, c.dp);   /* usd: a price move under a non-price headline */
       return (c.pct >= 0 ? UP : DOWN) + ' ' + (abs ? abs + ' ' : '') + '(' + Math.abs(c.pct).toFixed(2) + '%)';
     }
     if (isNum(c.delta)) {
@@ -531,11 +547,68 @@
     if (typeof r.note === 'string') {
       return title + ', session of ' + r.text + '. ' + r.note + ' ' + (r.caption || '') + '. Press to open the details.';
     }
+    if (r.say) return title + ': ' + r.say + '. Press to open the details.';
     var value = r.empty ? 'no reading yet' : r.text + (r.unit ? ' ' + r.unit : '');
     var c = r.change;
     var moved = c && (isNum(c.pct) || isNum(c.delta));
     var change = moved ? ', ' + changeText(c, r.unit).replace(UP, 'up').replace(DOWN, 'down') + ' over ' + c.label : '';
     return title + ': ' + value + change + '. Press to open the details.';
+  }
+
+  /* The row under the readout: the range tabs for the coins, the Stocks |
+   * Crypto switch for MOVER and LOSER, a stepper and ranges for WATCH. It
+   * keeps its height when idle, so the dial never moves under a dragging
+   * finger, and its buttons are rebuilt only when the kind of row changes. */
+  function tabsHtml(model) {
+    var html = '';
+    if (model.kind === 'watch') {
+      html += '<button type="button" class="rng rng-step" data-tab="step" data-value="-1" aria-label="Previous stock">‹</button>' +
+        '<button type="button" class="rng rng-step" data-tab="step" data-value="1" aria-label="Next stock">›</button>';
+    }
+    (model.options || []).forEach(function (o) {
+      html += '<button type="button" class="rng" data-tab="' + model.kind + '" data-value="' + escapeText(o[0]) +
+        '" aria-pressed="false">' + escapeText(o[1]) + '</button>';
+    });
+    return html;
+  }
+
+  function renderTabs(model) {
+    var host = el('lcdRanges');
+    if (!host) return;
+    var idle = !model;
+    host.classList.toggle('is-idle', idle);
+    host.setAttribute('aria-hidden', idle ? 'true' : 'false');
+    if (model) {
+      var sig = model.kind + '|' + (model.options || []).map(function (o) { return o[0]; }).join(',');
+      if (host.getAttribute('data-sig') !== sig) {
+        host.setAttribute('data-sig', sig);
+        host.setAttribute('data-kind', model.kind);
+        host.setAttribute('aria-label', model.label || 'Chart range');
+        host.innerHTML = tabsHtml(model);
+      }
+    }
+    var btns = host.querySelectorAll('.rng');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].tabIndex = idle ? -1 : 0;
+      if (btns[i].getAttribute('data-tab') === 'step') {
+        btns[i].disabled = !model || (model.count || 0) < 2;
+        continue;
+      }
+      var on = !!model && String(model.value) === btns[i].getAttribute('data-value');
+      btns[i].classList.toggle('is-on', on);
+      btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  /* The readout's short fade, for a change that is not a turn of the dial. */
+  function swapScreen() {
+    var lcd = el('lcd');
+    if (!lcd) return;
+    lcd.classList.remove('is-swap');
+    void lcd.offsetWidth;
+    lcd.classList.add('is-swap');
+    clearTimeout(detentTimer);
+    detentTimer = setTimeout(function () { lcd.classList.remove('is-swap'); }, DETENT_MS);
   }
 
   function paint(r) {
@@ -546,7 +619,15 @@
     var dir = direction(r.change, series);
 
     lcd.classList.toggle('is-off', off);
-    setText('lcdMode', off ? '' : r.mode || '');
+    var modeEl = el('lcdMode');
+    if (modeEl) {
+      if (!off && r.badge && r.badge.text) {
+        modeEl.innerHTML = '<b class="lcd-badge is-' + (r.badge.dir === 'down' ? 'down' : 'up') + '">' +
+          escapeText(r.badge.text) + '</b>' + escapeText(r.mode || '');
+      } else {
+        modeEl.textContent = off ? '' : r.mode || '';
+      }
+    }
     var live = el('lcdLive');
     if (live) live.classList.toggle('is-on', !off && !!r.live);
 
@@ -556,17 +637,25 @@
       chart.innerHTML = !off && typeof r.note === 'string'
         ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
         : !off && series.length > 1
-          ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+          ? G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
           : '';
     }
 
-    setText('lcdPrice', off ? '' : r.text || '');
+    var priceEl = el('lcdPrice');
+    if (priceEl) {
+      /* MOVER, LOSER and WATCH lead with the ticker; MOVER and LOSER colour
+       * the week's move by its sign */
+      if (!off && r.ticker) priceEl.innerHTML = '<span class="lcd-ticker">' + escapeText(r.ticker) + '</span>' + escapeText(r.text || '');
+      else priceEl.textContent = off ? '' : r.text || '';
+      priceEl.className = 'lcd-price' + (!off && r.headDir ? ' is-' + r.headDir : '');
+    }
     setText('lcdUnit', off ? '' : r.unit || '');
 
     var chg = el('lcdChange');
     if (chg) {
       var plain = r.caption || (r.empty && r.hint);
-      chg.textContent = off ? '' : (r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
+      var line = r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit);
+      chg.textContent = off ? '' : (r.lead && !r.empty ? r.lead + '   ' + line : line);
       chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
@@ -591,23 +680,7 @@
       bell.setAttribute('aria-label', n ? n + ' alert' + (n === 1 ? '' : 's') + ' armed. Open the list.' : 'No alerts. Open the list.');
     }
 
-    var ranges = el('lcdRanges');
-    if (ranges) {
-      /* kept in the layout even when idle: the screen must not change height
-       * between stops, or the dial would move under a dragging finger */
-      var idle = off || !r.ranges;
-      ranges.classList.toggle('is-idle', idle);
-      ranges.setAttribute('aria-hidden', idle ? 'true' : 'false');
-      var btns = ranges.querySelectorAll('.rng');
-      for (var b = 0; b < btns.length; b++) btns[b].tabIndex = idle ? -1 : 0;
-      var days = MP.app && MP.app.state ? MP.app.state.hero.days : 1;
-      var tabs = ranges.querySelectorAll('.rng[data-days]');
-      for (var i = 0; i < tabs.length; i++) {
-        var on = parseInt(tabs[i].getAttribute('data-days'), 10) === days;
-        tabs[i].classList.toggle('is-on', on);
-        tabs[i].setAttribute('aria-pressed', on ? 'true' : 'false');
-      }
-    }
+    renderTabs(off ? null : r.tabs || null);
 
     lcd.setAttribute('aria-label', describe(r, off));
   }

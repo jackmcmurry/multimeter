@@ -226,9 +226,13 @@ body {
 .lcd-chg {
   font-family: var(--f-ui);
   font-size: 19px;
+  line-height: 24px;   /* fixed, so a caption or a hint keeps the screen's height */
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--lcd-dim);
 }
 .lcd-chg.is-up { color: var(--up); }
@@ -277,6 +281,7 @@ body {
 .rng {
   font-family: var(--f-ui);
   font-size: 13px;
+  line-height: 16px;   /* fixed, so a row of arrows is as tall as a row of labels */
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--lcd-dim);
@@ -526,7 +531,8 @@ body {
 .skin[data-skin="silver"] { background: #cbd5e1; }
 @media (max-width: 480px) {
   .model { display: none; }
-  .skins { gap: 7px; }
+  .skins { gap: 4px; }
+  .brand { letter-spacing: 0.1em; }
 }
 
 /* ---- the daily reading ---------------------------------------------------- */
@@ -747,6 +753,102 @@ tr.row-rule th {
 }
 .prose a:hover { color: var(--holster); }
 .prose a:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+
+/* ---- MOVER, LOSER and WATCH ------------------------------------------------- */
+/* the mode line carries the badge and the rank; it gives way before the
+ * annunciators do */
+#lcdMode { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lcd-row .ann-group { flex: none; }
+.lcd-badge {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 7px;
+  line-height: 14px;   /* 18px with the padding: the row's own height */
+  border-radius: 5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--lcd-dk);
+}
+.lcd-badge.is-up { background: var(--up); box-shadow: 0 0 12px rgba(46, 229, 157, 0.35); }
+.lcd-badge.is-down { background: var(--down); box-shadow: 0 0 12px rgba(255, 107, 107, 0.35); }
+.lcd-ticker {
+  font-size: 0.58em;
+  letter-spacing: 0.02em;
+  margin-right: 0.4em;
+  color: var(--lcd-ink);
+  vertical-align: 0.08em;
+}
+.lcd-price.is-up { color: var(--up); text-shadow: 0 0 22px rgba(46, 229, 157, 0.28); }
+.lcd-price.is-down { color: var(--down); text-shadow: 0 0 22px rgba(255, 107, 107, 0.28); }
+.lcd-ranges[data-kind="switch"] .rng.is-on { background: var(--holster); color: var(--lcd-dk); }
+.rng-step { padding-left: 14px; padding-right: 14px; font-size: 17px; line-height: 16px; }
+.rng[disabled] { opacity: 0.3; cursor: default; }
+
+.movers-kind { margin: 0 0 12px; }
+.mv-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 18px; }
+.mv-logo {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--cell);
+  object-fit: contain;
+  padding: 6px;
+}
+.mv-mono { display: grid; place-items: center; padding: 0; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; color: var(--holster); }
+.mv-id { flex: 1; min-width: 0; }
+.mv-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.mv-badge { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 6px; color: var(--lcd-dk); }
+.mv-badge.is-up { background: var(--up); }
+.mv-badge.is-down { background: var(--down); }
+.mv-title .pill { padding: 4px 12px; background: var(--cell); }
+.mv-name { margin-top: 2px; font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mv-move { flex: none; text-align: right; font-size: clamp(26px, 6vw, 36px); font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mv-move.is-up { color: var(--pos); }
+.mv-move.is-down { color: var(--neg); }
+.mv-move-label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+.mv-sub { margin: 22px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+
+.board { list-style: none; margin: 0 0 8px; padding: 0; }
+.board li {
+  display: grid;
+  grid-template-columns: 30px 64px minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13.5px;
+}
+.board li.is-pick { background: var(--cell); border-radius: 8px; border-bottom-color: transparent; }
+.board .b-rank { color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; }
+.board .b-sym { font-weight: 700; }
+.board .b-bar { height: 8px; border-radius: 4px; background: var(--cell); overflow: hidden; }
+.board .b-bar i { display: block; height: 100%; border-radius: 4px; }
+.board .is-up .b-bar i { background: var(--pos); }
+.board .is-down .b-bar i { background: var(--neg); }
+.board .b-chg { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.board .is-up .b-chg { color: var(--pos); }
+.board .is-down .b-chg { color: var(--neg); }
+.board li.b-gap { display: block; padding: 6px; text-align: center; font-size: 12px; color: var(--dim); }
+
+.watch-table .linkish {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.watch-table .linkish:hover, .watch-table tr.is-on .linkish { color: var(--holster); }
+.watch-table th .row-desc { max-width: 22ch; font-weight: 400; }
+.watch-table .pill { padding: 4px 10px; }
+.watch-table .chg { font-size: 13px; }
+@media (max-width: 480px) {
+  .board li { grid-template-columns: 26px 54px minmax(0, 1fr) 64px; gap: 8px; }
+  .mv-title { font-size: 20px; }
+}
 
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {

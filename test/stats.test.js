@@ -229,6 +229,14 @@
       eq('unknown hash falls back rather than showing nothing', R.parseHash('#nope'), 'btc');
       eq('every stop has a title', R.VIEWS.filter(function (v) { return !R.TITLES[v]; }).length, 0);
       eq('every stop has a panel', R.VIEWS.filter(function (v) { return !R.PANELS[v]; }).length, 0);
+      eq('thirteen stops', R.VIEWS.length, 13);
+      eq('the old stock hash lands on MOVER', R.parseHash('#stock'), 'mover');
+      eq('the old crypto hash lands on MOVER', R.parseHash('#crypto'), 'mover');
+      eq('and sets the crypto switch', (R.aliasState('#crypto') || {}).movers, 'crypto');
+      eq('the old weekly hash sets the stocks switch', (R.aliasState('#weekly') || {}).movers, 'stocks');
+      ok('a plain hash sets nothing', R.aliasState('#btc') === null);
+      eq('MOVER and LOSER share a panel', R.PANELS.mover + ',' + R.PANELS.loser, 'movers,movers');
+      eq('the watch list routes', R.parseHash('#watchlist'), 'watch');
     }
 
     /* ---- dial ------------------------------------------------------------- */
@@ -243,7 +251,28 @@
       eq('just under a detent snaps down', M.stopAt(M.STEP_DEG * 1.5 - 1), 1);
       eq('just over a detent snaps up', M.stopAt(M.STEP_DEG * 1.5 + 1), 2);
       eq('ampersand label is escaped in the plate', M.plateSvg().indexOf('S&amp;P') > 0, true);
-      eq('twelve stops share 320 degrees', Math.round(M.STEP_DEG), 29);
+      close('thirteen stops share 320 degrees', M.STEP_DEG, 320 / 12, 1e-9);
+
+      /* the labels must not touch, at the desktop size and the phone size */
+      var labs = document.querySelectorAll('.dial-plate .dial-lab');
+      if (labs.length) {
+        var overlapsAt = function (size) {
+          var boxes = [], hits = [], li;
+          for (li = 0; li < labs.length; li++) labs[li].style.fontSize = size;
+          for (li = 0; li < labs.length; li++) boxes.push(labs[li].getBBox());
+          for (li = 0; li < labs.length; li++) labs[li].style.fontSize = '';
+          for (var a = 0; a < boxes.length; a++) {
+            for (var b = a + 1; b < boxes.length; b++) {
+              var A = boxes[a], B = boxes[b];
+              if (A.x < B.x + B.width && B.x < A.x + A.width && A.y < B.y + B.height && B.y < A.y + A.height) hits.push(labs[a].textContent + '/' + labs[b].textContent);
+            }
+          }
+          var outside = boxes.filter(function (bx) { return bx.x < -34 || bx.y < -34 || bx.x + bx.width > 334 || bx.y + bx.height > 334; }).length;
+          return hits.join(',') + (outside ? ' ' + outside + ' outside the plate' : '');
+        };
+        eq('dial labels keep apart at 11px', overlapsAt('11px'), '');
+        eq('dial labels keep apart at the phone size', overlapsAt('13.5px'), '');
+      }
 
       /* skins */
       var skinBefore = M.currentSkin();
@@ -462,6 +491,57 @@
       eq('a missing value fires nothing', AL.evaluate(list, 'btc', NaN, 9).fired.length, 0);
       var desc = AL.describe(list[0], function (stop, v) { return '$' + v; });
       eq('description reads as a sentence', desc, 'Bitcoin above $110');
+    }
+
+    /* ---- the watch list ---------------------------------------------------- */
+    var WL = MP.watch;
+    if (!WL) {
+      ok('watch module is loaded', false, 'MP.watch missing');
+    } else {
+      eq('the list keeps valid tickers only', WL.read(['aapl', 'AAPL', '../x', 7, ' msft ']).join(','), 'AAPL,MSFT');
+      eq('the list holds eight at most', WL.read(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']).length, 8);
+      eq('adding a repeat changes nothing', WL.add(['AAPL'], 'aapl').join(','), 'AAPL');
+      eq('adding appends', WL.add(['AAPL'], 'NVDA').join(','), 'AAPL,NVDA');
+      eq('a full list refuses more', WL.add(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], 'Z').length, 8);
+      eq('a path is never added', WL.add([], '../x').length, 0);
+      eq('removing drops the ticker', WL.remove(['AAPL', 'NVDA'], 'aapl').join(','), 'NVDA');
+      var rowsW = [
+        { symbol: 'AMDX', name: 'Example Corp.' }, { symbol: 'AMD', name: 'Advanced Micro Devices, Inc.' },
+        { symbol: 'AMAT', name: 'Applied Materials, Inc.' }, { symbol: 'MDLZ', name: 'Mondelez International, Inc.' },
+        { symbol: 'ADI', name: 'Analog Devices, Inc.' }
+      ];
+      function syms(list) { return list.map(function (r) { return r.symbol; }).join(','); }
+      eq('the exact ticker comes first', syms(WL.search(rowsW, 'amd')), 'AMD,AMDX');
+      eq('names match after tickers', syms(WL.search(rowsW, 'devices')), 'ADI,AMD');
+      eq('a ticker prefix beats a name match', syms(WL.search(rowsW, 'ad')), 'ADI,AMD');
+      eq('an empty query finds nothing', WL.search(rowsW, '  ').length, 0);
+      eq('the search is capped', WL.search(rowsW, 'a', 2).length, 2);
+    }
+
+    /* ---- alerts on retired stops ------------------------------------------ */
+    if (MP.alerts && R) {
+      var keptAlerts = MP.alerts.all().slice();
+      MP.alerts.save([
+        { id: 'old1', stop: 'stock', level: 1, dir: 'above' },
+        { id: 'old2', stop: 'crypto', level: 1, dir: 'above' },
+        { id: 'new1', stop: 'btc', level: 1, dir: 'above' }
+      ]);
+      eq('alerts on retired stops are dropped', MP.alerts.all().map(function (a) { return a.id; }).join(','), 'new1');
+      MP.alerts.save(keptAlerts);
+    }
+
+    /* ---- the tabs row, by stop -------------------------------------------- */
+    if (MP.app && MP.app.reading) {
+      var RD = MP.app.reading;
+      eq('a coin carries the range tabs', (RD('btc').tabs || {}).kind, 'ranges');
+      eq('MOVER carries the stocks and crypto switch', (RD('mover').tabs || {}).kind, 'switch');
+      eq('LOSER carries it too', (RD('loser').tabs || {}).kind, 'switch');
+      ok('an index carries no tabs', !RD('nasdaq').tabs);
+      eq('the LOSER badge reads LOSER', RD('loser').badge.text, 'LOSER ▼');
+      eq('the MOVER badge reads MOVER', RD('mover').badge.text, 'MOVER ▲');
+      ok('MOVER takes no alerts', isNaN(RD('mover').value));
+      var wr = RD('watch');
+      ok('WATCH carries a stepper, or nothing when the list is empty', wr.tabs ? wr.tabs.kind === 'watch' : !!wr.hint);
     }
 
     if (R && R.overridePanel) {
