@@ -853,7 +853,9 @@
     var lampOn = el('lampOn'), lampOff = el('lampOff');
     if (lampOn) lampOn.classList.toggle('is-lit', !!open);
     if (lampOff) lampOff.classList.toggle('is-lit', !!(d && !open));
-    setText('sessionText', d && d.equityStatus ? (open ? 'Market open' : 'Market closed') : 'Market —');
+    var lamps = document.querySelector('.jacks');
+    if (lamps) lamps.setAttribute('aria-label', d ? (open ? 'US market open' : 'US market closed') : 'US market status unknown');
+    /* the caption stays put; the lit lamp says which it is */
   }
 
   function tickSession() {
@@ -1146,9 +1148,14 @@
     });
   }
 
+  /* [label, value, class, concept]: the fourth entry puts a question mark
+   * beside the label that opens the explanation of what the figure means. */
   function strip(items) {
     return items.map(function (it) {
-      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
+      var ask = it[3] && MP.concepts && MP.concepts.get(it[3])
+        ? '<button type="button" class="ask" data-concept="' + F.escapeHtml(it[3]) + '" aria-label="What ' + F.escapeHtml(MP.concepts.get(it[3]).term) + ' means">?</button>'
+        : '';
+      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + ask + '</div>' +
         '<div class="stat-value' + (it[2] ? ' ' + it[2] : '') + '">' + F.escapeHtml(it[1]) + '</div></div>';
     }).join('');
   }
@@ -1180,9 +1187,9 @@
     /* coupling */
     var c90 = a.coupling[1] || a.coupling[0];
     setHtml('couplingStrip', strip([
-      ['Corr 90d', F.ratio(c90.correlation, 2)],
-      ['Beta 90d', F.ratio(c90.beta, 2)],
-      ['R² 90d', F.ratio(c90.r2, 2)]
+      ['Corr 90d', F.ratio(c90.correlation, 2), '', 'correlation'],
+      ['Beta 90d', F.ratio(c90.beta, 2), '', 'beta'],
+      ['R² 90d', F.ratio(c90.r2, 2), '', 'r2']
     ]));
 
     var rows = a.coupling.map(function (c) {
@@ -1223,8 +1230,8 @@
     var volRatio = S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol) && a.currentIndexVol
       ? a.currentCoinVol / a.currentIndexVol : NaN;
     setHtml('volStrip', strip([
-      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0)],
-      [L.index + ' 30d', F.pct(a.currentIndexVol, 0)],
+      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0), '', 'volatility'],
+      [L.index + ' 30d', F.pct(a.currentIndexVol, 0), '', 'volatility'],
       ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
     ]));
     setHtml('chartVol', G.columnChart({
@@ -1239,8 +1246,8 @@
 
     /* drawdown */
     setHtml('ddStrip', strip([
-      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg'],
-      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg'],
+      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg', 'drawdown'],
+      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg', 'drawdown'],
       [L.index + ' worst', F.signedPct(a.indexDd.max, 1), 'neg']
     ]));
     setHtml('chartDdBtc', G.underwaterChart({
@@ -1405,6 +1412,114 @@
       if (MP.spotlight) MP.spotlight.render();
     }
     if (view === 'watch') ensureStock(watchSymbol());
+    setStopNote(view);
+    hideConcept();
+    refreshContext(true);
+    if (MP.track) MP.track.event('dial_mode_changed', view);
+  }
+
+  /* ---- WATCH --------------------------------------------------------------- */
+
+  /* ---- what this stop is, and what the figures mean ------------------------ */
+
+  /* One sentence per stop, in the drawer under the title: what question the
+   * stop answers, in words a first-year student already has. */
+  var STOP_NOTES = {
+    off: 'How the meter works, where every figure comes from, and what it is not.',
+    btc: 'What bitcoin costs now, and how far it has moved over the period on the screen.',
+    eth: 'What ether costs now, next to bitcoin and the two indexes.',
+    nasdaq: 'Where the Nasdaq Composite stands today: about 3,000 listed companies, tech heavy.',
+    spx: 'Where the S&P 500 stands today: 500 large US companies, the usual stand-in for the market.',
+    mover: 'The largest five-session gain of the week, among the names the job could price. It says what moved, not what to buy.',
+    loser: 'The largest five-session drop of the week, shown beside the gain so both ends are visible.',
+    watch: 'The stocks you chose, at their last daily close. Closes, not live prices.',
+    probe: 'Any coin you pick, on the same instruments as bitcoin.',
+    corr: 'Whether two things move together, and how strongly. Correlation near 1 is in step, near 0 is unrelated.',
+    vol: 'How violently the price has been moving lately, next to the index, so you can tell calm from turbulent.',
+    dd: 'How far below its own peak the asset sits, which is what a buyer at the top would still be down.',
+    note: 'Three plain sentences about the session, written from the figures below and checked before publishing.'
+  };
+
+  function setStopNote(stop) {
+    setText('viewNote', STOP_NOTES[stop] || '');
+  }
+
+  /* The structured account of the current stop (MP.context), rebuilt on a
+   * stop change and every half minute, not on every tick. */
+  var ctxCache = { stop: null, at: 0, value: null };
+
+  function currentContext(force) {
+    var stop = currentStop();
+    if (!MP.context || !stop) return null;
+    if (!force && ctxCache.stop === stop && Date.now() - ctxCache.at < 20000) return ctxCache.value;
+    ctxCache = { stop: stop, at: Date.now(), value: MP.context.build(stop) };
+    return ctxCache.value;
+  }
+
+  /* "Larger than 94% of the last 251 daily moves." The one line that turns a
+   * percentage into something a student can judge. */
+  function unusualLine(ctx) {
+    var m = ctx && ctx.statistics ? ctx.statistics.move : null;
+    if (!m || !S.isNum(m.return) || !S.isNum(m.percentile)) return '';
+    var pct = Math.round(m.percentile * 100);
+    var size = F.signedPctPoints(m.return * 100, 2);
+    var z = S.isNum(m.z) ? ', about ' + Math.abs(m.z).toFixed(1) + ' standard deviations from its average day' : '';
+    return 'Last session moved ' + size + '. That is larger than ' + pct + '% of the last ' + m.comparedWith + ' daily moves' + z + '.';
+  }
+
+  function refreshContext(force) {
+    var ctx = currentContext(force);
+    if (!ctx) return;
+    setText('drawerProv', MP.context.provenance(ctx));
+    var line = unusualLine(ctx);
+    setText('heroUnusual', currentStop() === 'btc' ? line : '');
+    setText('volUnusual', currentStop() === 'vol' ? line : '');
+  }
+
+  /* The explainer bar: a question mark beside a figure opens it, and it
+   * shows the same words wherever it is opened from. */
+  function showConcept(id) {
+    var c = MP.concepts ? MP.concepts.get(id) : null;
+    var bar = el('conceptBar');
+    if (!bar || !c) return;
+    bar.hidden = false;
+    bar.innerHTML = '<button type="button" class="pill close" data-concept-close="1">Close</button>' +
+      '<h3>' + F.escapeHtml(c.term) + '</h3>' +
+      '<p>' + F.escapeHtml(c.what) + '</p>' +
+      '<p class="here">' + F.escapeHtml(c.here) + '</p>';
+    if (MP.track) MP.track.event('concept_opened', id);
+  }
+
+  function hideConcept() {
+    var bar = el('conceptBar');
+    if (bar) { bar.hidden = true; bar.innerHTML = ''; }
+  }
+
+  /* Feedback: three questions, opened as a GitHub issue the tester can read
+   * before sending. Counts go only if they paste them. */
+  function openFeedback() {
+    var base = 'https://github.com/jackmcmurry/multimeter/issues/new';
+    var body = ['What confused you?', '', 'What was useful?', '', 'What would bring you back?', '',
+      'Stop you were on: ' + (currentStop() || 'unknown'), '',
+      'Usage counts (optional, from this browser only):', '', MP.track ? MP.track.report() : ''].join('\n');
+    var url = base + '?title=' + encodeURIComponent('Feedback') + '&body=' + encodeURIComponent(body);
+    if (MP.track) MP.track.event('feedback_opened');
+    root.open(url, '_blank', 'noopener');
+  }
+
+  function wireLearn() {
+    var drawer = el('drawer');
+    if (drawer) {
+      drawer.addEventListener('click', function (ev) {
+        var t = ev.target && ev.target.closest ? ev.target : null;
+        if (!t) return;
+        var ask = t.closest('[data-concept]');
+        if (ask) { showConcept(ask.getAttribute('data-concept')); return; }
+        if (t.closest('[data-concept-close]')) hideConcept();
+      });
+    }
+    var fb = el('feedbackBtn');
+    if (fb) fb.addEventListener('click', openFeedback);
   }
 
   /* ---- WATCH --------------------------------------------------------------- */
@@ -1646,6 +1761,8 @@
     wireProbe();
     wireWatch();
     renderWatch();
+    wireLearn();
+    if (MP.track) MP.track.start();
     if (MP.spotlight && MP.spotlight.wire) MP.spotlight.wire();
     if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
     renderProbe();
@@ -1655,6 +1772,7 @@
     renderAnalytics();
     if (MP.spotlight) MP.spotlight.render();
     every(function () { renderStamp(); watchLive(); }, 1000);
+    every(function () { refreshContext(true); }, 30000);
     every(tickSession, SESSION_TICK_MS);
 
     if (typeof root.fetch !== 'function') {
@@ -1721,6 +1839,11 @@
     formatValue: formatValue,
     renderAlerts: renderAlerts,
     checkAlerts: checkAlerts,
+    setStopNote: setStopNote,
+    refreshContext: refreshContext,
+    coinHistory: coinHistory,
+    showConcept: showConcept,
+    STOP_NOTES: STOP_NOTES,
     applyTick: applyTick,
     liveProducts: liveProducts,
     productForStop: productForStop,

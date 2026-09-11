@@ -75,6 +75,22 @@ the bell on the screen lists armed and fired alerts. Alerts are kept in this
 browser (`localStorage`, key `mm.alerts`) and evaluated only while the page
 is open. **HOLD** freezes the display; MIN/MAX keeps capturing underneath.
 
+Three things help a reader who is still learning the vocabulary. A line under
+each drawer title says what the stop answers. A question mark beside a figure
+opens what it measures and how this page computes it (`src/lib/concepts.js`).
+A line at the foot of the drawer names the source and the window behind the
+figures (`src/lib/context.js`). That same module builds MarketContext, one
+structured account of the current stop: instrument, price with its basis and
+source, change, history window, volatility, how unusual the last move was,
+related pairs, market status and timestamps. Every field is either measured
+or null. It is what a future explanation feature would be given, so that a
+model writes over verified figures rather than recalling its own.
+
+Usage counting is local (`src/lib/track.js`): a fixed list of event names,
+counts in this browser, no third party, no network, no identifiers. FEEDBACK
+in the drawer opens a note with three questions, which a tester can send with
+those counts if they choose.
+
 Routing is hash-based (`#corr`), so a stop is linkable and the back button
 turns the dial. The old section hashes (`#home`, `#markets`, `#weekly`,
 `#coupling`, `#beta`, `#volatility`, `#drawdown`, `#about`) and the tickers

@@ -116,7 +116,7 @@ body {
 
 .holster {
   position: relative;
-  background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
+  background: var(--holster);
   border-radius: 0;
   padding: 14px;
   box-shadow:
@@ -148,7 +148,7 @@ body {
 .shell {
   position: relative;
   z-index: 1;
-  background: linear-gradient(180deg, var(--shell-lt), var(--shell) 12%, var(--shell) 90%, var(--shell-dk));
+  background: var(--shell);
   border-radius: 0;
   padding: 16px 18px 18px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
@@ -182,7 +182,7 @@ body {
   display: block;
   width: 100%;
   container-type: inline-size;   /* the readout sizes with the screen, not the window */
-  background: radial-gradient(120% 90% at 50% 0%, #10201f 0%, var(--lcd) 60%);
+  background: var(--lcd);
   color: var(--lcd-ink);
   border: 3px solid var(--lcd-dk);
   border-radius: 12px;
@@ -352,7 +352,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--key-text);
-  background: linear-gradient(180deg, var(--shell-lt), var(--key));
+  background: var(--key);
   border: 0;
   border-radius: 0;
   padding: 11px 6px;
@@ -369,7 +369,7 @@ body {
 .key:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--holster), inset 0 -3px 0 var(--key-dk); }
 .key-hold {
   color: var(--key-text);
-  background: linear-gradient(180deg, #ff6e6e, var(--hold));
+  background: var(--hold);
   box-shadow: inset 0 -3px 0 var(--hold-dk), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 .key-hold:active, .key-hold.is-held {
@@ -415,7 +415,7 @@ body {
   position: absolute;
   inset: 27%;   /* radius ≈ 85 of the plate's 184 half-width: inside the 92 face ring */
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, var(--knob-lt), var(--knob) 68%);
+  background: var(--knob);
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -1002,6 +1002,64 @@ tr.row-rule th {
   transition: opacity 400ms ease;
 }
 .dial-hint.is-on { opacity: 1; }
+
+/* ---- what a stop is, what a figure means, where it came from --------------- */
+.drawer-note {
+  margin: -6px 0 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dim);
+  max-width: 68ch;
+}
+.drawer-note b { color: var(--text); font-weight: 600; }
+
+/* the explainer: opened from a question mark beside a figure */
+.concept {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: var(--cell);
+  border-left: 3px solid var(--holster);
+}
+.concept h3 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--holster);
+}
+.concept p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.concept .here { color: var(--dim); }
+.concept .close { float: right; }
+
+.ask {
+  margin-left: 6px;
+  padding: 0;
+  width: 15px;
+  height: 15px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  color: var(--dim);
+  background: var(--cell);
+  border: 0;
+  cursor: pointer;
+}
+.ask:hover, .ask:focus-visible { color: var(--lcd-dk); background: var(--holster); outline: none; }
+
+.unusual:empty { display: none; }
+.unusual { color: var(--text); }
+
+.prov {
+  margin: 18px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--dim);
+}
+.prov:empty { display: none; }
 
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {

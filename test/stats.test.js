@@ -581,6 +581,67 @@
       if (hintBefore === null) MP.store.remove('hinted'); else MP.store.set('hinted', hintBefore);
     }
 
+    /* ---- concepts, context and counting ------------------------------------ */
+    var CO = MP.concepts;
+    if (!CO) {
+      ok('concepts module is loaded', false, 'MP.concepts missing');
+    } else {
+      eq('a concept has a term', CO.get('volatility').term, 'Volatility');
+      ok('a concept says what it is and how it is measured', CO.get('correlation').what.length > 40 && CO.get('correlation').here.length > 20);
+      ok('an unknown concept is null', CO.get('nope') === null);
+      eq('every listed concept resolves', CO.list().filter(Boolean).length, CO.IDS.length);
+      ok('every stop note names a stop that exists', !MP.app || !MP.app.STOP_NOTES ||
+        Object.keys(MP.app.STOP_NOTES).every(function (k) { return R.VIEWS.indexOf(k) >= 0; }));
+      ok('every stop has a note', !MP.app || !MP.app.STOP_NOTES ||
+        R.VIEWS.every(function (v) { return !!MP.app.STOP_NOTES[v]; }));
+    }
+
+    var CX = MP.context;
+    if (!CX) {
+      ok('context module is loaded', false, 'MP.context missing');
+    } else {
+      eq('the packet is versioned', CX.SCHEMA_VERSION, 1);
+      var built = M ? M.STOPS.map(function (s) { return CX.build(s.id); }) : [];
+      ok('every stop builds a packet without throwing', built.length === (M ? M.STOPS.length : 0));
+      ok('a packet names its stop and version', built.every(function (c) { return c.version === 1 && typeof c.stop === 'string'; }));
+      ok('a packet never invents a price', built.every(function (c) { return c.price === null || typeof c.price.value === 'number'; }));
+      ok('a packet carries its own build time', built.every(function (c) { return c.builtAt > 0; }));
+
+      /* a flat series with one large last move: the move is unusual, and the
+       * statistics describe it rather than the price */
+      var flat = [], px = 100;
+      for (var ci = 0; ci < 120; ci++) {
+        px *= 1 + (ci % 2 ? 0.002 : -0.002);
+        flat.push({ date: new Date(Date.UTC(2026, 0, 1) + ci * 86400000).toISOString().slice(0, 10), price: px });
+      }
+      flat.push({ date: '2026-06-01', price: px * 1.15 });
+      var mv = CX.moveStats(flat);
+      ok('a large last move reads as unusual', mv && mv.percentile === 1 && mv.z > 3);
+      close('the move is reported as a return', mv.return, Math.log(1.15), 1e-9);
+      ok('too little history gives no move statistics', CX.moveStats(flat.slice(0, 10)) === null);
+      var vol = CX.volatility(flat);
+      ok('volatility is annualized and windowed', vol && vol.window === 30 && vol.value > 0);
+      ok('a drawdown is never positive', CX.drawdown(flat).worst <= 0);
+    }
+
+    var TR = MP.track;
+    if (!TR) {
+      ok('track module is loaded', false, 'MP.track missing');
+    } else {
+      var keep = MP.store.get('usage', null);
+      TR.reset();
+      TR.event('dial_mode_changed', 'vol');
+      TR.event('dial_mode_changed', 'vol');
+      TR.event('concept_opened', 'volatility');
+      TR.event('not_an_event', 'x');
+      var sum = TR.summary();
+      eq('events count per label', sum.events['dial_mode_changed:vol'], 2);
+      ok('an unlisted event is ignored', !sum.events['not_an_event'] && !sum.events['not_an_event:x']);
+      ok('the report is plain text a tester can read', /dial_mode_changed:vol 2/.test(TR.report()));
+      TR.reset();
+      if (keep) MP.store.set('usage', keep);
+    }
+
     if (R && R.overridePanel) {
       eq('panel override accepts a known panel', R.overridePanel('alerts'), 'alerts');
       eq('panel override rejects an unknown panel', R.overridePanel('nope'), null);

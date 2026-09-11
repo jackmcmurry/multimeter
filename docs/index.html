@@ -150,7 +150,7 @@ body {
 
 .holster {
   position: relative;
-  background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
+  background: var(--holster);
   border-radius: 0;
   padding: 14px;
   box-shadow:
@@ -182,7 +182,7 @@ body {
 .shell {
   position: relative;
   z-index: 1;
-  background: linear-gradient(180deg, var(--shell-lt), var(--shell) 12%, var(--shell) 90%, var(--shell-dk));
+  background: var(--shell);
   border-radius: 0;
   padding: 16px 18px 18px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
@@ -216,7 +216,7 @@ body {
   display: block;
   width: 100%;
   container-type: inline-size;   /* the readout sizes with the screen, not the window */
-  background: radial-gradient(120% 90% at 50% 0%, #10201f 0%, var(--lcd) 60%);
+  background: var(--lcd);
   color: var(--lcd-ink);
   border: 3px solid var(--lcd-dk);
   border-radius: 12px;
@@ -386,7 +386,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--key-text);
-  background: linear-gradient(180deg, var(--shell-lt), var(--key));
+  background: var(--key);
   border: 0;
   border-radius: 0;
   padding: 11px 6px;
@@ -403,7 +403,7 @@ body {
 .key:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--holster), inset 0 -3px 0 var(--key-dk); }
 .key-hold {
   color: var(--key-text);
-  background: linear-gradient(180deg, #ff6e6e, var(--hold));
+  background: var(--hold);
   box-shadow: inset 0 -3px 0 var(--hold-dk), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 .key-hold:active, .key-hold.is-held {
@@ -449,7 +449,7 @@ body {
   position: absolute;
   inset: 27%;   /* radius ≈ 85 of the plate's 184 half-width: inside the 92 face ring */
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, var(--knob-lt), var(--knob) 68%);
+  background: var(--knob);
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -1037,6 +1037,64 @@ tr.row-rule th {
 }
 .dial-hint.is-on { opacity: 1; }
 
+/* ---- what a stop is, what a figure means, where it came from --------------- */
+.drawer-note {
+  margin: -6px 0 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dim);
+  max-width: 68ch;
+}
+.drawer-note b { color: var(--text); font-weight: 600; }
+
+/* the explainer: opened from a question mark beside a figure */
+.concept {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: var(--cell);
+  border-left: 3px solid var(--holster);
+}
+.concept h3 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--holster);
+}
+.concept p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.concept .here { color: var(--dim); }
+.concept .close { float: right; }
+
+.ask {
+  margin-left: 6px;
+  padding: 0;
+  width: 15px;
+  height: 15px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  color: var(--dim);
+  background: var(--cell);
+  border: 0;
+  cursor: pointer;
+}
+.ask:hover, .ask:focus-visible { color: var(--lcd-dk); background: var(--holster); outline: none; }
+
+.unusual:empty { display: none; }
+.unusual { color: var(--text); }
+
+.prov {
+  margin: 18px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--dim);
+}
+.prov:empty { display: none; }
+
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
   .stage { padding: 10px 6px 32px; gap: 12px; }
@@ -1151,9 +1209,9 @@ tr.row-rule th {
         </div>
 
         <div class="jacks">
-          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-off" id="lampOff"></span><span class="lamp-label">OFF</span></span>
-          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-on" id="lampOn"></span><span class="lamp-label">ON</span></span>
-          <span class="jack-text" id="sessionText">Market —</span>
+          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-on" id="lampOn"></span><span class="lamp-label">OPEN</span></span>
+          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-off" id="lampOff"></span><span class="lamp-label">CLOSED</span></span>
+          <span class="jack-text" id="sessionText">Market</span>
         </div>
 
         </div>
@@ -1168,9 +1226,13 @@ tr.row-rule th {
       <h2 id="viewTitle">Bitcoin</h2>
       <span class="drawer-tools">
         <span class="muted" id="quoteStamp">—</span>
+        <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
         <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
       </span>
     </header>
+
+    <p class="drawer-note" id="viewNote"></p>
+    <div class="concept" id="conceptBar" hidden></div>
 
     <div id="pageNotice"></div>
 
@@ -1183,6 +1245,7 @@ tr.row-rule th {
 
       <div class="chartbox" id="heroChart"></div>
       <p class="foot">The range follows the tabs on the screen.</p>
+      <p class="foot unusual" id="heroUnusual"></p>
 
       <div id="heroNotice"></div>
     </section>
@@ -1243,6 +1306,7 @@ tr.row-rule th {
       <div class="strip" id="volStrip"></div>
       <div class="chartbox" id="chartVol"></div>
       <p class="foot" id="volFoot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+      <p class="foot unusual" id="volUnusual"></p>
     </section>
 
     <!-- DD -->
@@ -1289,6 +1353,10 @@ tr.row-rule th {
       <h2>Keys</h2>
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
 
+      <h2>Learning as you go</h2>
+      <p>Under each title, one line says what the stop answers. A question mark beside a figure opens what it measures and how this page computes it, so a concept arrives next to the number it describes. On bitcoin and on VOL, a line says how large the last session's move was against the last 251 daily moves, which is how you tell an ordinary day from a rare one. The line at the foot of the drawer names the source of the figures above it and when they were read.</p>
+      <p><b>FEEDBACK</b> opens a note you can send about what confused you. It carries nothing but what you type, and counts of which stops you opened if you choose to paste them. Those counts are kept in this browser, are never sent anywhere on their own, and hold no personal information.</p>
+
       <h2>Skins</h2>
       <p>The palette beside the name opens the skins: gold, blue, pink, green, red, purple and silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
 
@@ -1309,6 +1377,8 @@ tr.row-rule th {
       <h2>Standing</h2>
       <p>Market data for reference only. Nothing here is investment advice, a recommendation, or a solicitation to trade. Figures are as reported by the sources above and may be delayed, revised, or wrong.</p>
     </section>
+
+    <p class="prov" id="drawerProv"></p>
   </div>
 </main>
 
@@ -2874,6 +2944,465 @@ tr.row-rule th {
     lastCompletedSession: lastCompletedSession,
     sessionBefore: sessionBefore
   };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/concepts.js ================================================= */
+/* ============================================================================
+ * concepts.js: the short explanations behind the figures.
+ *
+ * One entry per idea the meter puts on screen. Each says what the idea is in
+ * a sentence, then how this page measures it, so a student reads the
+ * definition next to the number it describes rather than in a textbook.
+ * Pure data and one lookup: the panels decide where to show it.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var CONCEPTS = {
+    volatility: {
+      term: 'Volatility',
+      what: 'How much an asset’s daily returns move around. Higher volatility means larger and less predictable swings, in both directions.',
+      here: 'Measured over the last 30 sessions as the standard deviation of daily log returns, then annualized by the square root of 252.'
+    },
+    correlation: {
+      term: 'Correlation',
+      what: 'Whether two assets tend to move together. It runs from +1, moving in step, through 0, no relationship, to -1, moving opposite.',
+      here: 'Computed on daily log returns over sessions both assets actually traded, so a weekend gap counts the same for each.'
+    },
+    beta: {
+      term: 'Beta',
+      what: 'How far one asset tends to move when another moves by one percent. A beta of 1.5 means it has historically moved about half again as much.',
+      here: 'The slope of the line through the return scatter, with the index on the horizontal axis.'
+    },
+    r2: {
+      term: 'R squared',
+      what: 'The share of one asset’s movement that the other explains. A high beta with a low R squared is a loose relationship, not a tight one.',
+      here: 'The square of the correlation over the same window.'
+    },
+    drawdown: {
+      term: 'Drawdown',
+      what: 'How far an asset sits below its own highest point so far. It answers what a buyer at the peak would still be down.',
+      here: 'Measured on each asset’s own daily closes, against its running peak.'
+    },
+    change: {
+      term: 'Percent change',
+      what: 'The move from one price to another, as a share of where it started. It is what makes moves in a 300 dollar stock and a 70,000 dollar coin comparable.',
+      here: 'Taken between the two prices named on the screen, over the period shown beside them.'
+    },
+    unusual: {
+      term: 'How unusual a move is',
+      what: 'A move only means something next to the asset’s own habits. The same one percent is ordinary for one asset and rare for another.',
+      here: 'This session’s return is compared with the last 252 daily returns: how many standard deviations out it sits, and what share of recent days it beats.'
+    },
+    marketcap: {
+      term: 'Market capitalisation',
+      what: 'The total value of what is outstanding: price times the number of units in circulation. It says how large a thing is, not how good.',
+      here: 'Reported by CoinGecko for coins and by the quote for stocks.'
+    },
+    returns: {
+      term: 'Returns',
+      what: 'The change from one close to the next, which is what statistics are computed on rather than the prices themselves.',
+      here: 'Log returns throughout, so that gains and losses add up symmetrically over time.'
+    }
+  };
+
+  var ORDER = ['change', 'unusual', 'volatility', 'correlation', 'beta', 'r2', 'drawdown', 'returns', 'marketcap'];
+
+  function get(id) {
+    return CONCEPTS[id] ? Object.assign({ id: id }, CONCEPTS[id]) : null;
+  }
+
+  function list() {
+    return ORDER.map(get);
+  }
+
+  MP.concepts = { get: get, list: list, IDS: ORDER };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/context.js ================================================== */
+/* ============================================================================
+ * context.js: MarketContext, one structured account of what the meter is
+ * showing right now.
+ *
+ * Everything in it is either a figure the page already holds or a statistic
+ * computed here from stored closes. A field the page cannot know is null,
+ * never a guess and never a placeholder. Each block carries where it came
+ * from and when, so the drawer can show provenance and a reader can tell a
+ * quoted price from a computed one.
+ *
+ * This is also the packet a future PROBE hands to Claude. Claude will write
+ * prose over these figures and add none of its own, so the shape is fixed
+ * and versioned: SCHEMA_VERSION changes whenever a field's meaning changes.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var S = MP.stats;
+
+  var SCHEMA_VERSION = 1;
+  var VOL_WINDOW = 30;
+  var MOVE_WINDOW = 252;     /* how many recent returns a move is judged against */
+  var ANNUALIZE = 252;
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function app() { return MP.app && MP.app.state ? MP.app.state : null; }
+
+  /* ---- statistics over a series ------------------------------------------- */
+
+  /* How unusual the latest move is against its own recent history: its z
+   * score, and the share of recent moves it is larger than. Both null when
+   * there is too little history to say. */
+  function moveStats(series) {
+    if (!series || series.length < 32) return null;
+    var prices = S.sortSeries(series).map(function (p) { return p.price; });
+    var rets = S.logReturns(prices).filter(isNum);
+    if (rets.length < 30) return null;
+    var recent = S.tail(rets, MOVE_WINDOW);
+    var latest = recent[recent.length - 1];
+    var body = recent.slice(0, -1);
+    var sd = S.stdev(body), mean = S.mean(body);
+    var smaller = body.filter(function (r) { return Math.abs(r) <= Math.abs(latest); }).length;
+    return {
+      return: latest,
+      z: isNum(sd) && sd > 0 ? (latest - mean) / sd : null,
+      percentile: body.length ? smaller / body.length : null,
+      comparedWith: body.length,
+      basis: 'daily log returns'
+    };
+  }
+
+  function volatility(series) {
+    if (!series || series.length < VOL_WINDOW + 2) return null;
+    var prices = S.sortSeries(series).map(function (p) { return p.price; });
+    var v = S.annualizedVol(S.tail(S.logReturns(prices), VOL_WINDOW), ANNUALIZE);
+    if (!isNum(v)) return null;
+    return {
+      value: v,
+      window: VOL_WINDOW,
+      annualized: true,
+      basis: 'standard deviation of daily log returns, annualized by the square root of ' + ANNUALIZE
+    };
+  }
+
+  function drawdown(series) {
+    if (!series || series.length < 3) return null;
+    var prices = S.sortSeries(series).map(function (p) { return p.price; });
+    var run = S.drawdownSeries(prices);
+    if (!run || !run.length) return null;
+    return { now: run[run.length - 1], worst: S.maxDrawdown(prices), basis: 'distance below the running peak' };
+  }
+
+  function window(series) {
+    if (!series || !series.length) return null;
+    var sorted = S.sortSeries(series);
+    return { points: sorted.length, from: sorted[0].date, to: sorted[sorted.length - 1].date, interval: 'daily' };
+  }
+
+  /* ---- the pieces the page already holds ----------------------------------- */
+
+  function priceBlock(value, opts) {
+    if (!isNum(value)) return null;
+    return {
+      value: value,
+      currency: 'USD',
+      basis: opts.basis,            /* 'spot' | 'last trade' | 'close' | 'index level' */
+      source: opts.source,
+      asOf: isNum(opts.asOf) ? opts.asOf : null,
+      live: !!opts.live
+    };
+  }
+
+  function changeBlock(pct, abs, period, source) {
+    if (!isNum(pct) && !isNum(abs)) return null;
+    return {
+      percent: isNum(pct) ? pct : null,
+      absolute: isNum(abs) ? abs : null,
+      period: period,
+      source: source
+    };
+  }
+
+  /* Whatever the statistics panels currently measure, as relationships. */
+  function relatedFromAnalytics() {
+    var st = app();
+    var a = st && st.analytics;
+    if (!a || !a.coupling || !a.coupling.length) return [];
+    var l = a.labels || {};
+    return a.coupling.map(function (c) {
+      return {
+        symbol: l.index || null,
+        name: l.indexName || null,
+        correlation: isNum(c.correlation) ? c.correlation : null,
+        beta: isNum(c.beta) ? c.beta : null,
+        r2: isNum(c.r2) ? c.r2 : null,
+        window: c.window,
+        pairedSessions: c.n,
+        basis: 'daily log returns on sessions both traded'
+      };
+    });
+  }
+
+  function marketBlock() {
+    var st = app();
+    var d = st && st.session ? st.session.data : null;
+    var now = Date.now();
+    var ses = MP.session ? MP.session.status(now) : null;
+    return {
+      equities: d ? d.equityStatus : (ses ? (ses.open ? 'open' : 'closed') : null),
+      phase: ses ? ses.phase : null,
+      lastCompletedSession: MP.session ? MP.session.lastCompletedSession(now, 60) : null,
+      crypto: 'continuous'
+    };
+  }
+
+  /* ---- one stop, one context ----------------------------------------------- */
+
+  var COIN_STOPS = { btc: 'Bitcoin', eth: 'Ether' };
+
+  function build(stop) {
+    var st = app();
+    var reading = MP.app && MP.app.reading ? MP.app.reading(stop) : null;
+    var ctx = {
+      version: SCHEMA_VERSION,
+      builtAt: Date.now(),
+      stop: stop,
+      instrument: { kind: null, symbol: null, name: null },
+      price: null,
+      change: null,
+      history: null,
+      statistics: { volatility: null, move: null, drawdown: null },
+      related: [],
+      market: marketBlock(),
+      sources: [],
+      empty: true
+    };
+    if (!st || !reading) return ctx;
+
+    var series = null;
+
+    if (stop === 'btc' || stop === 'eth') {
+      var key = stop;
+      var q = st.quotes[key].data;
+      ctx.instrument = { kind: 'crypto', symbol: stop.toUpperCase(), name: COIN_STOPS[stop] };
+      ctx.price = priceBlock(reading.value, {
+        basis: reading.live ? 'last trade' : 'spot',
+        source: reading.live ? 'Coinbase Exchange' : 'CoinGecko',
+        asOf: st.quotes[key].stamp,
+        live: !!reading.live
+      });
+      ctx.change = changeBlock(reading.change.pct, reading.change.abs, reading.change.label,
+        reading.live ? 'Coinbase Exchange' : 'CoinGecko');
+      series = st.history[key] || null;
+      if (q && isNum(q.marketCap) && q.marketCap > 0) ctx.instrument.marketCap = q.marketCap;
+      ctx.sources = reading.live ? ['Coinbase Exchange', 'CoinGecko'] : ['CoinGecko'];
+    } else if (stop === 'nasdaq' || stop === 'spx') {
+      var ik = stop === 'nasdaq' ? 'ixic' : 'spx';
+      ctx.instrument = {
+        kind: 'index',
+        symbol: stop === 'nasdaq' ? '^IXIC' : '^GSPC',
+        name: stop === 'nasdaq' ? 'Nasdaq Composite' : 'S&P 500'
+      };
+      ctx.price = priceBlock(reading.value, { basis: 'index level', source: 'Financial Modeling Prep', asOf: st.quotes[ik].stamp, live: false });
+      ctx.change = changeBlock(reading.change.pct, reading.change.abs, reading.change.label, 'Financial Modeling Prep');
+      series = st.history[ik] || null;
+      ctx.sources = ['Financial Modeling Prep'];
+    } else if (stop === 'watch' && reading.symbol) {
+      ctx.instrument = { kind: 'stock', symbol: reading.symbol, name: (MP.app.stockRow(reading.symbol) || {}).name || null };
+      ctx.price = priceBlock(reading.value, { basis: 'close', source: 'Financial Modeling Prep', asOf: null, live: false });
+      ctx.change = changeBlock(reading.change.pct, reading.change.abs, reading.change.label, 'Financial Modeling Prep');
+      series = MP.app.stockSeries(reading.symbol);
+      ctx.sources = ['Financial Modeling Prep'];
+    } else if ((stop === 'mover' || stop === 'loser') && reading.symbol) {
+      var crypto = MP.spotlight && MP.spotlight.kind() === 'crypto';
+      ctx.instrument = { kind: crypto ? 'crypto' : 'stock', symbol: reading.symbol, name: null };
+      ctx.price = priceBlock(reading.value, {
+        basis: crypto ? 'spot' : 'close',
+        source: crypto ? 'CoinGecko' : 'Financial Modeling Prep',
+        asOf: null,
+        live: !!reading.live
+      });
+      ctx.change = changeBlock(reading.change.pct, reading.change.abs, reading.change.label,
+        crypto ? 'CoinGecko' : 'Financial Modeling Prep');
+      if (!crypto) series = MP.app.stockSeries(reading.symbol);
+      ctx.sources = crypto ? ['CoinGecko'] : ['Financial Modeling Prep'];
+    } else if (stop === 'probe' && st.probe) {
+      ctx.instrument = { kind: 'crypto', symbol: st.probe.symbol, name: st.probe.name };
+      ctx.price = priceBlock(reading.value, { basis: 'spot', source: 'CoinGecko', asOf: st.quotes.probe.stamp, live: !!reading.live });
+      ctx.change = changeBlock(reading.change.pct, reading.change.abs, reading.change.label, 'CoinGecko');
+      ctx.sources = ['CoinGecko'];
+    } else if (stop === 'corr' || stop === 'vol' || stop === 'dd') {
+      var a = st.analytics, l = a ? a.labels : null;
+      ctx.instrument = { kind: 'statistic', symbol: l ? l.coin : null, name: reading.mode || null };
+      ctx.sources = ['CoinGecko', 'Financial Modeling Prep'];
+      /* the statistics stops describe a coin, so the packet carries that
+       * coin's closes and the same move statistics the other stops show */
+      series = MP.app && MP.app.coinHistory ? MP.app.coinHistory(st.stats ? st.stats.coin : null) : null;
+      if (a) {
+        ctx.statistics.volatility = isNum(a.currentCoinVol)
+          ? { value: a.currentCoinVol, window: 30, annualized: true, basis: 'standard deviation of daily log returns, annualized by the square root of 252' }
+          : null;
+        ctx.statistics.drawdown = a.coinDd ? { now: a.coinDd.now, worst: a.coinDd.max, basis: 'distance below the running peak' } : null;
+        ctx.history = { points: a.commonSessions, from: a.windowFrom, to: a.windowTo, interval: 'daily' };
+      }
+    }
+
+    if (series && series.length) {
+      ctx.history = window(series);
+      ctx.statistics.volatility = ctx.statistics.volatility || volatility(series);
+      ctx.statistics.move = moveStats(series);
+      ctx.statistics.drawdown = ctx.statistics.drawdown || drawdown(series);
+    }
+    ctx.related = relatedFromAnalytics();
+    ctx.empty = !ctx.price && !ctx.statistics.volatility && !ctx.history;
+    return ctx;
+  }
+
+  /* A one-line provenance for the drawer: where the figure came from, when
+   * it was read, and over what period. */
+  function provenance(ctx) {
+    if (!ctx) return '';
+    var bits = [];
+    if (ctx.price && ctx.price.source) bits.push(ctx.price.source);
+    else if (ctx.sources.length) bits.push(ctx.sources.join(' and '));
+    if (ctx.price && isNum(ctx.price.asOf) && MP.fmt) bits.push('read ' + MP.fmt.ago(ctx.price.asOf));
+    if (ctx.history && ctx.history.points) bits.push(ctx.history.points + ' daily closes to ' + (MP.fmt ? MP.fmt.shortDate(ctx.history.to) : ctx.history.to));
+    return bits.join(' · ');
+  }
+
+  MP.context = {
+    SCHEMA_VERSION: SCHEMA_VERSION,
+    build: build,
+    provenance: provenance,
+    moveStats: moveStats,
+    volatility: volatility,
+    drawdown: drawdown
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/track.js ==================================================== */
+/* ============================================================================
+ * track.js: counting, for user testing, in this browser only.
+ *
+ * No third party, no network, no identifiers, no personal data. Each event
+ * is a name, an optional label drawn from a fixed list, and a count, kept in
+ * localStorage so a tester can hand the numbers back deliberately through
+ * the feedback note. Nothing leaves the machine on its own.
+ *
+ * The questions it exists to answer: which stops students actually use,
+ * whether they open an explanation, whether they investigate, and whether
+ * they come back a second day.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var KEY = 'usage';
+  var MAX_KEYS = 60;          /* a small, bounded record */
+  var DAY_MS = 86400000;
+
+  /* Only these are recorded. Anything else is ignored, so a stray call can
+   * never quietly start collecting something new. */
+  var EVENTS = [
+    'session_started',
+    'dial_mode_changed',
+    'drawer_opened',
+    'concept_opened',
+    'range_changed',
+    'watch_added',
+    'feedback_opened',
+    'data_missing'
+  ];
+
+  var started = Date.now();
+
+  function blank() {
+    return { firstSeen: null, lastSeen: null, days: 0, sessions: 0, seconds: 0, events: {} };
+  }
+
+  function read() {
+    var v = MP.store ? MP.store.get(KEY, null) : null;
+    if (!v || typeof v !== 'object' || !v.events) return blank();
+    return v;
+  }
+
+  function write(v) {
+    if (MP.store) MP.store.set(KEY, v);
+    return v;
+  }
+
+  /* A label keeps an event readable ('dial_mode_changed:vol') without ever
+   * holding free text. */
+  function slug(label) {
+    return String(label || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16);
+  }
+
+  function event(name, label) {
+    if (EVENTS.indexOf(name) < 0) return null;
+    var v = read();
+    var k = label ? name + ':' + slug(label) : name;
+    if (!v.events[k] && Object.keys(v.events).length >= MAX_KEYS) return v;
+    v.events[k] = (v.events[k] || 0) + 1;
+    v.lastSeen = Date.now();
+    return write(v);
+  }
+
+  /* Called once a session: counts the visit, and counts a new day only when
+   * the calendar day differs from the last visit. */
+  function startSession() {
+    var v = read(), now = Date.now();
+    var newDay = !v.lastSeen || Math.floor(now / DAY_MS) !== Math.floor(v.lastSeen / DAY_MS);
+    v.firstSeen = v.firstSeen || now;
+    v.sessions = (v.sessions || 0) + 1;
+    if (newDay) v.days = (v.days || 0) + 1;
+    v.lastSeen = now;
+    write(v);
+    event('session_started');
+    return v;
+  }
+
+  /* Time on the page, added when the tab is hidden or closed. */
+  function addTime() {
+    var v = read();
+    v.seconds = Math.round((v.seconds || 0) + (Date.now() - started) / 1000);
+    started = Date.now();
+    write(v);
+  }
+
+  function summary() {
+    var v = read();
+    return {
+      sessions: v.sessions || 0,
+      days: v.days || 0,
+      minutes: Math.round((v.seconds || 0) / 60),
+      firstSeen: v.firstSeen ? new Date(v.firstSeen).toISOString().slice(0, 10) : null,
+      events: v.events || {}
+    };
+  }
+
+  /* What a tester pastes into the feedback note, by choice. */
+  function report() {
+    var s = summary();
+    var lines = Object.keys(s.events).sort().map(function (k) { return k + ' ' + s.events[k]; });
+    return 'visits ' + s.sessions + ' over ' + s.days + ' day(s), about ' + s.minutes + ' minute(s)\n' + lines.join('\n');
+  }
+
+  function reset() { if (MP.store) MP.store.remove(KEY); }
+
+  function start() {
+    startSession();
+    if (root.document && root.document.addEventListener) {
+      root.document.addEventListener('visibilitychange', function () {
+        if (root.document.hidden) addTime();
+      });
+    }
+    if (root.addEventListener) root.addEventListener('pagehide', addTime);
+  }
+
+  MP.track = { KEY: KEY, EVENTS: EVENTS, event: event, start: start, summary: summary, report: report, reset: reset };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -6208,7 +6737,9 @@ tr.row-rule th {
     var lampOn = el('lampOn'), lampOff = el('lampOff');
     if (lampOn) lampOn.classList.toggle('is-lit', !!open);
     if (lampOff) lampOff.classList.toggle('is-lit', !!(d && !open));
-    setText('sessionText', d && d.equityStatus ? (open ? 'Market open' : 'Market closed') : 'Market —');
+    var lamps = document.querySelector('.jacks');
+    if (lamps) lamps.setAttribute('aria-label', d ? (open ? 'US market open' : 'US market closed') : 'US market status unknown');
+    /* the caption stays put; the lit lamp says which it is */
   }
 
   function tickSession() {
@@ -6501,9 +7032,14 @@ tr.row-rule th {
     });
   }
 
+  /* [label, value, class, concept]: the fourth entry puts a question mark
+   * beside the label that opens the explanation of what the figure means. */
   function strip(items) {
     return items.map(function (it) {
-      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + '</div>' +
+      var ask = it[3] && MP.concepts && MP.concepts.get(it[3])
+        ? '<button type="button" class="ask" data-concept="' + F.escapeHtml(it[3]) + '" aria-label="What ' + F.escapeHtml(MP.concepts.get(it[3]).term) + ' means">?</button>'
+        : '';
+      return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + ask + '</div>' +
         '<div class="stat-value' + (it[2] ? ' ' + it[2] : '') + '">' + F.escapeHtml(it[1]) + '</div></div>';
     }).join('');
   }
@@ -6535,9 +7071,9 @@ tr.row-rule th {
     /* coupling */
     var c90 = a.coupling[1] || a.coupling[0];
     setHtml('couplingStrip', strip([
-      ['Corr 90d', F.ratio(c90.correlation, 2)],
-      ['Beta 90d', F.ratio(c90.beta, 2)],
-      ['R² 90d', F.ratio(c90.r2, 2)]
+      ['Corr 90d', F.ratio(c90.correlation, 2), '', 'correlation'],
+      ['Beta 90d', F.ratio(c90.beta, 2), '', 'beta'],
+      ['R² 90d', F.ratio(c90.r2, 2), '', 'r2']
     ]));
 
     var rows = a.coupling.map(function (c) {
@@ -6578,8 +7114,8 @@ tr.row-rule th {
     var volRatio = S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol) && a.currentIndexVol
       ? a.currentCoinVol / a.currentIndexVol : NaN;
     setHtml('volStrip', strip([
-      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0)],
-      [L.index + ' 30d', F.pct(a.currentIndexVol, 0)],
+      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0), '', 'volatility'],
+      [L.index + ' 30d', F.pct(a.currentIndexVol, 0), '', 'volatility'],
       ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
     ]));
     setHtml('chartVol', G.columnChart({
@@ -6594,8 +7130,8 @@ tr.row-rule th {
 
     /* drawdown */
     setHtml('ddStrip', strip([
-      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg'],
-      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg'],
+      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg', 'drawdown'],
+      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg', 'drawdown'],
       [L.index + ' worst', F.signedPct(a.indexDd.max, 1), 'neg']
     ]));
     setHtml('chartDdBtc', G.underwaterChart({
@@ -6760,6 +7296,114 @@ tr.row-rule th {
       if (MP.spotlight) MP.spotlight.render();
     }
     if (view === 'watch') ensureStock(watchSymbol());
+    setStopNote(view);
+    hideConcept();
+    refreshContext(true);
+    if (MP.track) MP.track.event('dial_mode_changed', view);
+  }
+
+  /* ---- WATCH --------------------------------------------------------------- */
+
+  /* ---- what this stop is, and what the figures mean ------------------------ */
+
+  /* One sentence per stop, in the drawer under the title: what question the
+   * stop answers, in words a first-year student already has. */
+  var STOP_NOTES = {
+    off: 'How the meter works, where every figure comes from, and what it is not.',
+    btc: 'What bitcoin costs now, and how far it has moved over the period on the screen.',
+    eth: 'What ether costs now, next to bitcoin and the two indexes.',
+    nasdaq: 'Where the Nasdaq Composite stands today: about 3,000 listed companies, tech heavy.',
+    spx: 'Where the S&P 500 stands today: 500 large US companies, the usual stand-in for the market.',
+    mover: 'The largest five-session gain of the week, among the names the job could price. It says what moved, not what to buy.',
+    loser: 'The largest five-session drop of the week, shown beside the gain so both ends are visible.',
+    watch: 'The stocks you chose, at their last daily close. Closes, not live prices.',
+    probe: 'Any coin you pick, on the same instruments as bitcoin.',
+    corr: 'Whether two things move together, and how strongly. Correlation near 1 is in step, near 0 is unrelated.',
+    vol: 'How violently the price has been moving lately, next to the index, so you can tell calm from turbulent.',
+    dd: 'How far below its own peak the asset sits, which is what a buyer at the top would still be down.',
+    note: 'Three plain sentences about the session, written from the figures below and checked before publishing.'
+  };
+
+  function setStopNote(stop) {
+    setText('viewNote', STOP_NOTES[stop] || '');
+  }
+
+  /* The structured account of the current stop (MP.context), rebuilt on a
+   * stop change and every half minute, not on every tick. */
+  var ctxCache = { stop: null, at: 0, value: null };
+
+  function currentContext(force) {
+    var stop = currentStop();
+    if (!MP.context || !stop) return null;
+    if (!force && ctxCache.stop === stop && Date.now() - ctxCache.at < 20000) return ctxCache.value;
+    ctxCache = { stop: stop, at: Date.now(), value: MP.context.build(stop) };
+    return ctxCache.value;
+  }
+
+  /* "Larger than 94% of the last 251 daily moves." The one line that turns a
+   * percentage into something a student can judge. */
+  function unusualLine(ctx) {
+    var m = ctx && ctx.statistics ? ctx.statistics.move : null;
+    if (!m || !S.isNum(m.return) || !S.isNum(m.percentile)) return '';
+    var pct = Math.round(m.percentile * 100);
+    var size = F.signedPctPoints(m.return * 100, 2);
+    var z = S.isNum(m.z) ? ', about ' + Math.abs(m.z).toFixed(1) + ' standard deviations from its average day' : '';
+    return 'Last session moved ' + size + '. That is larger than ' + pct + '% of the last ' + m.comparedWith + ' daily moves' + z + '.';
+  }
+
+  function refreshContext(force) {
+    var ctx = currentContext(force);
+    if (!ctx) return;
+    setText('drawerProv', MP.context.provenance(ctx));
+    var line = unusualLine(ctx);
+    setText('heroUnusual', currentStop() === 'btc' ? line : '');
+    setText('volUnusual', currentStop() === 'vol' ? line : '');
+  }
+
+  /* The explainer bar: a question mark beside a figure opens it, and it
+   * shows the same words wherever it is opened from. */
+  function showConcept(id) {
+    var c = MP.concepts ? MP.concepts.get(id) : null;
+    var bar = el('conceptBar');
+    if (!bar || !c) return;
+    bar.hidden = false;
+    bar.innerHTML = '<button type="button" class="pill close" data-concept-close="1">Close</button>' +
+      '<h3>' + F.escapeHtml(c.term) + '</h3>' +
+      '<p>' + F.escapeHtml(c.what) + '</p>' +
+      '<p class="here">' + F.escapeHtml(c.here) + '</p>';
+    if (MP.track) MP.track.event('concept_opened', id);
+  }
+
+  function hideConcept() {
+    var bar = el('conceptBar');
+    if (bar) { bar.hidden = true; bar.innerHTML = ''; }
+  }
+
+  /* Feedback: three questions, opened as a GitHub issue the tester can read
+   * before sending. Counts go only if they paste them. */
+  function openFeedback() {
+    var base = 'https://github.com/jackmcmurry/multimeter/issues/new';
+    var body = ['What confused you?', '', 'What was useful?', '', 'What would bring you back?', '',
+      'Stop you were on: ' + (currentStop() || 'unknown'), '',
+      'Usage counts (optional, from this browser only):', '', MP.track ? MP.track.report() : ''].join('\n');
+    var url = base + '?title=' + encodeURIComponent('Feedback') + '&body=' + encodeURIComponent(body);
+    if (MP.track) MP.track.event('feedback_opened');
+    root.open(url, '_blank', 'noopener');
+  }
+
+  function wireLearn() {
+    var drawer = el('drawer');
+    if (drawer) {
+      drawer.addEventListener('click', function (ev) {
+        var t = ev.target && ev.target.closest ? ev.target : null;
+        if (!t) return;
+        var ask = t.closest('[data-concept]');
+        if (ask) { showConcept(ask.getAttribute('data-concept')); return; }
+        if (t.closest('[data-concept-close]')) hideConcept();
+      });
+    }
+    var fb = el('feedbackBtn');
+    if (fb) fb.addEventListener('click', openFeedback);
   }
 
   /* ---- WATCH --------------------------------------------------------------- */
@@ -7001,6 +7645,8 @@ tr.row-rule th {
     wireProbe();
     wireWatch();
     renderWatch();
+    wireLearn();
+    if (MP.track) MP.track.start();
     if (MP.spotlight && MP.spotlight.wire) MP.spotlight.wire();
     if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
     renderProbe();
@@ -7010,6 +7656,7 @@ tr.row-rule th {
     renderAnalytics();
     if (MP.spotlight) MP.spotlight.render();
     every(function () { renderStamp(); watchLive(); }, 1000);
+    every(function () { refreshContext(true); }, 30000);
     every(tickSession, SESSION_TICK_MS);
 
     if (typeof root.fetch !== 'function') {
@@ -7076,6 +7723,11 @@ tr.row-rule th {
     formatValue: formatValue,
     renderAlerts: renderAlerts,
     checkAlerts: checkAlerts,
+    setStopNote: setStopNote,
+    refreshContext: refreshContext,
+    coinHistory: coinHistory,
+    showConcept: showConcept,
+    STOP_NOTES: STOP_NOTES,
     applyTick: applyTick,
     liveProducts: liveProducts,
     productForStop: productForStop,

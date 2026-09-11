@@ -125,9 +125,9 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
         </div>
 
         <div class="jacks">
-          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-off" id="lampOff"></span><span class="lamp-label">OFF</span></span>
-          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-on" id="lampOn"></span><span class="lamp-label">ON</span></span>
-          <span class="jack-text" id="sessionText">Market —</span>
+          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-on" id="lampOn"></span><span class="lamp-label">OPEN</span></span>
+          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-off" id="lampOff"></span><span class="lamp-label">CLOSED</span></span>
+          <span class="jack-text" id="sessionText">Market</span>
         </div>
 
         </div>
@@ -142,9 +142,13 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <h2 id="viewTitle">Bitcoin</h2>
       <span class="drawer-tools">
         <span class="muted" id="quoteStamp">—</span>
+        <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
         <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
       </span>
     </header>
+
+    <p class="drawer-note" id="viewNote"></p>
+    <div class="concept" id="conceptBar" hidden></div>
 
     <div id="pageNotice"></div>
 
@@ -157,6 +161,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
 
       <div class="chartbox" id="heroChart"></div>
       <p class="foot">The range follows the tabs on the screen.</p>
+      <p class="foot unusual" id="heroUnusual"></p>
 
       <div id="heroNotice"></div>
     </section>
@@ -217,6 +222,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <div class="strip" id="volStrip"></div>
       <div class="chartbox" id="chartVol"></div>
       <p class="foot" id="volFoot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+      <p class="foot unusual" id="volUnusual"></p>
     </section>
 
     <!-- DD -->
@@ -263,6 +269,10 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <h2>Keys</h2>
       <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
 
+      <h2>Learning as you go</h2>
+      <p>Under each title, one line says what the stop answers. A question mark beside a figure opens what it measures and how this page computes it, so a concept arrives next to the number it describes. On bitcoin and on VOL, a line says how large the last session's move was against the last 251 daily moves, which is how you tell an ordinary day from a rare one. The line at the foot of the drawer names the source of the figures above it and when they were read.</p>
+      <p><b>FEEDBACK</b> opens a note you can send about what confused you. It carries nothing but what you type, and counts of which stops you opened if you choose to paste them. Those counts are kept in this browser, are never sent anywhere on their own, and hold no personal information.</p>
+
       <h2>Skins</h2>
       <p>The palette beside the name opens the skins: gold, blue, pink, green, red, purple and silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
 
@@ -283,6 +293,8 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <h2>Standing</h2>
       <p>Market data for reference only. Nothing here is investment advice, a recommendation, or a solicitation to trade. Figures are as reported by the sources above and may be delayed, revised, or wrong.</p>
     </section>
+
+    <p class="prov" id="drawerProv"></p>
   </div>
 </main>
 
