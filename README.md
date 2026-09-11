@@ -58,6 +58,24 @@ turns the dial. The old section hashes (`#home`, `#markets`, `#weekly`,
 The knob turns by dragging, by tapping a label, by tapping the knob itself
 (one stop clockwise), by rolling the wheel over it, or with the arrow keys once it has focus. While dragging it follows the pointer and clicks at each detent.
 
+## Install and share
+
+The page is installable. On a phone, "Add to Home Screen" (or the install
+prompt on Android Chrome) puts the yellow icon on the home screen and opens
+the meter standalone. A small service worker (`docs/sw.js`, generated from
+`src/sw.template.js`) precaches the shell and serves the page and the
+`data/*.json` snapshots network-first with a cache fallback, so the meter
+opens offline with the last figures it saw. It never touches CoinGecko,
+Coinbase or the fonts. The cache name carries the build hash that
+`build.ps1` prints, so a new build replaces the old cache on the next load.
+Icons are rendered by `tools/icons.ps1` (System.Drawing) into `docs/icons`
+and committed; rerun it only when the art changes.
+
+**SHARE**, in the drawer's header, draws the screen's reading — mode, chart,
+price and change — as a 1200×630 picture and hands it to the system share
+sheet where there is one, otherwise copies it to the clipboard, otherwise
+downloads it.
+
 ## How it gets data
 
 The page is static: one HTML file on GitHub Pages. Numbers reach it two ways.
@@ -162,9 +180,14 @@ src/
     geom.js                  SVG chart kit
     sources.js               endpoints + payload normalizers
     session.js               NYSE session clock
+    store.js                 guarded localStorage (alerts, probe, statistics pair)
     router.js                hash routing between dial stops
-    meter.js                 the dial, the knob, HOLD, and the LCD paint
-    spotlight.js             stock-of-the-week rule and panel
+    funcs.js                 REL and MIN/MAX
+    alerts.js                alert levels and their evaluation
+    meter.js                 the dial, the knob, the keys, and the screen paint
+    live.js                  Coinbase WebSocket ticks
+    share.js                 the share card
+    spotlight.js             stock- and crypto-of-the-week rules and panels
     app.js                   state, polling, analytics, render
     pipeline.js              the data job's decisions (debug bundle + Node)
     debug.js                 synthetic-data render (debug bundle only)
@@ -172,8 +195,12 @@ test/
   stats.test.js
   data.test.js
 tools/serve.ps1              loopback server for local checks
+tools/icons.ps1              renders docs/icons/*.png from the icon art
 docs/                        what GitHub Pages serves
   index.html                 built page (commit after .\build.ps1)
+  sw.js                      service worker, stamped by the build
+  manifest.webmanifest       web app manifest (copied from src/)
+  icons/                     app icons
   data/*.json                snapshots (written by the Action)
 ```
 

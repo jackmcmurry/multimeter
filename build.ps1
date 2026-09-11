@@ -36,6 +36,7 @@ $libOrder = @(
     'src/lib/alerts.js',
     'src/lib/meter.js',
     'src/lib/live.js',
+    'src/lib/share.js',
     'src/lib/spotlight.js',
     'src/lib/app.js'
 )
@@ -84,6 +85,19 @@ $release = $template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources
 $releaseKb = Write-Text 'docs/index.html' $release
 Write-Output "release  docs/index.html              $releaseKb KB  ($($libOrder.Count) modules)"
 
+# ---- installable shell -----------------------------------------------------
+# The service worker's cache name carries a hash of everything it serves, so
+# a new build purges the old cache on activation.
+$swTemplate = Read-Text 'src/sw.template.js'
+$manifest = Read-Text 'src/manifest.webmanifest'
+$sha = [System.Security.Cryptography.SHA256]::Create()
+$digest = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($release + $swTemplate + $manifest))
+$version = (($digest | ForEach-Object { $_.ToString('x2') }) -join '').Substring(0, 12)
+$sw = $swTemplate.Replace('/* @version */', $version)
+Write-Text 'docs/sw.js' $sw | Out-Null
+Write-Text 'docs/manifest.webmanifest' $manifest | Out-Null
+Write-Output "sw       docs/sw.js                   version $version"
+
 # ---- debug -----------------------------------------------------------------
 if (-not $ReleaseOnly) {
     $debug = $template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources ($libOrder + $debugOrder)))
@@ -93,7 +107,12 @@ if (-not $ReleaseOnly) {
     $distData = Join-Path $here 'dist/data'
     if (-not (Test-Path $distData)) { New-Item -ItemType Directory -Path $distData | Out-Null }
     Copy-Item (Join-Path $here 'docs/data/*.json') $distData -Force
-    Write-Output "data     dist/data/                   snapshots copied from docs/data"
+    Write-Text 'dist/sw.js' $sw | Out-Null
+    Write-Text 'dist/manifest.webmanifest' $manifest | Out-Null
+    $distIcons = Join-Path $here 'dist/icons'
+    if (-not (Test-Path $distIcons)) { New-Item -ItemType Directory -Path $distIcons | Out-Null }
+    if (Test-Path (Join-Path $here 'docs/icons')) { Copy-Item (Join-Path $here 'docs/icons/*') $distIcons -Force }
+    Write-Output "data     dist/data/                   snapshots copied from docs/data (+ sw, manifest, icons)"
 }
 
 # ---- sanity checks ---------------------------------------------------------
@@ -105,6 +124,21 @@ foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline')) {
 if (-not $release.StartsWith('<!doctype html>')) { $problems += 'release bundle must start with <!doctype html>' }
 # A key, or even a key parameter, in a public page is a leak waiting to happen.
 if ($release.IndexOf('apikey=') -ge 0) { $problems += 'release bundle contains an apikey= parameter' }
+
+# The installable shell must be complete: a stamped worker, a manifest that
+# parses with the icon sizes installability needs, and icons that exist.
+if ($sw.IndexOf('@version') -ge 0) { $problems += 'service worker still carries the @version marker' }
+try {
+    $m = $manifest | ConvertFrom-Json
+    $sizes = @($m.icons | ForEach-Object { $_.sizes })
+    if ($sizes -notcontains '192x192') { $problems += 'manifest lacks a 192x192 icon' }
+    if ($sizes -notcontains '512x512') { $problems += 'manifest lacks a 512x512 icon' }
+    foreach ($icon in $m.icons) {
+        if (-not (Test-Path (Join-Path $here ('docs/' + $icon.src)))) { $problems += "manifest icon missing: $($icon.src) (run .\tools\icons.ps1)" }
+    }
+} catch {
+    $problems += "manifest does not parse: $($_.Exception.Message)"
+}
 
 # Every var(--token) must resolve. A renamed palette silently paints shapes an
 # invalid colour -- an SVG stroke of var(--gone) just disappears -- so the

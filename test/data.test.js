@@ -207,6 +207,21 @@
       eq('diff removes the dropped product', diff.remove.join(','), 'BTC-USD');
     }
 
+    /* the share card's helpers */
+    var SH = MP.share;
+    if (!SH) {
+      ok('share module is loaded', false, 'MP.share missing');
+    } else {
+      var sized = SH.svgWithSize('<svg viewBox="0 0 10 10" width="10" class="chart"><path d="M0,0"/></svg>', 100, 50);
+      ok('share sizes the svg for rasterising', sized.indexOf('width="100" height="50"') > 0);
+      ok('share drops the original width', sized.indexOf('width="10"') < 0);
+      ok('share keeps the viewBox', sized.indexOf('viewBox="0 0 10 10"') > 0);
+      ok('share adds the svg namespace a standalone image needs', sized.indexOf('xmlns="http://www.w3.org/2000/svg"') > 0);
+      eq('share does not double an existing namespace', (SH.svgWithSize('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>', 1, 1).match(/xmlns=/g) || []).length, 1);
+      eq('share falls back to a colour for an unknown token', SH.token('--no-such-token'), '#888888');
+      ok('share resolves a declared token', /^(#[0-9a-f]{3,8}|rgb)/i.test(SH.token('--up')));
+    }
+
     /* FMP */
     var ixic = SRC.normalizeFmpQuote(FMP_IXIC);
     close('FMP index price', ixic.price, 26081.7245);

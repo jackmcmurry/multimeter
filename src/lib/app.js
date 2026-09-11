@@ -1258,6 +1258,15 @@
       return loadRange(coinForStop(currentStop()), state.hero.days, true);
     }, HERO_REFRESH_MS);
 
+    /* The offline shell. A relative path keeps the scope at the Pages
+     * sub-path; a failure to register costs nothing. */
+    var nav = root.navigator;
+    if (nav && 'serviceWorker' in nav && root.location && root.location.protocol !== 'file:') {
+      try {
+        nav.serviceWorker.register('sw.js').catch(function () { /* no offline shell */ });
+      } catch (e) { /* not available */ }
+    }
+
     /* Real-time ticks ride alongside the polls; without WebSocket support
      * the polls alone carry the page, as before. */
     if (MP.live && typeof root.WebSocket === 'function') {

@@ -10,6 +10,12 @@
 <meta property="og:title" content="Multimeter">
 <meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Multimeter">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -100,7 +106,10 @@
   <div class="drawer" id="drawer" hidden>
     <header class="drawer-head">
       <h2 id="viewTitle">Bitcoin</h2>
-      <span class="muted" id="quoteStamp">—</span>
+      <span class="drawer-tools">
+        <span class="muted" id="quoteStamp">—</span>
+        <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
+      </span>
     </header>
 
     <div id="pageNotice"></div>

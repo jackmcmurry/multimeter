@@ -461,6 +461,15 @@ body {
   color: var(--holster);
 }
 .drawer-head .muted { font-size: 12px; }
+.drawer-tools { display: flex; align-items: center; gap: 12px; }
+.pill.share { background: var(--cell); color: var(--holster); }
+.pill.share:hover { background: var(--hover); color: var(--holster); }
+.pill.is-busy { opacity: 0.5; pointer-events: none; }
+
+/* installed to a home screen: keep clear of the status bar */
+@media (display-mode: standalone) {
+  .stage { padding-top: max(24px, env(safe-area-inset-top)); }
+}
 
 /* ---- hero (the weekly-pick panels) --------------------------------------- */
 .hero { margin-bottom: 14px; }
