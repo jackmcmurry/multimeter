@@ -261,7 +261,7 @@
     var coin = k === 'crypto' ? coinPrice(e.id) : null;
     var src = k === 'crypto' ? (coin && coin.image) : LOGO_URL + encodeURIComponent(e.symbol) + '.png';
     if (!src || failedLogos[src]) return '<span class="mv-logo mv-mono" aria-hidden="true">' + mono + '</span>';
-    return '<img class="mv-logo" alt="" loading="lazy" referrerpolicy="no-referrer" src="' + F.escapeHtml(src) + '" data-mono="' + mono + '">';
+    return '<img class="mv-logo" alt="" referrerpolicy="no-referrer" src="' + F.escapeHtml(src) + '" data-mono="' + mono + '">';
   }
 
   function strip(items) {
