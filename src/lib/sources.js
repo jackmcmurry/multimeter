@@ -27,8 +27,17 @@
     history: 'data/history.json',
     spotlight: 'data/spotlight.json',
     findings: 'data/findings.json',
-    note: 'data/note.json'
+    note: 'data/note.json',
+    stocks: 'data/stocks.json'
   };
+
+  /* Nasdaq-style tickers only (AAPL, GOOGL, BRK.B): anything else, a path
+   * included, never becomes a file name. */
+  var SYMBOL_RE = /^[A-Z0-9]{1,6}(?:[.-][A-Z0-9]{1,4})?$/;
+
+  function stockPath(symbol) {
+    return typeof symbol === 'string' && SYMBOL_RE.test(symbol) ? 'data/stocks/' + symbol + '.json' : null;
+  }
 
   function parsePayload(payload) {
     if (typeof payload === 'string') {
@@ -437,10 +446,55 @@
     };
   }
 
+  /* stocks.json: the Nasdaq-100 with each member's last close. Rows without
+   * a symbol or a numeric close are dropped. */
+  function normalizeStocksSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || !Array.isArray(p.rows)) return null;
+    function pct(v) { var n = toNum(v); return isFinite(n) ? n : NaN; }
+    var rows = [];
+    for (var i = 0; i < p.rows.length; i++) {
+      var r = p.rows[i];
+      if (!r || typeof r.symbol !== 'string' || !SYMBOL_RE.test(r.symbol) || !isFinite(toNum(r.close))) continue;
+      rows.push({
+        symbol: r.symbol,
+        name: typeof r.name === 'string' ? r.name : r.symbol,
+        close: toNum(r.close),
+        date: typeof r.date === 'string' ? r.date.slice(0, 10) : null,
+        change1d: pct(r.change1d),
+        change5d: pct(r.change5d),
+        change1m: pct(r.change1m)
+      });
+    }
+    var c = p.count || {};
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      session: typeof p.session === 'string' ? p.session : null,
+      listAsOf: typeof p.listAsOf === 'string' ? p.listAsOf : null,
+      count: { listed: toNum(c.listed), priced: toNum(c.priced), denied: toNum(c.denied) },
+      complete: p.complete === true,
+      rows: rows
+    };
+  }
+
+  /* stocks/SYM.json: [[date, close]] -> [{ date, price }] ascending. */
+  function normalizeStockFile(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || typeof p.symbol !== 'string' || !Array.isArray(p.closes)) return null;
+    var series = readSeries(p.closes.map(function (c) {
+      return Array.isArray(c) ? { date: c[0], price: c[1] } : null;
+    }));
+    if (!series) return null;
+    return { symbol: p.symbol, name: typeof p.name === 'string' ? p.name : p.symbol, series: series };
+  }
+
   MP.sources = {
     COINGECKO: COINGECKO,
     COINBASE_WS: COINBASE_WS,
     SNAPSHOT: SNAPSHOT,
+    stockPath: stockPath,
+    normalizeStocksSnapshot: normalizeStocksSnapshot,
+    normalizeStockFile: normalizeStockFile,
     coinbaseWs: coinbaseWs,
     btcSpot: btcSpot,
     coinsMarkets: coinsMarkets,

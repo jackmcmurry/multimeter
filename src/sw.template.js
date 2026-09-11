@@ -100,7 +100,7 @@ self.addEventListener('fetch', function (event) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;      /* other origins pass through */
 
-  if (/\/data\/[^/]+\.json$/.test(url.pathname)) {
+  if (/\/data\/(?:stocks\/)?[^/]+\.json$/.test(url.pathname)) {
     event.respondWith(networkFirst(req, stripSearch(req), null));
     return;
   }

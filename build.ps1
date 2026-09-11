@@ -53,6 +53,7 @@ $findingsOrder = @(
 $debugOrder = @(
     'src/lib/findings.js',
     'src/lib/note.js',
+    'src/lib/universe.js',
     'src/lib/pipeline.js',
     'test/stats.test.js',
     'test/data.test.js',
@@ -126,6 +127,13 @@ if (-not $ReleaseOnly) {
     $distData = Join-Path $here 'dist/data'
     if (-not (Test-Path $distData)) { New-Item -ItemType Directory -Path $distData | Out-Null }
     Copy-Item (Join-Path $here 'docs/data/*.json') $distData -Force
+    # The Nasdaq-100 members' closes, one file each, once the job has written them.
+    $stocksSrc = Join-Path $here 'docs/data/stocks'
+    if (Test-Path $stocksSrc) {
+        $stocksDst = Join-Path $distData 'stocks'
+        if (-not (Test-Path $stocksDst)) { New-Item -ItemType Directory -Path $stocksDst | Out-Null }
+        Copy-Item (Join-Path $stocksSrc '*.json') $stocksDst -Force -ErrorAction SilentlyContinue
+    }
     Write-Text 'dist/sw.js' $sw | Out-Null
     Write-Text 'dist/manifest.webmanifest' $manifest | Out-Null
     $distIcons = Join-Path $here 'dist/icons'
@@ -140,7 +148,7 @@ $bundles = @{ 'release' = $release; 'findings' = $findingsPage }
 foreach ($name in $bundles.Keys) {
     $b = $bundles[$name]
     if ($b.IndexOf('@inject') -ge 0) { $problems += "an inject marker survived into the $name bundle" }
-    foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline', 'MP.note')) {
+    foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline', 'MP.note', 'MP.universe')) {
         if ($b.IndexOf($leak) -ge 0) { $problems += "$leak leaked into the $name bundle" }
     }
     if (-not $b.StartsWith('<!doctype html>')) { $problems += "$name bundle must start with <!doctype html>" }

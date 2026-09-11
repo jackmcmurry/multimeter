@@ -23,13 +23,18 @@
  *   findings   whenever history is rewritten (or missing for the session):
  *              the write-up's statistics, computed here from that history
  *              with MP.findings. No calls at all.
+ *   universe   after each close, once the index's daily bar is in: the
+ *              Nasdaq-100 members' daily closes, one FMP call per member and
+ *              at most MP.universe.PER_RUN per run, so a full pass takes three
+ *              runs. Plan denials are parked for 35 days (see universe.js).
+ *              Writes stocks.json, stocks/SYM.json and the job.json ledger.
  *   note       once per session after its final quote read: a three-sentence
  *              reading of the figures, written by Claude when a key is set
  *              and checked by MP.note.validate, else the fixed template.
  *              One Messages API call a trading day, plus one retry at most.
  *
- * Budget on the free plans, per weekday: about 90 FMP calls of 250 and 10
- * Alpha Vantage calls of 25.
+ * Budget on the free plans, per weekday: about 90 FMP calls of 250 plus one
+ * per Nasdaq-100 member (about 100), and 10 Alpha Vantage calls of 25.
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -83,9 +88,11 @@
     return series && series.length ? series[series.length - 1].date : '';
   }
 
-  /* opts: { now, env, fetchJson(url) -> Promise<payload>, read(name) -> object|null }
-   * Resolves to { out: { spotlight?, quotes?, history? }, calls, failed,
-   * warnings, skipped }. Only snapshots present in `out` should be written. */
+  /* opts: { now, env, fetchJson(url) -> Promise<payload>, read(name) -> object|null,
+   * askClaude? }. Names are 'quotes', 'history' and so on, and 'stocks/SYM'
+   * for one member's closes. Resolves to { out: { name: snapshot }, calls,
+   * failed, warnings, log, skipped }. Only snapshots present in `out` should
+   * be written. */
   async function run(opts) {
     var SRC = MP.sources, SES = MP.session, SP = MP.spotlight;
     var now = opts.now === undefined ? Date.now() : opts.now;
@@ -100,8 +107,9 @@
     var calls = { fmp: 0, av: 0, cg: 0, claude: 0 };
     var failed = { fmp: 0, av: 0, cg: 0, claude: 0 };
     var warnings = [];
+    var log = [];   /* plain progress lines for the run's output */
     var out = {};
-    var result = { out: out, calls: calls, failed: failed, warnings: warnings, skipped: null };
+    var result = { out: out, calls: calls, failed: failed, warnings: warnings, log: log, skipped: null };
 
     if (!fmpKey) {
       result.skipped = 'FMP_API_KEY is not set, so no market data was fetched. ' +
@@ -170,7 +178,9 @@
       quotes: opts.read('quotes') || {},
       history: opts.read('history') || {},
       findings: opts.read('findings') || null,
-      note: opts.read('note') || null
+      note: opts.read('note') || null,
+      stocks: opts.read('stocks') || null,
+      job: opts.read('job') || null
     };
     var session = SES.status(now);
     var closeSession = SES.lastCompletedSession(now, CLOSE_GRACE_MIN);
@@ -362,6 +372,106 @@
         out.findings = Object.assign(findings, { generatedAt: nowIso, forSession: eodSession });
       } else if (out.history || !prev.findings) {
         warnings.push('findings: not enough daily history yet');
+      }
+    }
+
+    /* ---- the Nasdaq-100: daily closes, a slice per run -------------------- */
+    /* After each close, once the index's own daily bar is in (so FMP has
+     * published the session), up to MP.universe.PER_RUN members are fetched
+     * per run until every member has that session's close. FORCE=universe
+     * asks for all of them in one run, plan denials included. */
+    var U = MP.universe;
+    var histForUniverse = out.history || prev.history || {};
+    var forceUniverse = force === 'universe';
+    if (U && (forceUniverse || lastDate(histForUniverse.ixic) >= eodSession)) {
+      var jobPrev = prev.job && prev.job.universe ? prev.job.universe : {};
+      var ledger = {};
+      Object.keys(jobPrev.symbols || {}).forEach(function (s) {
+        if (U.listed(s)) ledger[s] = jobPrev.symbols[s];
+      });
+      var budget = forceUniverse ? Infinity : U.PER_RUN;
+      var plan = U.planUniverse(ledger, eodSession, now, { limit: budget, force: forceUniverse });
+
+      if (plan.due.length) {
+        var spent = 0, fetched = 0, deniedNow = [], failedNow = [], rebased = [], stopped = null;
+        var rowsBy = {};
+        ((prev.stocks && prev.stocks.rows) || []).forEach(function (r) { if (r && r.symbol) rowsBy[r.symbol] = r; });
+
+        var closesFor = async function (s, fromDate) {
+          spent += 1;
+          try {
+            var rows = SRC.normalizeEodLight(await get('fmp', fmpUrl('historical-price-eod/light',
+              { symbol: s, from: fromDate, to: today }, fmpKey)));
+            return rows ? { series: rows } : { error: new Error('no closes in the response'), kind: 'failed' };
+          } catch (err) {
+            return { error: err, kind: U.classify(err) };
+          }
+        };
+        var why = function (res) { return redact(res.error && res.error.message ? res.error.message : res.error).slice(0, 160); };
+
+        for (var u = 0; u < plan.due.length && spent < budget; u++) {
+          var s = plan.due[u];
+          var entry = ledger[s] || {};
+          var stored = U.readCloses(opts.read('stocks/' + s));
+          var res = await closesFor(s, U.fromDay(stored, now, entry.full));
+          if (res.kind === 'limit') { stopped = why(res); break; }
+          if (res.kind === 'denied') {
+            ledger[s] = { deniedAt: now, at: now, reason: why(res) };
+            deniedNow.push(s);
+            continue;
+          }
+          if (res.error) {
+            ledger[s] = { failedFor: eodSession, tries: entry.failedFor === eodSession ? (entry.tries || 1) + 1 : 1, at: now, reason: why(res) };
+            failedNow.push(s);
+            continue;
+          }
+
+          var merged = U.mergeSeries(stored, res.series);
+          if (merged.mismatch) {
+            /* FMP re-based the history (a split): the stored closes cannot be
+             * spliced onto it, so fetch the whole series again, now if the
+             * budget allows, otherwise first thing next run. */
+            var full = spent < budget ? await closesFor(s, U.fromDay(null, now, true)) : null;
+            if (full && full.kind === 'limit') stopped = why(full);
+            if (!full || full.error) {
+              ledger[s] = Object.assign({}, entry, { full: true, at: now });
+              if (stopped) break;
+              continue;
+            }
+            merged = U.mergeSeries(null, full.series);
+            rebased.push(s);
+          }
+
+          out['stocks/' + s] = U.stockFile(s, merged.series, nowIso);
+          rowsBy[s] = U.row(s, merged.series);
+          ledger[s] = { checkedFor: eodSession, last: lastDate(merged.series), at: now };
+          fetched += 1;
+        }
+
+        var deniedAll = Object.keys(ledger).filter(function (k) {
+          return ledger[k].deniedAt && now - ledger[k].deniedAt < U.DENY_RETRY_MS;
+        });
+        out.stocks = U.summary(rowsBy, eodSession, deniedAll.length, nowIso);
+        out.job = {
+          generatedAt: nowIso,
+          universe: {
+            listAsOf: U.AS_OF,
+            listSource: U.LIST_SOURCE,
+            session: eodSession,
+            symbols: ledger,
+            lastRun: { at: now, calls: spent, fetched: fetched, denied: deniedNow, failed: failedNow, rebased: rebased, stopped: stopped }
+          }
+        };
+
+        var cnt = out.stocks.count;
+        log.push('universe: ' + fetched + ' fetched this run; ' + cnt.priced + ' of ' + cnt.listed + ' priced for ' +
+          eodSession + ', ' + cnt.denied + ' not on this plan' + (out.stocks.complete ? ', complete' : ''));
+        if (deniedNow.length) warnings.push('universe: not on this FMP plan, asked again in 35 days: ' + deniedNow.join(', '));
+        if (failedNow.length) warnings.push('universe: failed, retried later: ' + failedNow.join(', '));
+        if (rebased.length) warnings.push('universe: stored closes disagreed with FMP (a split?), refetched in full: ' + rebased.join(', '));
+        if (stopped) warnings.push('universe: FMP answered with its daily limit, so the step stopped for this run (' + stopped + ')');
+        var age = U.listAge(now);
+        if (age.stale) warnings.push('universe: the Nasdaq-100 list in src/lib/universe.js is ' + age.days + ' days old; refresh it from nasdaq.com');
       }
     }
 

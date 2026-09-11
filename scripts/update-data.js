@@ -9,7 +9,8 @@
  *   FMP_API_KEY=... ALPHAVANTAGE_API_KEY=... node scripts/update-data.js
  *   ANTHROPIC_API_KEY=... (optional) lets Claude write the daily reading;
  *   it needs `npm install` first for @anthropic-ai/sdk.
- *   FORCE=all node scripts/update-data.js     # refresh regardless of schedule
+ *   FORCE=all node scripts/update-data.js       # refresh regardless of schedule
+ *   FORCE=universe node scripts/update-data.js  # every Nasdaq-100 member at once
  * ========================================================================== */
 'use strict';
 
@@ -18,16 +19,23 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(ROOT, 'docs', 'data');
-const MODULES = ['stats.js', 'format.js', 'sources.js', 'session.js', 'spotlight.js', 'findings.js', 'note.js', 'pipeline.js'];
+const MODULES = ['stats.js', 'format.js', 'sources.js', 'session.js', 'spotlight.js', 'findings.js', 'note.js', 'universe.js', 'pipeline.js'];
 
 MODULES.forEach((file) => require(path.join(ROOT, 'src', 'lib', file)));
 const { pipeline } = globalThis.MP;
 
+/* 'quotes' -> docs/data/quotes.json; 'stocks/AAPL' -> docs/data/stocks/AAPL.json.
+ * Anything else is refused, so no name can reach outside docs/data. */
+const NAME_RE = /^(?:[a-z]+|stocks\/[A-Z0-9]{1,6}(?:[.-][A-Z0-9]{1,4})?)$/;
+const SNAPSHOTS = ['spotlight', 'quotes', 'history', 'findings', 'stocks', 'job', 'note'];
+
 function fileFor(name) {
+  if (!NAME_RE.test(name)) throw new Error('refusing to use data file name ' + JSON.stringify(name));
   return path.join(DATA_DIR, name + '.json');
 }
 
 function read(name) {
+  if (!NAME_RE.test(name)) return null;
   try {
     return JSON.parse(fs.readFileSync(fileFor(name), 'utf8'));
   } catch (err) {
@@ -39,6 +47,15 @@ function read(name) {
 function sameContent(a, b) {
   const strip = (o) => JSON.stringify(Object.assign({}, o, { generatedAt: null }));
   return !!a && !!b && strip(a) === strip(b);
+}
+
+/* 'written', 'unchanged'. */
+function write(name, next) {
+  if (sameContent(read(name), next)) return 'unchanged';
+  const file = fileFor(name);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(next) + '\n');
+  return 'written';
 }
 
 async function fetchJson(url) {
@@ -121,21 +138,18 @@ async function main() {
     return 0;
   }
 
-  for (const name of ['spotlight', 'quotes', 'history', 'findings', 'note']) {
+  for (const name of SNAPSHOTS) {
     const next = result.out[name];
-    if (!next) {
-      console.log(name + ': not due');
-      continue;
-    }
-    if (sameContent(read(name), next)) {
-      console.log(name + ': unchanged');
-      continue;
-    }
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(fileFor(name), JSON.stringify(next) + '\n');
-    console.log(name + ': written');
+    console.log(name + ': ' + (next ? write(name, next) : 'not due'));
+  }
+  const stockNames = Object.keys(result.out).filter((n) => n.indexOf('stocks/') === 0);
+  if (stockNames.length) {
+    const tally = { written: 0, unchanged: 0 };
+    stockNames.forEach((n) => { tally[write(n, result.out[n])] += 1; });
+    console.log('stocks/: ' + tally.written + ' written, ' + tally.unchanged + ' unchanged');
   }
 
+  (result.log || []).forEach((line) => console.log(pipeline.redact(line)));
   result.warnings.forEach((w) => annotate('warning', w));
   console.log('calls: FMP ' + result.calls.fmp + ' (' + result.failed.fmp + ' failed), ' +
     'Alpha Vantage ' + result.calls.av + ' (' + result.failed.av + ' failed), ' +

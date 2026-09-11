@@ -103,6 +103,7 @@
   }];
 
   var FMP_DENIED = { 'Error Message': 'Premium Query Parameter: this symbol requires a higher plan.' };
+  var FMP_LIMIT = { 'Error Message': 'Limit Reach . Please upgrade your plan or visit our documentation for more details at https://site.financialmodelingprep.com/' };
 
   var AV_QUOTE = {
     'Global Quote': {
@@ -293,6 +294,107 @@
     eq('spotlight snapshot keeps the pick', ss.current.symbol, 'ADBE');
     ok('spotlight history must be a list', Array.isArray(ss.history) && ss.history.length === 0);
 
+    /* session before a day */
+    eq('the session before Tuesday skips Labor Day', SES.sessionBefore('2026-09-08'), '2026-09-04');
+    eq('the session before Monday is Friday', SES.sessionBefore('2026-09-14'), '2026-09-11');
+    eq('the session before a Saturday is that Friday', SES.sessionBefore('2026-09-12'), '2026-09-11');
+
+    /* stock files and the Nasdaq-100 summary */
+    eq('a ticker maps to its file', SRC.stockPath('AAPL'), 'data/stocks/AAPL.json');
+    eq('a class suffix is allowed', SRC.stockPath('BRK.B'), 'data/stocks/BRK.B.json');
+    ok('a path is not a ticker', SRC.stockPath('../x') === null);
+    ok('a path after a ticker is refused', SRC.stockPath('AAPL/../x') === null);
+    ok('lower case is refused', SRC.stockPath('aapl') === null);
+    var sfile = SRC.normalizeStockFile({ symbol: 'AAPL', name: 'Apple Inc.', closes: [['2026-09-11', 334.1], ['2026-09-10', 326.57], ['bad'], ['2026-09-09', 'x']] });
+    eq('stock file keeps the good closes', sfile.series.length, 2);
+    eq('stock file sorts ascending', sfile.series[0].date, '2026-09-10');
+    ok('stock file without closes is null', SRC.normalizeStockFile({ symbol: 'AAPL' }) === null);
+    var ssnap = SRC.normalizeStocksSnapshot({ session: '2026-09-11', complete: true, count: { listed: 102, priced: 1, denied: 1 },
+      rows: [{ symbol: 'AAPL', name: 'Apple Inc.', close: 334.1, date: '2026-09-11', change1d: 2.3, change5d: null }, { symbol: '../x', close: 1 }, { symbol: 'MSFT' }] });
+    eq('stocks snapshot drops rows without a ticker or a close', ssnap.rows.length, 1);
+    ok('a missing change reads as NaN', isNaN(ssnap.rows[0].change5d));
+    ok('stocks snapshot keeps the coverage', ssnap.complete === true && ssnap.count.listed === 102);
+    ok('stocks snapshot without rows is null', SRC.normalizeStocksSnapshot({ session: 'x' }) === null);
+
+    var U = MP.universe;
+    if (!U) {
+      ok('universe module is loaded', false, 'MP.universe missing');
+    } else {
+      var syms = U.LIST.map(function (s) { return s.symbol; });
+      ok('the list holds the whole index', syms.length >= 100);
+      ok('the list has no duplicates', syms.every(function (s, i) { return syms.indexOf(s) === i; }));
+      ok('every listed ticker makes a file name', syms.every(function (s) { return SRC.stockPath(s) !== null; }));
+      ok('the list is sorted by ticker', syms.every(function (s, i) { return i === 0 || syms[i - 1] < s; }));
+      eq('names come from the list', U.nameFor('NVDA'), 'NVIDIA Corporation');
+      ok('an unlisted ticker has no name', U.nameFor('ZZZZ') === null);
+
+      var m = U.mergeSeries([{ date: '2026-09-09', price: 10 }, { date: '2026-09-10', price: 11 }],
+        [{ date: '2026-09-10', price: 11.02 }, { date: '2026-09-11', price: 12 }]);
+      eq('merge de-duplicates by date', m.series.length, 3);
+      eq('merge counts the new closes', m.added, 1);
+      close('fresh closes win on a shared date', m.series[1].price, 11.02);
+      ok('a small revision is not a split', m.mismatch === false);
+      ok('a re-based close is flagged', U.mergeSeries([{ date: '2026-09-10', price: 11 }], [{ date: '2026-09-10', price: 2.75 }]).mismatch === true);
+      var long = [];
+      for (var li = 0; li < 310; li++) long.push({ date: new Date(Date.UTC(2025, 0, 1) + li * 86400000).toISOString().slice(0, 10), price: li + 1 });
+      var capped = U.mergeSeries(long, []);
+      eq('merge caps the stored sessions', capped.series.length, U.MAX_SESSIONS);
+      close('the cap keeps the newest', capped.series[capped.series.length - 1].price, 310);
+
+      var weekS = [100, 101, 102, 103, 104, 105, 110].map(function (p, i) { return { date: '2026-09-0' + (i + 1), price: p }; });
+      close('five-session change', U.weekChange(weekS), (110 / 101 - 1) * 100, 1e-9);
+      close('change ending on an earlier day', U.weekChange(weekS, '2026-09-06'), 5, 1e-9);
+      ok('too short a series has no change', isNaN(U.changeOver(weekS, 7)));
+      var wrow = U.row('AAPL', weekS);
+      ok('a row carries the last close and its date', wrow.close === 110 && wrow.date === '2026-09-07' && wrow.name === 'Apple Inc.');
+      ok('a row without a month of closes has no 1m change', wrow.change1m === null);
+
+      var byS = {};
+      syms.slice(0, 92).forEach(function (s) { byS[s] = { symbol: s, close: 1, date: '2026-09-11' }; });
+      ok('90 percent of the list priced is complete', U.summary(byS, '2026-09-11', 0, 'x').complete === true);
+      delete byS[syms[0]];
+      ok('one fewer is not', U.summary(byS, '2026-09-11', 0, 'x').complete === false);
+      ok('denials shrink what completeness asks for', U.summary(byS, '2026-09-11', 5, 'x').complete === true);
+      eq('an older close is not priced for the session', U.summary({ AAPL: { symbol: 'AAPL', close: 1, date: '2026-09-10' } }, '2026-09-11', 0, 'x').count.priced, 0);
+
+      var T0 = Date.parse('2026-09-14T13:05:00Z'), H = 3600000, D = 86400000;
+      var p0 = U.planUniverse({}, '2026-09-11', T0);
+      eq('a fresh plan takes one slice', p0.due.length, U.PER_RUN);
+      eq('the rest wait', p0.waiting, syms.length - U.PER_RUN);
+      eq('a fresh plan starts at the top of the list', p0.due[0], 'AAPL');
+      var led = {
+        AAPL: { checkedFor: '2026-09-11', last: '2026-09-11', at: T0 - H },
+        ABNB: { checkedFor: '2026-09-10', last: '2026-09-10', at: T0 - D },
+        ADBE: { deniedAt: T0 - 34 * D, at: T0 - 34 * D },
+        ADI: { deniedAt: T0 - 36 * D, at: T0 - 36 * D },
+        ADP: { failedFor: '2026-09-11', tries: 1, at: T0 - H },
+        ADSK: { failedFor: '2026-09-11', tries: 1, at: T0 - 3 * H },
+        AEP: { failedFor: '2026-09-11', tries: 3, at: T0 - 3 * H },
+        ALAB: { checkedFor: '2026-09-11', at: T0 - 2 * D, full: true }
+      };
+      var p1 = U.planUniverse(led, '2026-09-11', T0, { limit: 200 });
+      ok('a checked member is not asked again', p1.due.indexOf('AAPL') < 0);
+      ok('a member from an older session is asked', p1.due.indexOf('ABNB') >= 0);
+      ok('a recent denial waits', p1.due.indexOf('ADBE') < 0 && p1.denied.indexOf('ADBE') >= 0);
+      ok('a denial is asked again after 35 days', p1.due.indexOf('ADI') >= 0);
+      ok('a fresh failure waits two hours', p1.due.indexOf('ADP') < 0);
+      ok('an older failure is retried', p1.due.indexOf('ADSK') >= 0);
+      ok('three failures end the session for a member', p1.due.indexOf('AEP') < 0);
+      ok('never-fetched members come first', p1.due[0] === 'ALNY');
+      var firstFetched = p1.due.filter(function (s) { return led[s] && led[s].at; })[0];
+      eq('a suspected split comes before routine refreshes', firstFetched, 'ALAB');
+      eq('force asks everything', U.planUniverse(led, '2026-09-11', T0, { limit: Infinity, force: true }).due.length, syms.length);
+
+      eq('a 429 is the limit', U.classify({ status: 429, message: 'HTTP 429' }), 'limit');
+      eq('the limit message is the limit', U.classify(new Error(FMP_LIMIT['Error Message'])), 'limit');
+      eq('a premium message is a denial', U.classify(new Error(FMP_DENIED['Error Message'])), 'denied');
+      eq('a 402 is a denial', U.classify({ status: 402, message: 'HTTP 402' }), 'denied');
+      eq('anything else is a failure', U.classify({ status: 500, message: 'HTTP 500' }), 'failed');
+      eq('a new fetch reads a full year', U.fromDay(null, T0), '2025-08-10');
+      eq('a later fetch overlaps ten days', U.fromDay([{ date: '2026-09-11', price: 1 }], T0), '2026-09-01');
+      eq('a suspected split reads a full year again', U.fromDay([{ date: '2026-09-11', price: 1 }], T0, true), '2025-08-10');
+    }
+
     /* key hygiene */
     var P = MP.pipeline;
     if (P) {
@@ -310,14 +412,26 @@
 
   /* ---- pipeline suite ------------------------------------------------------- */
 
-  /* Newest-first weekday closes ending on `lastDay`, as FMP returns them. */
-  function eodRows(symbol, count, lastDay) {
-    var rows = [], d = new Date(lastDay + 'T12:00:00Z'), price = 100;
-    while (rows.length < count) {
+  /* A close that depends only on the symbol and the date, so a later fetch
+   * agrees with an earlier one on every shared day, the way FMP does. */
+  function priceOn(symbol, day) {
+    var t = (Date.parse(day + 'T00:00:00Z') - Date.parse('2025-01-01T00:00:00Z')) / 86400000;
+    var h = 0;
+    for (var i = 0; i < symbol.length; i++) h = (h * 31 + symbol.charCodeAt(i)) % 1000;
+    var drift = ((h % 21) - 10) / 4000;
+    return Math.round((50 + h / 10) * Math.exp(drift * t + 0.02 * Math.sin(t / 3 + h)) * 100) / 100;
+  }
+
+  /* Newest-first weekday closes from `lastDay` back to `fromDay` (or 290 of
+   * them without one), as FMP returns them. `scale` stands in for a split. */
+  function eodRows(symbol, lastDay, fromDay, scale) {
+    var rows = [], d = new Date(lastDay + 'T12:00:00Z');
+    while (rows.length < 290) {
+      var day = d.toISOString().slice(0, 10);
+      if (fromDay && day < fromDay) break;
       var dow = d.getUTCDay();
       if (dow !== 0 && dow !== 6) {
-        rows.push({ symbol: symbol, date: d.toISOString().slice(0, 10), price: price, volume: 1 });
-        price += 0.5;
+        rows.push({ symbol: symbol, date: day, price: Math.round(priceOn(symbol, day) * (scale || 1) * 10000) / 10000, volume: 1 });
       }
       d.setUTCDate(d.getUTCDate() - 1);
     }
@@ -331,6 +445,7 @@
       TSLA: 7.7, COST: 0.4, NFLX: -2.5, AMD: 9.0, ADBE: -9.34, CSCO: 0.9, PEP: -0.3, INTC: 5.5
     };
     var log = [];
+    var fmpCalls = 0;
     function reject(status) {
       var e = new Error('HTTP ' + status);
       e.status = status;
@@ -342,6 +457,8 @@
       var sym = u.searchParams.get('symbol');
       if (u.hostname === 'financialmodelingprep.com') {
         if (opts.fmpDown) return reject(401);
+        fmpCalls += 1;
+        if (opts.fmpLimitAfter && fmpCalls > opts.fmpLimitAfter) return Promise.resolve(FMP_LIMIT);
         if (/\/stock-price-change$/.test(u.pathname)) {
           if (moves[sym] === null || moves[sym] === undefined) return Promise.resolve(FMP_DENIED);
           return Promise.resolve([{ symbol: sym, '1D': 0.1, '5D': moves[sym], '1M': 2.5 }]);
@@ -351,7 +468,12 @@
           if (sym === '^GSPC') return Promise.resolve([{ symbol: '^GSPC', name: 'S&P 500', price: 6512.34, changePercentage: -0.41, timestamp: 1789070407 }]);
           return Promise.resolve([{ symbol: sym, name: sym + ' Inc.', price: 250, changePercentage: 1.1, marketCap: 1e11, timestamp: 1789070407 }]);
         }
-        if (/\/historical-price-eod\/light$/.test(u.pathname)) return Promise.resolve(eodRows(sym, 290, '2026-09-11'));
+        if (/\/historical-price-eod\/light$/.test(u.pathname)) {
+          /* AVGO is not on the free plan; the bars end on eodLast (Friday by default) */
+          if (sym === 'AVGO') return Promise.resolve(FMP_DENIED);
+          var last = opts.eodLast || '2026-09-11', to = u.searchParams.get('to');
+          return Promise.resolve(eodRows(sym, to && to < last ? to : last, u.searchParams.get('from'), opts.split === sym ? 0.25 : 1));
+        }
       }
       if (u.hostname === 'api.coingecko.com') {
         /* exact ids: the scan's universe includes bitcoin-cash */
@@ -404,6 +526,10 @@
     var t = harness();
     var P = MP.pipeline;
     if (!P) { t.ok('pipeline module is loaded', false, 'MP.pipeline missing'); return t.summary(); }
+    var U = MP.universe;
+    if (!U) { t.ok('universe module is loaded', false, 'MP.universe missing'); return t.summary(); }
+    var N = U.LIST.length, PER = U.PER_RUN;
+    function stockKeys(out) { return Object.keys(out).filter(function (k) { return k.indexOf('stocks/') === 0; }); }
 
     async function step(db, api, iso, env) {
       var r = await P.run({ now: Date.parse(iso), env: env || KEYS, fetchJson: api.fetchJson, askClaude: api.askClaude, read: db.read });
@@ -447,7 +573,20 @@
     t.ok('findings regime shares are sane', (function (g) { return g.coupledShare >= 0 && g.coupledShare <= 1 && g.coupledShare + g.decoupledShare <= 1.0001; })(r1.out.findings.pairs.ixic.regimes));
     t.ok('findings regime is one of the three', ['coupled', 'middle', 'decoupled'].indexOf(r1.out.findings.pairs.ixic.regimes.current) >= 0);
     t.ok('findings include the S&P pair', !!r1.out.findings.pairs.spx);
-    t.eq('FMP calls: 15 scan + 1 series + 3 quotes + 3 history', r1.calls.fmp, 22);
+    t.eq('FMP calls: 15 scan + 1 series + 3 quotes + 3 history + one slice of members', r1.calls.fmp, 22 + PER);
+    t.eq('the first slice stores every member it could price', stockKeys(r1.out).length, PER - 1);
+    t.eq('the summary counts the priced members', r1.out.stocks.count.priced, PER - 1);
+    t.eq('the summary counts the denial', r1.out.stocks.count.denied, 1);
+    t.ok('one slice is not complete', r1.out.stocks.complete === false);
+    t.eq('a plan denial is parked in the ledger', r1.out.job.universe.symbols.AVGO.deniedAt, Date.parse('2026-09-14T13:05:00Z'));
+    t.ok('the denial is a warning', r1.warnings.some(function (w) { return w.indexOf('universe: not on this FMP plan') === 0 && w.indexOf('AVGO') > 0; }));
+    t.ok('the run logs its coverage', r1.log.some(function (l) { return l.indexOf((PER - 1) + ' of ' + N + ' priced for 2026-09-11') > 0; }));
+    t.ok('a member file covers the 1Y range', db.files['stocks/AAPL'].closes.length > 252 && db.files['stocks/AAPL'].closes.length <= U.MAX_SESSIONS);
+    t.eq('a member file names the company', db.files['stocks/AAPL'].name, 'Apple Inc.');
+    t.eq('a summary row carries the last close date', r1.out.stocks.rows[0].date, '2026-09-11');
+    t.close('a summary row carries the last close', r1.out.stocks.rows[0].close, priceOn('AAPL', '2026-09-11'));
+    t.ok('a summary row carries the five-session change', typeof r1.out.stocks.rows[0].change5d === 'number');
+    t.ok('the history step runs before the members', api.log.indexOf(api.log.filter(function (u) { return u.indexOf('BTCUSD') > 0; })[0]) < api.log.indexOf(api.log.filter(function (u) { return /eod\/light\?symbol=AAPL/.test(u); })[0]));
     t.eq('Alpha Vantage calls: quote + daily', r1.calls.av, 2);
     t.eq('CoinGecko calls: one scan + one quote for the reading', r1.calls.cg, 2);
 
@@ -471,26 +610,35 @@
       return red.indexOf('test-fmp-key') < 0 && red.indexOf('test-av-key') < 0;
     }));
 
-    /* 2. fifteen minutes later, still pre-market: nothing is due */
+    /* 2. fifteen minutes later, still pre-market: only the next slice of members */
     var r2 = await step(db, api, '2026-09-14T13:20:00Z');
-    t.eq('quiet pre-market run writes nothing', Object.keys(r2.out).length, 0);
-    t.eq('quiet run makes no FMP calls', r2.calls.fmp, 0);
-    t.eq('quiet run makes no Alpha Vantage calls', r2.calls.av, 0);
-    t.eq('quiet run makes no CoinGecko calls', r2.calls.cg, 0);
-    t.eq('quiet run makes no Claude calls', r2.calls.claude, 0);
+    t.eq('the next run fetches the next slice of members', r2.calls.fmp, PER);
+    t.ok('the next run writes only member files and their summary', Object.keys(r2.out).every(function (k) {
+      return k === 'stocks' || k === 'job' || k.indexOf('stocks/') === 0;
+    }));
+    t.ok('the second slice starts where the first stopped', !!r2.out['stocks/' + U.LIST[PER].symbol] && !r2.out['stocks/AAPL']);
+    t.eq('the denial is not asked again', api.log.filter(function (u) { return /eod\/light\?symbol=AVGO/.test(u); }).length, 1);
+    t.eq('that run makes no Alpha Vantage calls', r2.calls.av, 0);
+    t.eq('that run makes no CoinGecko calls', r2.calls.cg, 0);
+    t.eq('that run makes no Claude calls', r2.calls.claude, 0);
 
     /* 3. market open, 45 minutes after the last QQQ read */
     var r3 = await step(db, api, '2026-09-14T13:50:00Z');
     t.ok('open market refreshes quotes', !!r3.out.quotes);
     t.ok('open market leaves history alone', !r3.out.history);
     t.ok('open market leaves the pick alone', !r3.out.spotlight);
-    t.eq('open market costs three FMP calls', r3.calls.fmp, 3);
+    t.eq('open market: three quotes and the last slice of members', r3.calls.fmp, 3 + N - 2 * PER);
+    t.eq('the pass prices every member but the denial', r3.out.stocks.count.priced, N - 1);
+    t.ok('the pass is complete', r3.out.stocks.complete === true);
+    t.eq('the summary lists every priced member', r3.out.stocks.rows.length, N - 1);
     t.eq('QQQ is throttled inside the hour', r3.calls.av, 0);
     t.eq('finalFor is untouched while open', r3.out.quotes.finalFor, '2026-09-11');
 
     /* 4. more than 55 minutes after the last QQQ read */
     var r4 = await step(db, api, '2026-09-14T14:10:00Z');
     t.eq('QQQ refreshes after the hour', r4.calls.av, 1);
+    t.eq('a finished pass asks for no more members', r4.calls.fmp, 3);
+    t.ok('a finished pass rewrites nothing', !r4.out.stocks && !r4.out.job);
 
     /* 5. after the close: one final quote read, history waits for the bars */
     var r5 = await step(db, api, '2026-09-14T20:25:00Z');
@@ -504,10 +652,51 @@
     t.eq('a new reading for the new session', r6.out.note && r6.out.note.forSession, '2026-09-14');
     t.ok('no further quote reads once final', !r6.out.quotes);
     t.ok('pick detail refreshes with history', !!r6.out.spotlight);
+    t.ok('members wait until the index has the new session', !r6.out.stocks && stockKeys(r6.out).length === 0);
 
     /* the canned bars stop on Friday, so Monday's bar is "late": retry spacing */
     var r7 = await step(db, api, '2026-09-14T21:20:00Z');
     t.eq('late bar is not re-asked within two hours', Object.keys(r7.out).length, 0);
+
+    /* Monday's bars land; AAPL has split 4:1 since it was stored */
+    var apiMon = mockApi({ eodLast: '2026-09-14', split: 'AAPL' });
+    var abnbBefore = db.files['stocks/ABNB'].closes.length;
+    var rMon = await step(db, apiMon, '2026-09-14T23:30:00Z');
+    t.ok('the late index bar is asked again after two hours', !!rMon.out.history);
+    t.eq('FMP calls: 3 history + one slice of members', rMon.calls.fmp, 3 + PER);
+    var abnbUrl = apiMon.log.filter(function (u) { return /eod\/light\?symbol=ABNB/.test(u); })[0] || '';
+    t.ok('a stored member asks only for the recent closes', abnbUrl.indexOf('from=2026-09-01') > 0);
+    t.eq('the new close is appended', db.files['stocks/ABNB'].closes.length, abnbBefore + 1);
+    t.eq('the member file ends on the new session', db.files['stocks/ABNB'].closes[db.files['stocks/ABNB'].closes.length - 1][0], '2026-09-14');
+    t.ok('a split is caught', rMon.out.job.universe.lastRun.rebased.indexOf('AAPL') >= 0);
+    t.ok('the split is a warning', rMon.warnings.some(function (w) { return w.indexOf('refetched in full: AAPL') > 0; }));
+    var aapl = db.files['stocks/AAPL'].closes;
+    var aaplFri = aapl.filter(function (c) { return c[0] === '2026-09-11'; })[0];
+    t.close('after a split the whole history is re-based', aaplFri && aaplFri[1], Math.round(priceOn('AAPL', '2026-09-11') * 0.25 * 10000) / 10000, 1e-9);
+    t.ok('the re-based history is complete', aapl.length > 252);
+    t.eq('the refetch counts against the slice', rMon.out.job.universe.lastRun.fetched, PER - 1);
+    t.eq('the summary moves to the new session', rMon.out.stocks.session, '2026-09-14');
+    t.eq('members still on Friday are not priced for Monday', rMon.out.stocks.count.priced, PER - 1);
+
+    /* the daily limit mid-pass */
+    var capped = store(), cappedApi = mockApi({ fmpLimitAfter: 25 });
+    var rCap = await step(capped, cappedApi, '2026-09-14T13:05:00Z');
+    t.eq('the step stops at the limit', rCap.calls.fmp, 26);
+    t.eq('members before the limit are kept', stockKeys(rCap.out).length, 3);
+    t.ok('the limit is recorded', !!rCap.out.job.universe.lastRun.stopped);
+    t.ok('the limit is a warning', rCap.warnings.some(function (w) { return w.indexOf('daily limit') > 0; }));
+    t.ok('the member that hit the limit is not marked', !rCap.out.job.universe.symbols[U.LIST[3].symbol]);
+
+    /* FORCE=universe: every member in one run */
+    var forced = store();
+    var rForce = await step(forced, mockApi(), '2026-09-14T13:05:00Z', Object.assign({}, KEYS, { FORCE: 'universe' }));
+    t.eq('force asks every member once', rForce.calls.fmp, 22 + N);
+    t.ok('a forced pass is complete', rForce.out.stocks.complete === true);
+    t.eq('a forced pass prices all but the denial', rForce.out.stocks.count.priced, N - 1);
+    t.ok('a forced pass logs its coverage', rForce.log.some(function (l) { return l.indexOf('complete') > 0; }));
+    t.ok('no stock file name escapes the folder', Object.keys(forced.files).every(function (k) {
+      return k.indexOf('stocks/') !== 0 || MP.sources.stockPath(k.slice(7)) !== null;
+    }));
 
     /* 6. no FMP key */
     var bare = store(), bareApi = mockApi();

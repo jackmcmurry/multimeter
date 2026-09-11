@@ -100,6 +100,17 @@
     return date;
   }
 
+  /* The session before `day` (YYYY-MM-DD), skipping weekends and holidays.
+   * `day` itself need not be a session. */
+  function sessionBefore(day) {
+    var date = prevDate(day);
+    for (var i = 0; i < 14; i++) {
+      if (isSessionDay(date)) return date;
+      date = prevDate(date);
+    }
+    return date;
+  }
+
   MP.session = {
     TZ: TZ,
     HOLIDAYS: HOLIDAYS,
@@ -108,6 +119,7 @@
     weekdayOf: weekdayOf,
     isSessionDay: isSessionDay,
     status: status,
-    lastCompletedSession: lastCompletedSession
+    lastCompletedSession: lastCompletedSession,
+    sessionBefore: sessionBefore
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

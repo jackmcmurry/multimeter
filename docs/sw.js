@@ -13,7 +13,7 @@
  * The cache name carries the build hash, so a new build purges the old one.
  * ========================================================================== */
 /* eslint-env serviceworker */
-var VERSION = '14ece2aed94f';
+var VERSION = 'c60216b3f55b';
 var CACHE = 'mm-' + VERSION;
 var SHELL = [
   './',
@@ -100,7 +100,7 @@ self.addEventListener('fetch', function (event) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;      /* other origins pass through */
 
-  if (/\/data\/[^/]+\.json$/.test(url.pathname)) {
+  if (/\/data\/(?:stocks\/)?[^/]+\.json$/.test(url.pathname)) {
     event.respondWith(networkFirst(req, stripSearch(req), null));
     return;
   }

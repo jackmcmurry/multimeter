@@ -19,7 +19,8 @@ on:
       force:
         description: Refresh even if the schedule says nothing is due
         type: choice
-        options: [none, all, quotes, history, spotlight, findings, note]
+        # universe: every Nasdaq-100 member's closes in one run (about 100 FMP calls)
+        options: [none, all, quotes, history, spotlight, findings, note, universe]
         default: all
 
 permissions:
