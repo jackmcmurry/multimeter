@@ -8,6 +8,8 @@ coins, and a watch list of Nasdaq-100 stocks you pick.
 
 **Live:** https://jackmcmurry.github.io/multimeter/
 
+![The Multimeter at the BTC stop: bitcoin's price and chart on the screen, the dial of readings on the right](docs/og.png)
+
 Built by Jack McMurry with Claude Code.
 
 ## What's on it

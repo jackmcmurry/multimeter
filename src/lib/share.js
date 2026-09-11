@@ -69,7 +69,8 @@
     return Promise.all([
       document.fonts.load('700 88px "Space Grotesk"'),
       document.fonts.load('600 30px "Space Grotesk"'),
-      document.fonts.load('600 22px "JetBrains Mono"')
+      document.fonts.load('600 22px "JetBrains Mono"'),
+      document.fonts.load('800 26px "Unbounded"')
     ]).then(function () { return document.fonts.ready; }).catch(function () { /* system fonts then */ });
   }
 
@@ -102,7 +103,9 @@
       ctx.font = '600 22px "JetBrains Mono", ui-monospace, monospace';
       ctx.fillText(String(meta.mode || '').toUpperCase(), 80, 74);
       ctx.textAlign = 'right';
-      ctx.fillText('MULTIMETER', W - 80, 74);
+      ctx.fillStyle = token('--holster');
+      ctx.font = '800 26px "Unbounded", "Space Grotesk", sans-serif';   /* the wordmark, as on the meter */
+      ctx.fillText('MULTIMETER', W - 80, 70);
       ctx.textAlign = 'left';
 
       if (chart) ctx.drawImage(chart, 80, 118, 1040, 250);

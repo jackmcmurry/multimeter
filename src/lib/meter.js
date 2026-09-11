@@ -168,6 +168,15 @@
   /* ---- detent feedback ---------------------------------------------------- */
   var detentTimer = null;
   var audio = null;
+  var master = null;     /* every sound goes through this */
+  var noise = null;      /* 30 ms of white noise, made once, for the tick */
+  var lastClickAt = 0;
+  var SOUND_KEY = 'sound';
+  var soundIsOn = readSound();
+
+  function readSound() {
+    return (MP.store ? MP.store.get(SOUND_KEY, true) : true) !== false;
+  }
 
   /* The audio context has to be born inside a user gesture, so the pointer
    * and key handlers prime it; the detent then only has to play. */
@@ -178,26 +187,146 @@
     }
     var AC = root.AudioContext || root.webkitAudioContext;
     if (!AC) return;
-    try { audio = new AC(); } catch (e) { audio = null; }
+    try {
+      try { audio = new AC({ latencyHint: 'interactive' }); } catch (e1) { audio = new AC(); }
+      master = audio.createGain();
+      master.gain.value = 1;
+      master.connect(audio.destination);
+      var n = Math.floor(audio.sampleRate * 0.03);
+      noise = audio.createBuffer(1, n, audio.sampleRate);
+      var ch = noise.getChannelData(0);
+      for (var i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+    } catch (e) { audio = null; master = null; }
   }
 
-  /* A short, quiet mechanical tick: a fast square chirp with a 40 ms decay. */
-  function tickSound() {
-    if (!audio || audio.state !== 'running') return;
+  function canPlay() {
+    return soundIsOn && !!audio && !!master && !!noise && audio.state === 'running';
+  }
+
+  /* The click's recipe, pure so the tests can hold it to account. A
+   * mechanical detent is two layers: a bright tick (filtered noise) and a
+   * low thock (a sine whose pitch falls). Every click varies a little, so a
+   * spin never repeats itself. Clicks closer than FAST_MS apart come shorter
+   * and softer, so a fast spin purrs. The end stop is lower and longer; the
+   * settle tap is a quiet echo of a detent.
+   * kind: 'detent' | 'stop' | 'settle'; sinceMs: time since the last click;
+   * rand: a function returning [0, 1). */
+  var FAST_MS = 45;
+  function clickParams(kind, sinceMs, rand) {
+    var r = typeof rand === 'function' ? rand : Math.random;
+    var pitch = 1 + (r() * 2 - 1) * 0.04;
+    var level = 1 + (r() * 2 - 1) * 0.08;
+    var p = {
+      tickHz: 3800 * pitch, tickQ: 1.2, tickDur: 0.005, tickGain: 0.22,
+      thockHz: 210 * pitch, thockEndHz: 120 * pitch, thockDur: 0.035, thockGain: 0.2
+    };
+    if (kind === 'stop') {
+      p.tickHz = 2600 * pitch; p.tickDur = 0.007; p.tickGain = 0.26;
+      p.thockHz = 105 * pitch; p.thockEndHz = 60 * pitch; p.thockDur = 0.07; p.thockGain = 0.3;
+    } else if (kind === 'settle') {
+      p.tickHz = 4600 * pitch; p.tickDur = 0.003; p.tickGain = 0.07;
+      p.thockHz = 260 * pitch; p.thockEndHz = 170 * pitch; p.thockDur = 0.02; p.thockGain = 0.06;
+    } else if (typeof sinceMs === 'number' && sinceMs < FAST_MS) {
+      p.tickDur *= 0.6; p.thockDur *= 0.6; p.tickGain *= 0.6; p.thockGain *= 0.6;
+    }
+    p.tickGain *= level;
+    p.thockGain *= level;
+    p.dur = Math.max(p.tickDur, p.thockDur);
+    p.gain = Math.max(p.tickGain, p.thockGain);
+    return p;
+  }
+
+  function envelope(g, t, peak, attack, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  }
+
+  /* One click, `delay` seconds from now. */
+  function click(kind, delay) {
+    if (!canPlay()) return;
+    var now = Date.now(), since = now - lastClickAt;
+    if (kind !== 'settle') lastClickAt = now;
+    var p = clickParams(kind || 'detent', since);
     try {
-      var t = audio.currentTime;
-      var osc = audio.createOscillator(), gain = audio.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(2400, t);
-      osc.frequency.exponentialRampToValueAtTime(520, t + 0.03);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.045, t + 0.002);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-      osc.connect(gain);
-      gain.connect(audio.destination);
+      var t = audio.currentTime + (delay || 0);
+
+      var src = audio.createBufferSource(), band = audio.createBiquadFilter(), tg = audio.createGain();
+      src.buffer = noise;
+      band.type = 'bandpass';
+      band.frequency.value = p.tickHz;
+      band.Q.value = p.tickQ;
+      envelope(tg, t, p.tickGain, 0.0005, p.tickDur);
+      src.connect(band);
+      band.connect(tg);
+      tg.connect(master);
+      src.start(t);
+      src.stop(t + p.tickDur + 0.01);
+
+      var osc = audio.createOscillator(), og = audio.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(p.thockHz, t);
+      osc.frequency.exponentialRampToValueAtTime(p.thockEndHz, t + p.thockDur * 0.85);
+      envelope(og, t, p.thockGain, 0.001, p.thockDur);
+      osc.connect(og);
+      og.connect(master);
       osc.start(t);
-      osc.stop(t + 0.045);
+      osc.stop(t + p.thockDur + 0.01);
     } catch (e) { /* no sound is fine */ }
+  }
+
+  /* The detent click, under the name the switch, the stepper and the skin
+   * dots already use. */
+  function tickSound() { click('detent'); }
+
+  /* ---- the speaker: sound on or off ----------------------------------------- */
+  function soundOn() { return soundIsOn; }
+
+  function markSound() {
+    var btn = el('lcdSound');
+    if (!btn) return;
+    btn.classList.toggle('is-on', soundIsOn);
+    btn.setAttribute('aria-pressed', soundIsOn ? 'true' : 'false');
+    btn.setAttribute('aria-label', soundIsOn ? 'Sound on. Press to mute.' : 'Sound off. Press to turn it on.');
+  }
+
+  function setSound(on) {
+    soundIsOn = !!on;
+    if (MP.store) MP.store.set(SOUND_KEY, soundIsOn);
+    markSound();
+    return soundIsOn;
+  }
+
+  /* ---- the first-visit hint ------------------------------------------------- */
+  /* Once per browser: 1.2 s after the first stop, the knob wiggles and a
+   * label says it turns. Any touch of the dial, or the label running its
+   * three seconds, retires it for good. */
+  var HINT_KEY = 'hinted';
+  var hintTimer = null, hintLive = false, hintArmed = false;
+
+  function endHint() {
+    clearTimeout(hintTimer);
+    hintLive = false;
+    var knob = el('knob'), label = el('dialHint');
+    if (knob) knob.classList.remove('is-hint');
+    if (label) label.classList.remove('is-on');
+    if (MP.store) MP.store.set(HINT_KEY, true);
+  }
+
+  function hint() {
+    if (!MP.store || MP.store.get(HINT_KEY, false) || currentId === 'off') return;
+    hintLive = true;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function () {
+      var knob = el('knob'), label = el('dialHint');
+      if (knob) knob.classList.add('is-hint');
+      if (label) label.classList.add('is-on');
+      hintTimer = setTimeout(endHint, 3000);
+    }, 1200);
+  }
+
+  function touchedDial() {
+    if (hintLive) endHint();
   }
 
   /* The knob dips, the readout refreshes with a short fade, the phone gives
@@ -235,6 +364,7 @@
     dial.addEventListener('pointerdown', function (ev) {
       if (ev.button !== undefined && ev.button !== 0) return;
       primeAudio();
+      touchedDial();
       var stopEl = ev.target.closest ? ev.target.closest('.dial-stop[data-stop]') : null;
       drag = {
         id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, moved: false,
@@ -259,6 +389,10 @@
       }
       var b = bearing(ev);
       turnKnob(clampToSweep(b), true);          /* the knob follows the finger */
+      /* pushing into the dead zone past either end: one heavier clunk */
+      var inGap = b > SWEEP_DEG;
+      if (inGap && !drag.atStop) click('stop');
+      drag.atStop = inGap;
       var idx = stopAt(b);
       if (idx !== drag.lastIdx) {                /* crossed a detent */
         drag.lastIdx = idx;
@@ -275,6 +409,7 @@
       if (d.moved) {
         var idx = indexOf(currentId);
         settleOn(idx < 0 ? 0 : idx);             /* spring onto the stop */
+        click('settle', 0.12);                   /* where the spring lands */
         return;
       }
       if (ev.type === 'pointercancel') return;
@@ -291,6 +426,7 @@
       if (now - wheelAt < WHEEL_MS) return;
       wheelAt = now;
       primeAudio();
+      touchedDial();
       step(ev.deltaY > 0 || ev.deltaX > 0 ? 1 : -1);
     }, { passive: false });
   }
@@ -299,6 +435,7 @@
     knob.addEventListener('keydown', function (ev) {
       var k = ev.key;
       primeAudio();
+      touchedDial();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
       else if (k === 'ArrowLeft' || k === 'ArrowDown') step(-1);
       else if (k === 'Home') go(STOPS[0].id);
@@ -405,7 +542,7 @@
   /* Three 1 kHz pulses: the continuity beep. Silent until a gesture has
    * primed the audio context. */
   function beep() {
-    if (!audio || audio.state !== 'running') return;
+    if (!soundIsOn || !audio || audio.state !== 'running') return;
     try {
       var t = audio.currentTime;
       for (var i = 0; i < 3; i++) {
@@ -474,10 +611,19 @@
     }
     if (cancel) cancel.addEventListener('click', closeEditor);
     if (bell) bell.addEventListener('click', showAlerts);
+    var speaker = el('lcdSound');
+    if (speaker) {
+      speaker.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        primeAudio();
+        setSound(!soundIsOn);
+        if (soundIsOn) click('detent');
+      });
+    }
     if (lcd) {
       lcd.addEventListener('click', function (ev) {
         /* the tabs, the editor, the bell are controls of their own */
-        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell')) return;
+        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell, #lcdSound')) return;
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
@@ -712,6 +858,7 @@
     if (idx < 0) return;
     var changed = currentId !== null && currentId !== id;
     currentId = id;
+    if (!hintArmed) { hintArmed = true; hint(); }   /* the first stop, once the page knows it */
     if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
@@ -730,6 +877,7 @@
     wireKeys(knob);
     wireButtons();
     wireSkins();
+    markSound();
     if (MP.router) MP.router.onChange(onStop);
 
     fitToWindow();
@@ -828,6 +976,11 @@
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
+    clickParams: clickParams,
+    setSound: setSound,
+    soundOn: soundOn,
+    hint: hint,
+    endHint: endHint,
     fitToWindow: fitToWindow,
     SKINS: SKINS,
     setSkin: setSkin,

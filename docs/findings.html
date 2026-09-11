@@ -8,6 +8,13 @@
 <meta name="theme-color" content="#0b0d12">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Is bitcoin a tech stock?">
+<meta property="og:url" content="https://jackmcmurry.github.io/multimeter/findings.html">
+<meta property="og:image" content="https://jackmcmurry.github.io/multimeter/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Multimeter: a yellow handheld meter with bitcoin's price and chart on its screen and a rotary dial of market readings beside it.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jackmcmurry.github.io/multimeter/og.png">
 <meta property="og:description" content="A running answer from daily closes: correlation regimes, beta, volatility and drawdowns for bitcoin against the Nasdaq and the S&amp;P 500.">
 <link rel="icon" href="icons/icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
@@ -95,6 +102,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
 
   --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --f-lcd: "JetBrains Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
+  --f-brand: "Unbounded", "Space Grotesk", -apple-system, "Segoe UI", sans-serif;   /* the wordmark only */
 }
 
 * { box-sizing: border-box; }
@@ -153,7 +161,21 @@ body {
   justify-content: space-between;
   padding: 0 4px 12px;
 }
-.brand { font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: var(--text); }
+/* The wordmark: the instrument's name, printed like a maker's badge. Wide,
+ * heavy, in the skin's accent, lifted off the body with a light edge above,
+ * a shadow below and a faint glow. */
+.brand {
+  font-family: var(--f-brand);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--holster);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2),
+    0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 0 22px var(--accent-glow);
+}
 .model { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); }
 
 /* ---- display ------------------------------------------------------------- */
@@ -554,7 +576,8 @@ body {
 @media (max-width: 480px) {
   .model { display: none; }
   .skins { gap: 4px; }
-  .brand { letter-spacing: 0.1em; }
+  .brand { font-size: 17px; letter-spacing: 0; }
+  .skin { width: 14px; height: 14px; }
 }
 
 /* ---- the daily reading ---------------------------------------------------- */
@@ -871,6 +894,56 @@ tr.row-rule th {
   .board li { grid-template-columns: 26px 54px minmax(0, 1fr) 64px; gap: 8px; }
   .mv-title { font-size: 20px; }
 }
+
+/* ---- the speaker and the first-visit hint ---------------------------------- */
+.ann-sound {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  color: var(--lcd-dim);
+  opacity: 0.35;
+  cursor: pointer;
+}
+.ann-sound.is-on { opacity: 1; color: var(--holster); }
+.ann-sound:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.ann-sound .snd-x { display: none; }
+.ann-sound:not(.is-on) .snd-wave { display: none; }
+.ann-sound:not(.is-on) .snd-x { display: inline; }
+
+/* once per browser: the knob wiggles and says it turns. `rotate` stacks
+ * with the knob's inline transform, so the wiggle starts from wherever the
+ * knob points */
+.knob.is-hint { animation: knob-hint 900ms ease-in-out 1; }
+@keyframes knob-hint {
+  0% { rotate: 0deg; }
+  30% { rotate: 12deg; }
+  65% { rotate: -7deg; }
+  100% { rotate: 0deg; }
+}
+.dial-hint {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  transform: translateX(-50%);
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--holster);
+  color: var(--lcd-dk);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+.dial-hint.is-on { opacity: 1; }
 
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {

@@ -4,11 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multimeter</title>
-<meta name="description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<meta name="description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns, the week's highest and lowest movers, and a watch list of Nasdaq-100 stocks.">
 <meta name="theme-color" content="#0b0d12">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Multimeter">
-<meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<meta property="og:url" content="https://jackmcmurry.github.io/multimeter/">
+<meta property="og:image" content="https://jackmcmurry.github.io/multimeter/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Multimeter: a yellow handheld meter with bitcoin's price and chart on its screen and a rotary dial of market readings beside it.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jackmcmurry.github.io/multimeter/og.png">
+<meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns, the week's highest and lowest movers, and a watch list of Nasdaq-100 stocks.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -18,7 +25,7 @@
 <meta name="apple-mobile-web-app-title" content="Multimeter">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@800&display=swap">
 <script>
 /* A saved skin goes on before the first paint, so the page never flashes gold first. */
 try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
@@ -100,6 +107,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
 
   --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --f-lcd: "JetBrains Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
+  --f-brand: "Unbounded", "Space Grotesk", -apple-system, "Segoe UI", sans-serif;   /* the wordmark only */
 }
 
 * { box-sizing: border-box; }
@@ -158,7 +166,21 @@ body {
   justify-content: space-between;
   padding: 0 4px 12px;
 }
-.brand { font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: var(--text); }
+/* The wordmark: the instrument's name, printed like a maker's badge. Wide,
+ * heavy, in the skin's accent, lifted off the body with a light edge above,
+ * a shadow below and a faint glow. */
+.brand {
+  font-family: var(--f-brand);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--holster);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2),
+    0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 0 22px var(--accent-glow);
+}
 .model { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); }
 
 /* ---- display ------------------------------------------------------------- */
@@ -559,7 +581,8 @@ body {
 @media (max-width: 480px) {
   .model { display: none; }
   .skins { gap: 4px; }
-  .brand { letter-spacing: 0.1em; }
+  .brand { font-size: 17px; letter-spacing: 0; }
+  .skin { width: 14px; height: 14px; }
 }
 
 /* ---- the daily reading ---------------------------------------------------- */
@@ -877,6 +900,56 @@ tr.row-rule th {
   .mv-title { font-size: 20px; }
 }
 
+/* ---- the speaker and the first-visit hint ---------------------------------- */
+.ann-sound {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  color: var(--lcd-dim);
+  opacity: 0.35;
+  cursor: pointer;
+}
+.ann-sound.is-on { opacity: 1; color: var(--holster); }
+.ann-sound:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.ann-sound .snd-x { display: none; }
+.ann-sound:not(.is-on) .snd-wave { display: none; }
+.ann-sound:not(.is-on) .snd-x { display: inline; }
+
+/* once per browser: the knob wiggles and says it turns. `rotate` stacks
+ * with the knob's inline transform, so the wiggle starts from wherever the
+ * knob points */
+.knob.is-hint { animation: knob-hint 900ms ease-in-out 1; }
+@keyframes knob-hint {
+  0% { rotate: 0deg; }
+  30% { rotate: 12deg; }
+  65% { rotate: -7deg; }
+  100% { rotate: 0deg; }
+}
+.dial-hint {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  transform: translateX(-50%);
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--holster);
+  color: var(--lcd-dk);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+.dial-hint.is-on { opacity: 1; }
+
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
   .stage { padding: 10px 6px 32px; gap: 12px; }
@@ -934,6 +1007,7 @@ tr.row-rule th {
               <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
               <span class="ann ann-rel" id="lcdRel">REL</span>
               <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
+              <button type="button" class="ann ann-sound is-on" id="lcdSound" aria-pressed="true" aria-label="Sound on. Press to mute."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
               <span class="ann ann-hold" id="lcdHold">HOLD</span>
             </span>
           </div>
@@ -981,6 +1055,7 @@ tr.row-rule th {
 
         <div class="dial" id="dial">
           <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="12" aria-valuenow="1"></div>
+          <span class="dial-hint" id="dialHint" aria-hidden="true">Turn the dial</span>
         </div>
 
         <div class="jacks">
@@ -1121,7 +1196,7 @@ tr.row-rule th {
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
+      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
 
       <h2>Skins</h2>
       <p>The coloured dots beside the brand pick the skin: gold, blue, pink, green, red, purple or silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
@@ -3272,6 +3347,15 @@ tr.row-rule th {
   /* ---- detent feedback ---------------------------------------------------- */
   var detentTimer = null;
   var audio = null;
+  var master = null;     /* every sound goes through this */
+  var noise = null;      /* 30 ms of white noise, made once, for the tick */
+  var lastClickAt = 0;
+  var SOUND_KEY = 'sound';
+  var soundIsOn = readSound();
+
+  function readSound() {
+    return (MP.store ? MP.store.get(SOUND_KEY, true) : true) !== false;
+  }
 
   /* The audio context has to be born inside a user gesture, so the pointer
    * and key handlers prime it; the detent then only has to play. */
@@ -3282,26 +3366,146 @@ tr.row-rule th {
     }
     var AC = root.AudioContext || root.webkitAudioContext;
     if (!AC) return;
-    try { audio = new AC(); } catch (e) { audio = null; }
+    try {
+      try { audio = new AC({ latencyHint: 'interactive' }); } catch (e1) { audio = new AC(); }
+      master = audio.createGain();
+      master.gain.value = 1;
+      master.connect(audio.destination);
+      var n = Math.floor(audio.sampleRate * 0.03);
+      noise = audio.createBuffer(1, n, audio.sampleRate);
+      var ch = noise.getChannelData(0);
+      for (var i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+    } catch (e) { audio = null; master = null; }
   }
 
-  /* A short, quiet mechanical tick: a fast square chirp with a 40 ms decay. */
-  function tickSound() {
-    if (!audio || audio.state !== 'running') return;
+  function canPlay() {
+    return soundIsOn && !!audio && !!master && !!noise && audio.state === 'running';
+  }
+
+  /* The click's recipe, pure so the tests can hold it to account. A
+   * mechanical detent is two layers: a bright tick (filtered noise) and a
+   * low thock (a sine whose pitch falls). Every click varies a little, so a
+   * spin never repeats itself. Clicks closer than FAST_MS apart come shorter
+   * and softer, so a fast spin purrs. The end stop is lower and longer; the
+   * settle tap is a quiet echo of a detent.
+   * kind: 'detent' | 'stop' | 'settle'; sinceMs: time since the last click;
+   * rand: a function returning [0, 1). */
+  var FAST_MS = 45;
+  function clickParams(kind, sinceMs, rand) {
+    var r = typeof rand === 'function' ? rand : Math.random;
+    var pitch = 1 + (r() * 2 - 1) * 0.04;
+    var level = 1 + (r() * 2 - 1) * 0.08;
+    var p = {
+      tickHz: 3800 * pitch, tickQ: 1.2, tickDur: 0.005, tickGain: 0.22,
+      thockHz: 210 * pitch, thockEndHz: 120 * pitch, thockDur: 0.035, thockGain: 0.2
+    };
+    if (kind === 'stop') {
+      p.tickHz = 2600 * pitch; p.tickDur = 0.007; p.tickGain = 0.26;
+      p.thockHz = 105 * pitch; p.thockEndHz = 60 * pitch; p.thockDur = 0.07; p.thockGain = 0.3;
+    } else if (kind === 'settle') {
+      p.tickHz = 4600 * pitch; p.tickDur = 0.003; p.tickGain = 0.07;
+      p.thockHz = 260 * pitch; p.thockEndHz = 170 * pitch; p.thockDur = 0.02; p.thockGain = 0.06;
+    } else if (typeof sinceMs === 'number' && sinceMs < FAST_MS) {
+      p.tickDur *= 0.6; p.thockDur *= 0.6; p.tickGain *= 0.6; p.thockGain *= 0.6;
+    }
+    p.tickGain *= level;
+    p.thockGain *= level;
+    p.dur = Math.max(p.tickDur, p.thockDur);
+    p.gain = Math.max(p.tickGain, p.thockGain);
+    return p;
+  }
+
+  function envelope(g, t, peak, attack, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  }
+
+  /* One click, `delay` seconds from now. */
+  function click(kind, delay) {
+    if (!canPlay()) return;
+    var now = Date.now(), since = now - lastClickAt;
+    if (kind !== 'settle') lastClickAt = now;
+    var p = clickParams(kind || 'detent', since);
     try {
-      var t = audio.currentTime;
-      var osc = audio.createOscillator(), gain = audio.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(2400, t);
-      osc.frequency.exponentialRampToValueAtTime(520, t + 0.03);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.045, t + 0.002);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-      osc.connect(gain);
-      gain.connect(audio.destination);
+      var t = audio.currentTime + (delay || 0);
+
+      var src = audio.createBufferSource(), band = audio.createBiquadFilter(), tg = audio.createGain();
+      src.buffer = noise;
+      band.type = 'bandpass';
+      band.frequency.value = p.tickHz;
+      band.Q.value = p.tickQ;
+      envelope(tg, t, p.tickGain, 0.0005, p.tickDur);
+      src.connect(band);
+      band.connect(tg);
+      tg.connect(master);
+      src.start(t);
+      src.stop(t + p.tickDur + 0.01);
+
+      var osc = audio.createOscillator(), og = audio.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(p.thockHz, t);
+      osc.frequency.exponentialRampToValueAtTime(p.thockEndHz, t + p.thockDur * 0.85);
+      envelope(og, t, p.thockGain, 0.001, p.thockDur);
+      osc.connect(og);
+      og.connect(master);
       osc.start(t);
-      osc.stop(t + 0.045);
+      osc.stop(t + p.thockDur + 0.01);
     } catch (e) { /* no sound is fine */ }
+  }
+
+  /* The detent click, under the name the switch, the stepper and the skin
+   * dots already use. */
+  function tickSound() { click('detent'); }
+
+  /* ---- the speaker: sound on or off ----------------------------------------- */
+  function soundOn() { return soundIsOn; }
+
+  function markSound() {
+    var btn = el('lcdSound');
+    if (!btn) return;
+    btn.classList.toggle('is-on', soundIsOn);
+    btn.setAttribute('aria-pressed', soundIsOn ? 'true' : 'false');
+    btn.setAttribute('aria-label', soundIsOn ? 'Sound on. Press to mute.' : 'Sound off. Press to turn it on.');
+  }
+
+  function setSound(on) {
+    soundIsOn = !!on;
+    if (MP.store) MP.store.set(SOUND_KEY, soundIsOn);
+    markSound();
+    return soundIsOn;
+  }
+
+  /* ---- the first-visit hint ------------------------------------------------- */
+  /* Once per browser: 1.2 s after the first stop, the knob wiggles and a
+   * label says it turns. Any touch of the dial, or the label running its
+   * three seconds, retires it for good. */
+  var HINT_KEY = 'hinted';
+  var hintTimer = null, hintLive = false, hintArmed = false;
+
+  function endHint() {
+    clearTimeout(hintTimer);
+    hintLive = false;
+    var knob = el('knob'), label = el('dialHint');
+    if (knob) knob.classList.remove('is-hint');
+    if (label) label.classList.remove('is-on');
+    if (MP.store) MP.store.set(HINT_KEY, true);
+  }
+
+  function hint() {
+    if (!MP.store || MP.store.get(HINT_KEY, false) || currentId === 'off') return;
+    hintLive = true;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function () {
+      var knob = el('knob'), label = el('dialHint');
+      if (knob) knob.classList.add('is-hint');
+      if (label) label.classList.add('is-on');
+      hintTimer = setTimeout(endHint, 3000);
+    }, 1200);
+  }
+
+  function touchedDial() {
+    if (hintLive) endHint();
   }
 
   /* The knob dips, the readout refreshes with a short fade, the phone gives
@@ -3339,6 +3543,7 @@ tr.row-rule th {
     dial.addEventListener('pointerdown', function (ev) {
       if (ev.button !== undefined && ev.button !== 0) return;
       primeAudio();
+      touchedDial();
       var stopEl = ev.target.closest ? ev.target.closest('.dial-stop[data-stop]') : null;
       drag = {
         id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, moved: false,
@@ -3363,6 +3568,10 @@ tr.row-rule th {
       }
       var b = bearing(ev);
       turnKnob(clampToSweep(b), true);          /* the knob follows the finger */
+      /* pushing into the dead zone past either end: one heavier clunk */
+      var inGap = b > SWEEP_DEG;
+      if (inGap && !drag.atStop) click('stop');
+      drag.atStop = inGap;
       var idx = stopAt(b);
       if (idx !== drag.lastIdx) {                /* crossed a detent */
         drag.lastIdx = idx;
@@ -3379,6 +3588,7 @@ tr.row-rule th {
       if (d.moved) {
         var idx = indexOf(currentId);
         settleOn(idx < 0 ? 0 : idx);             /* spring onto the stop */
+        click('settle', 0.12);                   /* where the spring lands */
         return;
       }
       if (ev.type === 'pointercancel') return;
@@ -3395,6 +3605,7 @@ tr.row-rule th {
       if (now - wheelAt < WHEEL_MS) return;
       wheelAt = now;
       primeAudio();
+      touchedDial();
       step(ev.deltaY > 0 || ev.deltaX > 0 ? 1 : -1);
     }, { passive: false });
   }
@@ -3403,6 +3614,7 @@ tr.row-rule th {
     knob.addEventListener('keydown', function (ev) {
       var k = ev.key;
       primeAudio();
+      touchedDial();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
       else if (k === 'ArrowLeft' || k === 'ArrowDown') step(-1);
       else if (k === 'Home') go(STOPS[0].id);
@@ -3509,7 +3721,7 @@ tr.row-rule th {
   /* Three 1 kHz pulses: the continuity beep. Silent until a gesture has
    * primed the audio context. */
   function beep() {
-    if (!audio || audio.state !== 'running') return;
+    if (!soundIsOn || !audio || audio.state !== 'running') return;
     try {
       var t = audio.currentTime;
       for (var i = 0; i < 3; i++) {
@@ -3578,10 +3790,19 @@ tr.row-rule th {
     }
     if (cancel) cancel.addEventListener('click', closeEditor);
     if (bell) bell.addEventListener('click', showAlerts);
+    var speaker = el('lcdSound');
+    if (speaker) {
+      speaker.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        primeAudio();
+        setSound(!soundIsOn);
+        if (soundIsOn) click('detent');
+      });
+    }
     if (lcd) {
       lcd.addEventListener('click', function (ev) {
         /* the tabs, the editor, the bell are controls of their own */
-        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell')) return;
+        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell, #lcdSound')) return;
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
@@ -3816,6 +4037,7 @@ tr.row-rule th {
     if (idx < 0) return;
     var changed = currentId !== null && currentId !== id;
     currentId = id;
+    if (!hintArmed) { hintArmed = true; hint(); }   /* the first stop, once the page knows it */
     if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
@@ -3834,6 +4056,7 @@ tr.row-rule th {
     wireKeys(knob);
     wireButtons();
     wireSkins();
+    markSound();
     if (MP.router) MP.router.onChange(onStop);
 
     fitToWindow();
@@ -3932,6 +4155,11 @@ tr.row-rule th {
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
+    clickParams: clickParams,
+    setSound: setSound,
+    soundOn: soundOn,
+    hint: hint,
+    endHint: endHint,
     fitToWindow: fitToWindow,
     SKINS: SKINS,
     setSkin: setSkin,
@@ -4299,7 +4527,8 @@ tr.row-rule th {
     return Promise.all([
       document.fonts.load('700 88px "Space Grotesk"'),
       document.fonts.load('600 30px "Space Grotesk"'),
-      document.fonts.load('600 22px "JetBrains Mono"')
+      document.fonts.load('600 22px "JetBrains Mono"'),
+      document.fonts.load('800 26px "Unbounded"')
     ]).then(function () { return document.fonts.ready; }).catch(function () { /* system fonts then */ });
   }
 
@@ -4332,7 +4561,9 @@ tr.row-rule th {
       ctx.font = '600 22px "JetBrains Mono", ui-monospace, monospace';
       ctx.fillText(String(meta.mode || '').toUpperCase(), 80, 74);
       ctx.textAlign = 'right';
-      ctx.fillText('MULTIMETER', W - 80, 74);
+      ctx.fillStyle = token('--holster');
+      ctx.font = '800 26px "Unbounded", "Space Grotesk", sans-serif';   /* the wordmark, as on the meter */
+      ctx.fillText('MULTIMETER', W - 80, 70);
       ctx.textAlign = 'left';
 
       if (chart) ctx.drawImage(chart, 80, 118, 1040, 250);

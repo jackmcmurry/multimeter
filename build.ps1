@@ -173,6 +173,19 @@ try {
     $problems += "manifest does not parse: $($_.Exception.Message)"
 }
 
+# The link preview the head tags promise: a 1200x630 docs/og.png. Retake it
+# with headless Edge when the look changes (see README, "Link preview").
+$og = Join-Path $here 'docs/og.png'
+if (-not (Test-Path $og)) {
+    $problems += 'docs/og.png is missing (the link preview image)'
+} else {
+    Add-Type -AssemblyName System.Drawing
+    $img = [System.Drawing.Image]::FromFile($og)
+    try {
+        if ($img.Width -ne 1200 -or $img.Height -ne 630) { $problems += "docs/og.png is $($img.Width)x$($img.Height), not 1200x630" }
+    } finally { $img.Dispose() }
+}
+
 # Every var(--token) must resolve. A renamed palette silently paints shapes an
 # invalid colour -- an SVG stroke of var(--gone) just disappears -- so the
 # build refuses to ship a dangling reference.

@@ -544,6 +544,34 @@
       ok('WATCH carries a stepper, or nothing when the list is empty', wr.tabs ? wr.tabs.kind === 'watch' : !!wr.hint);
     }
 
+    /* ---- the click, the speaker and the first-visit hint ------------------- */
+    if (M && M.clickParams) {
+      var fixed = function (v) { return function () { return v; }; };
+      var mid = M.clickParams('detent', 500, fixed(0.5));
+      var hiC = M.clickParams('detent', 500, fixed(0.999)), loC = M.clickParams('detent', 500, fixed(0));
+      ok('a detent varies its pitch by at most 4%',
+        hiC.thockHz <= mid.thockHz * 1.0401 && loC.thockHz >= mid.thockHz * 0.9599 && hiC.thockHz > loC.thockHz);
+      ok('the thock falls in pitch', mid.thockEndHz < mid.thockHz);
+      var fastC = M.clickParams('detent', 20, fixed(0.5));
+      ok('a fast click is shorter and quieter', fastC.dur < mid.dur && fastC.gain < mid.gain);
+      var stopC = M.clickParams('stop', 500, fixed(0.5));
+      ok('the end stop is lower and longer', stopC.thockHz < mid.thockHz && stopC.dur > mid.dur);
+      ok('the settle tap is quieter than a detent', M.clickParams('settle', 500, fixed(0.5)).gain < mid.gain);
+
+      var soundBefore = M.soundOn();
+      M.setSound(false);
+      ok('muting is remembered', MP.store.get('sound', true) === false && M.soundOn() === false);
+      eq('the speaker shows it', document.getElementById('lcdSound') ? document.getElementById('lcdSound').getAttribute('aria-pressed') : 'false', 'false');
+      M.setSound(soundBefore);
+
+      var hintBefore = MP.store.get('hinted', null);
+      MP.store.remove('hinted');
+      M.hint();
+      M.endHint();
+      eq('the hint retires itself for good', MP.store.get('hinted', false), true);
+      if (hintBefore === null) MP.store.remove('hinted'); else MP.store.set('hinted', hintBefore);
+    }
+
     if (R && R.overridePanel) {
       eq('panel override accepts a known panel', R.overridePanel('alerts'), 'alerts');
       eq('panel override rejects an unknown panel', R.overridePanel('nope'), null);

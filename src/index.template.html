@@ -4,11 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multimeter</title>
-<meta name="description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<meta name="description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns, the week's highest and lowest movers, and a watch list of Nasdaq-100 stocks.">
 <meta name="theme-color" content="#0b0d12">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Multimeter">
-<meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns and the week's biggest movers.">
+<meta property="og:url" content="https://jackmcmurry.github.io/multimeter/">
+<meta property="og:image" content="https://jackmcmurry.github.io/multimeter/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Multimeter: a yellow handheld meter with bitcoin's price and chart on its screen and a rotary dial of market readings beside it.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jackmcmurry.github.io/multimeter/og.png">
+<meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns, the week's highest and lowest movers, and a watch list of Nasdaq-100 stocks.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -18,7 +25,7 @@
 <meta name="apple-mobile-web-app-title" content="Multimeter">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@800&display=swap">
 <script>
 /* A saved skin goes on before the first paint, so the page never flashes gold first. */
 try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
@@ -61,6 +68,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
               <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
               <span class="ann ann-rel" id="lcdRel">REL</span>
               <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
+              <button type="button" class="ann ann-sound is-on" id="lcdSound" aria-pressed="true" aria-label="Sound on. Press to mute."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
               <span class="ann ann-hold" id="lcdHold">HOLD</span>
             </span>
           </div>
@@ -108,6 +116,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
 
         <div class="dial" id="dial">
           <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="12" aria-valuenow="1"></div>
+          <span class="dial-hint" id="dialHint" aria-hidden="true">Turn the dial</span>
         </div>
 
         <div class="jacks">
@@ -248,7 +257,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
+      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
 
       <h2>Skins</h2>
       <p>The coloured dots beside the brand pick the skin: gold, blue, pink, green, red, purple or silver. A skin recolours the holster and the accents. The choice stays in this browser.</p>
