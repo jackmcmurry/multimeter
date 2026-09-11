@@ -38,7 +38,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
  * The page is a handheld digital multimeter in the classic field-instrument
  * livery: a graphite body in a rubber holster (gold unless a skin is chosen), a backlit dark display
  * up top with a luminous readout, a rotary function switch in the middle and
- * three input jacks along the bottom. The detail drawer beneath it is a dark
+ * two square market lamps along the bottom. The detail drawer beneath it is a dark
  * card so the charts and tables read as the instrument's manual, not more
  * instrument.
  *
@@ -149,8 +149,9 @@ body {
 .face { min-width: 0; }
 
 .holster {
+  position: relative;
   background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
-  border-radius: 36px;
+  border-radius: 0;
   padding: 14px;
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.35),
@@ -158,9 +159,31 @@ body {
     0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
+/* The holster's rubber: a fine grain and a soft mottle, blended over whatever
+ * colour the skin gives it, and kept under the shell. */
+.holster::before, .holster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.holster::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: 0.5;
+}
+.holster::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)'/%3E%3C/svg%3E");
+  background-size: 420px 420px;
+  opacity: 0.28;
+}
+
 .shell {
+  position: relative;
+  z-index: 1;
   background: linear-gradient(180deg, var(--shell-lt), var(--shell) 12%, var(--shell) 90%, var(--shell-dk));
-  border-radius: 26px;
+  border-radius: 0;
   padding: 16px 18px 18px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
 }
@@ -355,7 +378,8 @@ body {
 }
 
 /* ---- keys ---------------------------------------------------------------- */
-.keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; }
+/* the keys' cast shadow follows their cut shapes, so it lives on the row */
+.keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.45)); }
 .key {
   font-family: var(--f-body);
   font-size: 12px;
@@ -364,28 +388,35 @@ body {
   color: var(--key-text);
   background: linear-gradient(180deg, var(--shell-lt), var(--key));
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 11px 6px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
-  box-shadow: 0 3px 0 var(--key-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 -3px 0 var(--key-dk), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: transform 90ms ease, box-shadow 90ms ease;
 }
-.key:active, .key.is-on { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-dk); }
+.key:active, .key.is-on { transform: translateY(2px); box-shadow: inset 0 -1px 0 var(--key-dk); }
 .key.is-on { color: var(--holster); }
-.key:focus-visible { outline: 3px solid var(--holster); outline-offset: 2px; }
+/* an outline would be cut off by the key's shape, so focus rings inside it */
+.key:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--holster), inset 0 -3px 0 var(--key-dk); }
 .key-hold {
   color: var(--key-text);
   background: linear-gradient(180deg, #ff6e6e, var(--hold));
-  box-shadow: 0 3px 0 var(--hold-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 -3px 0 var(--hold-dk), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 .key-hold:active, .key-hold.is-held {
   background: var(--hold-dk);
   transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--hold-dk);
+  box-shadow: inset 0 -1px 0 var(--hold-dk);
 }
+
+/* Buttons outside the screen are cut as slightly irregular facets: uneven
+ * chamfers, and no two neighbours cut alike. */
+.key:nth-child(3n+1) { clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 10px) 100%, 0 100%, 0 5px); }
+.key:nth-child(3n+2) { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 8px, 100% 100%, 9px 100%, 0 calc(100% - 7px)); }
+.key:nth-child(3n) { clip-path: polygon(4px 0, calc(100% - 9px) 0, 100% 5px, 100% calc(100% - 4px), calc(100% - 3px) 100%, 8px 100%, 0 calc(100% - 9px)); }
 
 /* ---- dial ---------------------------------------------------------------- */
 .dial {
@@ -469,17 +500,20 @@ body {
   gap: 4px 26px;
   padding-top: 4px;
 }
-.jack {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+/* the market lamps: two squares, OFF and ON, unlit until the session clock
+ * lights one; no glow */
+.lamp-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 5px; }
+.lamp {
+  width: 24px;
+  height: 24px;
   background: var(--jack);
-  border: 4px solid var(--jack-ring);
-  box-shadow: inset 0 0 0 3px var(--shell-lt), 0 1px 0 rgba(255, 255, 255, 0.12);
+  border: 3px solid var(--shell-lt);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: background 200ms ease;
 }
-.jack-com { border-color: var(--knob-lt); }
-.jack-com.is-closed { background: var(--led-off); }
-.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt); }
+.lamp-off.is-lit { background: var(--hold); }
+.lamp-on.is-lit { background: var(--led); }
+.lamp-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--dim); }
 .jack-text {
   flex-basis: 100%;
   text-align: center;
@@ -563,7 +597,8 @@ body {
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 7px) 100%, 0 100%, 0 4px);
   background: none;
   color: var(--holster);
   cursor: pointer;
@@ -711,6 +746,10 @@ body {
   padding: 6px 14px; border-radius: 999px;
   cursor: pointer;
 }
+/* drawer buttons share the keys' faceted cut */
+.pill { border-radius: 0; clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 4px); }
+.pill:nth-child(2n) { clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 6px 100%, 0 calc(100% - 5px)); }
+.pill:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--holster); }
 .pill:hover { background: var(--hover); color: var(--text); }
 .pill.is-on { background: var(--cell); color: var(--holster); }
 .pill:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
@@ -1001,8 +1040,8 @@ tr.row-rule th {
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
   .stage { padding: 10px 6px 32px; gap: 12px; }
-  .holster { border-radius: 28px; padding: 10px; }
-  .shell { border-radius: 20px; padding: 12px 12px 14px; }
+  .holster { padding: 10px; }
+  .shell { padding: 12px 12px 14px; }
   .lcd { padding: 12px 14px 12px; }
   .lcd-chg { font-size: 16px; }
   .rng { padding: 8px 12px; font-size: 12px; }
@@ -1112,9 +1151,8 @@ tr.row-rule th {
         </div>
 
         <div class="jacks">
-          <span class="jack" aria-hidden="true"></span>
-          <span class="jack jack-com" id="sessionDot" aria-hidden="true"></span>
-          <span class="jack jack-v" aria-hidden="true"></span>
+          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-off" id="lampOff"></span><span class="lamp-label">OFF</span></span>
+          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-on" id="lampOn"></span><span class="lamp-label">ON</span></span>
           <span class="jack-text" id="sessionText">Market —</span>
         </div>
 
@@ -5331,7 +5369,9 @@ tr.row-rule th {
   var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
 
   /* ---- configuration ------------------------------------------------------ */
-  var BTC_REFRESH_MS = 45000;
+  /* CoinGecko is keyless and rate limits by address, and a campus shares
+   * one, so the poll is deliberately unhurried. */
+  var BTC_REFRESH_MS = 60000;
   var SNAPSHOT_REFRESH_MS = 60000;
   var DAILY_REFRESH_MS = 30 * 60000;
   var HERO_REFRESH_MS = 5 * 60000;
@@ -5454,7 +5494,8 @@ tr.row-rule th {
    * was skipped while hidden runs the moment the tab is shown again. */
   function poll(task, baseMs) {
     var delay = baseMs, timer = null, stopped = false, skipped = false;
-    function schedule() { if (!stopped) timer = setTimeout(tick, delay); }
+    /* jitter, so that many tabs on one network do not all ask in the same second */
+    function schedule() { if (!stopped) timer = setTimeout(tick, Math.round(delay * (0.85 + Math.random() * 0.3))); }
     function tick() {
       if (stopped) return;
       if (root.document && root.document.hidden) { skipped = true; schedule(); return; }
@@ -5637,6 +5678,31 @@ tr.row-rule th {
     };
   }
 
+  /* A rate limit or an outage at CoinGecko must not leave the screen blank.
+   * A coin with daily history from the data job still reads: its last
+   * published close, the move into it, and the line the closes draw, with
+   * the mode line saying which it is. */
+  function withLastClose(r, key) {
+    if (!r.empty) return r;
+    var hist = state.history[key];
+    if (!hist || hist.length < 2) return r;
+    var last = hist[hist.length - 1], prev = hist[hist.length - 2];
+    if (!S.isNum(last.price)) return r;
+    r.text = money(last.price);
+    r.value = last.price;
+    r.empty = false;
+    r.mode = r.mode + ' · LAST CLOSE';
+    if (S.isNum(prev.price) && prev.price > 0) {
+      r.change.pct = (last.price / prev.price - 1) * 100;
+      r.change.abs = last.price - prev.price;
+      r.change.label = '1D';
+    }
+    if (!r.spark || !r.spark.length) {
+      r.spark = S.tail(hist, SPARK_POINTS).map(function (p) { return p.price; });
+    }
+    return r;
+  }
+
   /* Coins carry the screen's range tabs: the chart and the change follow the
    * chosen range, the price stays live spot. Until the range has loaded, the
    * 24-hour change from the quote stands in. */
@@ -5800,8 +5866,8 @@ tr.row-rule th {
 
   function reading(stop) {
     switch (stop) {
-      case 'btc': return applyLive(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), stop);
-      case 'eth': return applyLive(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), stop);
+      case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), 'btc'), stop);
+      case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), 'eth'), stop);
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
@@ -6137,12 +6203,11 @@ tr.row-rule th {
   /* ---- session ------------------------------------------------------------ */
   function renderSession() {
     var d = state.session.data;
-    var dot = el('sessionDot');
+    /* two square lamps: ON while the US market is open, OFF otherwise */
     var open = d && d.equityStatus === 'open';
-    if (dot) {
-      dot.classList.toggle('is-open', !!open);
-      dot.classList.toggle('is-closed', !!(d && !open));
-    }
+    var lampOn = el('lampOn'), lampOff = el('lampOff');
+    if (lampOn) lampOn.classList.toggle('is-lit', !!open);
+    if (lampOff) lampOff.classList.toggle('is-lit', !!(d && !open));
     setText('sessionText', d && d.equityStatus ? (open ? 'Market open' : 'Market closed') : 'Market —');
   }
 

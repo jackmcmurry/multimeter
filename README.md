@@ -19,8 +19,8 @@ the screen shows that one reading: a tall chart, the price beneath it, the
 change, and a row of tabs: the chart's range for the coins, a Stocks | Crypto
 switch for MOVER and LOSER, and a stepper for WATCH. The DATA key, or a press on the
 screen, opens a drawer beneath the meter with the charts and tables behind
-the number. HOLD freezes the display. The COM jack lights while the US
-market is open.
+the number. HOLD freezes the display. Two square lamps beneath the dial
+show the US session: ON while the market is open, OFF when it is closed.
 
 The palette beside the name opens the skins: gold (the default), blue,
 pink, green, red, purple or silver. A skin recolours the holster and the

@@ -14,7 +14,9 @@
   var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
 
   /* ---- configuration ------------------------------------------------------ */
-  var BTC_REFRESH_MS = 45000;
+  /* CoinGecko is keyless and rate limits by address, and a campus shares
+   * one, so the poll is deliberately unhurried. */
+  var BTC_REFRESH_MS = 60000;
   var SNAPSHOT_REFRESH_MS = 60000;
   var DAILY_REFRESH_MS = 30 * 60000;
   var HERO_REFRESH_MS = 5 * 60000;
@@ -137,7 +139,8 @@
    * was skipped while hidden runs the moment the tab is shown again. */
   function poll(task, baseMs) {
     var delay = baseMs, timer = null, stopped = false, skipped = false;
-    function schedule() { if (!stopped) timer = setTimeout(tick, delay); }
+    /* jitter, so that many tabs on one network do not all ask in the same second */
+    function schedule() { if (!stopped) timer = setTimeout(tick, Math.round(delay * (0.85 + Math.random() * 0.3))); }
     function tick() {
       if (stopped) return;
       if (root.document && root.document.hidden) { skipped = true; schedule(); return; }
@@ -320,6 +323,31 @@
     };
   }
 
+  /* A rate limit or an outage at CoinGecko must not leave the screen blank.
+   * A coin with daily history from the data job still reads: its last
+   * published close, the move into it, and the line the closes draw, with
+   * the mode line saying which it is. */
+  function withLastClose(r, key) {
+    if (!r.empty) return r;
+    var hist = state.history[key];
+    if (!hist || hist.length < 2) return r;
+    var last = hist[hist.length - 1], prev = hist[hist.length - 2];
+    if (!S.isNum(last.price)) return r;
+    r.text = money(last.price);
+    r.value = last.price;
+    r.empty = false;
+    r.mode = r.mode + ' · LAST CLOSE';
+    if (S.isNum(prev.price) && prev.price > 0) {
+      r.change.pct = (last.price / prev.price - 1) * 100;
+      r.change.abs = last.price - prev.price;
+      r.change.label = '1D';
+    }
+    if (!r.spark || !r.spark.length) {
+      r.spark = S.tail(hist, SPARK_POINTS).map(function (p) { return p.price; });
+    }
+    return r;
+  }
+
   /* Coins carry the screen's range tabs: the chart and the change follow the
    * chosen range, the price stays live spot. Until the range has loaded, the
    * 24-hour change from the quote stands in. */
@@ -483,8 +511,8 @@
 
   function reading(stop) {
     switch (stop) {
-      case 'btc': return applyLive(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), stop);
-      case 'eth': return applyLive(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), stop);
+      case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), 'btc'), stop);
+      case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), 'eth'), stop);
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
@@ -820,12 +848,11 @@
   /* ---- session ------------------------------------------------------------ */
   function renderSession() {
     var d = state.session.data;
-    var dot = el('sessionDot');
+    /* two square lamps: ON while the US market is open, OFF otherwise */
     var open = d && d.equityStatus === 'open';
-    if (dot) {
-      dot.classList.toggle('is-open', !!open);
-      dot.classList.toggle('is-closed', !!(d && !open));
-    }
+    var lampOn = el('lampOn'), lampOff = el('lampOff');
+    if (lampOn) lampOn.classList.toggle('is-lit', !!open);
+    if (lampOff) lampOff.classList.toggle('is-lit', !!(d && !open));
     setText('sessionText', d && d.equityStatus ? (open ? 'Market open' : 'Market closed') : 'Market —');
   }
 
