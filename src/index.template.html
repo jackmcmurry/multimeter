@@ -37,10 +37,20 @@
             <span class="ann" id="lcdMode"></span>
             <span class="ann-group">
               <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
+              <span class="ann ann-rel" id="lcdRel">REL</span>
+              <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
               <span class="ann ann-hold" id="lcdHold">HOLD</span>
             </span>
           </div>
           <div class="lcd-chart" id="lcdChart"></div>
+          <form class="lcd-edit" id="lcdEdit" hidden>
+            <label class="ann" for="lcdEditLevel">Alert when the reading crosses</label>
+            <div class="lcd-edit-row">
+              <input id="lcdEditLevel" type="number" inputmode="decimal" step="any" autocomplete="off">
+              <button type="submit" class="rng is-on">SET</button>
+              <button type="button" class="rng" id="lcdEditCancel" aria-label="Cancel">✕</button>
+            </div>
+          </form>
           <div class="lcd-readout">
             <div class="lcd-price-row">
               <span class="lcd-price" id="lcdPrice"></span>
@@ -49,6 +59,10 @@
             <div class="lcd-row lcd-foot">
               <span class="lcd-chg" id="lcdChange"></span>
               <span class="ann" id="lcdChangeLabel"></span>
+            </div>
+            <div class="lcd-row lcd-minmax is-idle" id="lcdMinmax" aria-live="off">
+              <span class="ann" id="lcdMin"></span>
+              <span class="ann" id="lcdMax"></span>
             </div>
           </div>
           <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range">
@@ -61,6 +75,9 @@
 
         <div class="keys">
           <button type="button" class="key" id="detailBtn" aria-expanded="false" aria-controls="drawer">DATA</button>
+          <button type="button" class="key" id="relBtn" aria-pressed="false" title="Relative: zero the reading here">REL</button>
+          <button type="button" class="key" id="minmaxBtn" aria-pressed="false" title="Capture the lowest and highest reading">MIN/MAX</button>
+          <button type="button" class="key" id="alertBtn" aria-expanded="false" aria-controls="lcdEdit" title="Beep when the reading crosses a level">ALERT</button>
           <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
         </div>
 
@@ -178,6 +195,12 @@
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
+    <!-- ALERTS (reached from the bell on the screen) -->
+    <section class="view" data-panel="alerts" hidden>
+      <ul class="rows alerts" id="alertRows"></ul>
+      <p class="foot">Alerts live in this browser only and fire while the page is open: three beeps, a flash, and a notification if you allowed them.</p>
+    </section>
+
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
@@ -190,6 +213,9 @@
       <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
       <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
       <p><b>CORR</b> — bitcoin against the Nasdaq Composite over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — bitcoin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far bitcoin sits below its running peak.</p>
+
+      <h2>Keys</h2>
+      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
 
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>

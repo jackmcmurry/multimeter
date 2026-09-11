@@ -166,6 +166,17 @@ body {
 .ann-hold.is-on { opacity: 1; color: var(--holster); }
 
 .ann-group { display: flex; align-items: center; gap: 14px; }
+.ann-rel { opacity: 0.18; }
+.ann-rel.is-on { opacity: 1; color: var(--holster); }
+.ann-bell {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 0; margin: 0;
+  color: var(--lcd-dim); opacity: 0.35; cursor: pointer;
+  font: inherit; letter-spacing: inherit;
+}
+.ann-bell b { font-weight: 700; }
+.ann-bell.is-on { opacity: 1; color: var(--holster); }
+.ann-bell:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .ann-live { display: inline-flex; align-items: center; gap: 6px; opacity: 0.18; }
 .ann-live .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .ann-live.is-on { opacity: 1; color: var(--up); }
@@ -217,6 +228,42 @@ body {
 .lcd-chg.is-down { color: var(--down); }
 
 /* range tabs, shown for the coins */
+/* MIN/MAX row: reserved height, faded when idle */
+.lcd-minmax { min-height: 18px; margin-top: 8px; justify-content: flex-start; gap: 22px; transition: opacity 200ms ease; }
+.lcd-minmax.is-idle { opacity: 0; }
+.lcd-minmax .ann { color: var(--lcd-ink); font-variant-numeric: tabular-nums; }
+
+/* the alert editor floats over the chart so the screen keeps its height */
+.lcd { position: relative; }
+.lcd-edit {
+  position: absolute;
+  left: 18px; right: 18px; top: 48px;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--lcd-dk);
+  border: 1px solid var(--lcd-tab);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+.lcd-edit .ann { color: var(--lcd-dim); display: block; margin-bottom: 8px; }
+.lcd-edit-row { display: flex; gap: 8px; align-items: center; }
+.lcd-edit input {
+  flex: 1; min-width: 0;
+  font-family: var(--f-ui); font-size: 22px; font-weight: 600;
+  color: var(--lcd-ink); background: var(--lcd); border: 1px solid var(--lcd-tab);
+  border-radius: 8px; padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
+.lcd-edit input:focus-visible { outline: 2px solid var(--holster); outline-offset: 1px; }
+
+/* the alarm: the bezel flashes red three times */
+.lcd.is-alarm { animation: alarm 420ms ease-in-out 3; }
+@keyframes alarm {
+  0%, 100% { border-color: var(--lcd-dk); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.5); }
+  50% { border-color: var(--hold); box-shadow: 0 0 0 3px var(--hold), 0 0 40px var(--down), inset 0 0 60px rgba(255, 107, 107, 0.25); }
+}
+
 .lcd-ranges { display: flex; gap: 6px; margin-top: 18px; transition: opacity 200ms ease; }
 .lcd-ranges.is-idle { opacity: 0; pointer-events: none; }
 .lcd-chg:empty::before { content: "—"; }
@@ -250,17 +297,20 @@ body {
 }
 
 /* ---- keys ---------------------------------------------------------------- */
-.keys { display: flex; justify-content: space-between; margin: 16px 6px 4px; }
+.keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; }
 .key {
   font-family: var(--f-ui);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--key-text);
   background: linear-gradient(180deg, var(--shell-lt), var(--key));
   border: 0;
   border-radius: 8px;
-  padding: 10px 24px;
+  padding: 11px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
   box-shadow: 0 3px 0 var(--key-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
   cursor: pointer;
   transition: transform 90ms ease, box-shadow 90ms ease;
@@ -482,6 +532,9 @@ body {
 .row-chg { text-align: right; }
 .row-chg .chg { font-size: 13px; }
 .row-spark { min-width: 0; }
+.rows.alerts li { grid-template-columns: minmax(0, 1fr) auto 36px; }
+.rows.alerts li.is-fired .row-code { color: var(--dim); text-decoration: line-through; }
+.rows.alerts .pill { padding: 4px 10px; }
 
 /* ---- stat strip ---------------------------------------------------------- */
 .strip {
@@ -569,6 +622,9 @@ tr.row-rule th {
   .lcd-price { font-size: 40px; }
   .lcd-chg { font-size: 16px; }
   .rng { padding: 8px 12px; font-size: 12px; }
+  .keys { gap: 6px; }
+  .key { font-size: 10.5px; letter-spacing: 0.04em; padding: 10px 2px; }
+  .lcd-edit { left: 12px; right: 12px; top: 40px; }
   .drawer { border-radius: 14px; padding: 14px 12px 18px; }
   .dial { width: 100%; }
   .dial-lab { font-size: 13.5px; }

@@ -322,13 +322,151 @@
     }
   }
 
+  /* ---- REL, MIN/MAX, ALERT ------------------------------------------------ */
+  var lastReading = null;   /* the reading last painted, for the function keys */
+
+  function pressKey(id, on, attr) {
+    var btn = el(id);
+    if (!btn) return;
+    btn.classList.toggle('is-on', !!on);
+    btn.setAttribute(attr || 'aria-pressed', on ? 'true' : 'false');
+  }
+
+  function relPress() {
+    if (!MP.funcs || !lastReading) return;
+    primeAudio();
+    MP.funcs.rel.toggle(currentId, lastReading.value);
+    refresh(true);
+  }
+
+  /* On: start capturing. Off: clear. */
+  function minmaxPress() {
+    if (!MP.funcs) return;
+    primeAudio();
+    var fm = MP.funcs.minmax;
+    if (fm.isShown(currentId)) { fm.show(currentId, false); fm.reset(currentId); }
+    else fm.show(currentId, true);
+    refresh(true);
+  }
+
+  function openEditor() {
+    var form = el('lcdEdit'), input = el('lcdEditLevel');
+    if (!form || !input || !lastReading || currentId === 'off' || !isNum(lastReading.value)) return;
+    primeAudio();
+    var dp = isNum(lastReading.dp) ? lastReading.dp : 2;
+    input.value = String(Number(lastReading.value.toFixed(dp)));
+    input.step = dp ? String(Math.pow(10, -dp)) : '1';
+    form.hidden = false;
+    pressKey('alertBtn', true, 'aria-expanded');
+    input.focus();
+    input.select();
+  }
+
+  function closeEditor() {
+    var form = el('lcdEdit');
+    if (form) form.hidden = true;
+    pressKey('alertBtn', false, 'aria-expanded');
+  }
+
+  function submitEditor(ev) {
+    if (ev) ev.preventDefault();
+    var input = el('lcdEditLevel');
+    var level = input ? parseFloat(input.value) : NaN;
+    if (!isNum(level) || !lastReading || !MP.alerts) return;
+    /* asked inside the gesture, which is the only time browsers allow it */
+    if (root.Notification && root.Notification.permission === 'default') {
+      try { root.Notification.requestPermission(); } catch (e) { /* not available */ }
+    }
+    MP.alerts.add(currentId, level, lastReading.value, lastReading.unit);
+    closeEditor();
+    if (MP.app && MP.app.renderAlerts) MP.app.renderAlerts();
+    refresh(true);
+  }
+
+  function showAlerts() {
+    if (MP.router && MP.router.overridePanel) MP.router.overridePanel('alerts');
+    openDrawer(true);
+  }
+
+  /* ---- alarm -------------------------------------------------------------- */
+  var alarmTimer = null;
+
+  /* Three 1 kHz pulses: the continuity beep. Silent until a gesture has
+   * primed the audio context. */
+  function beep() {
+    if (!audio || audio.state !== 'running') return;
+    try {
+      var t = audio.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var t0 = t + i * 0.24;
+        var osc = audio.createOscillator(), gain = audio.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 1000;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.06, t0 + 0.006);
+        gain.gain.setValueAtTime(0.06, t0 + 0.11);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.135);
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.14);
+      }
+    } catch (e) { /* no sound is fine */ }
+  }
+
+  function notify(text) {
+    if (!root.Notification || root.Notification.permission !== 'granted') return;
+    var opts = { body: text, tag: 'mm-alert-' + Date.now() };
+    function plain() { try { void new root.Notification('Multimeter', opts); } catch (e) { /* page-context constructor unsupported */ } }
+    var sw = root.navigator && root.navigator.serviceWorker;
+    if (sw && sw.getRegistration) {
+      sw.getRegistration().then(function (reg) {
+        if (reg && reg.showNotification) return reg.showNotification('Multimeter', opts);
+        plain();
+      }).catch(plain);
+    } else {
+      plain();
+    }
+  }
+
+  /* Beep, flash the screen, pulse the phone, and notify — once per crossing. */
+  function alarm(messages) {
+    beep();
+    var lcd = el('lcd');
+    if (lcd) {
+      lcd.classList.remove('is-alarm');
+      void lcd.offsetWidth;
+      lcd.classList.add('is-alarm');
+      clearTimeout(alarmTimer);
+      alarmTimer = setTimeout(function () { lcd.classList.remove('is-alarm'); }, 1300);
+    }
+    if (root.navigator && typeof root.navigator.vibrate === 'function') {
+      try { root.navigator.vibrate([80, 80, 80, 80, 80]); } catch (e) { /* not permitted */ }
+    }
+    (messages || []).forEach(notify);
+  }
+
   function wireButtons() {
     var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd'), ranges = el('lcdRanges');
+    var rel = el('relBtn'), minmax = el('minmaxBtn'), alertBtn = el('alertBtn');
+    var form = el('lcdEdit'), cancel = el('lcdEditCancel'), bell = el('lcdBell');
     if (hold) hold.addEventListener('click', function () { setHold(!held); });
     if (detail) detail.addEventListener('click', function () { openDrawer(); });
+    if (rel) rel.addEventListener('click', relPress);
+    if (minmax) minmax.addEventListener('click', minmaxPress);
+    if (alertBtn) alertBtn.addEventListener('click', function () {
+      if (form && !form.hidden) closeEditor(); else openEditor();
+    });
+    if (form) {
+      form.addEventListener('submit', submitEditor);
+      form.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { closeEditor(); ev.preventDefault(); } });
+    }
+    if (cancel) cancel.addEventListener('click', closeEditor);
+    if (bell) bell.addEventListener('click', showAlerts);
     if (lcd) {
       lcd.addEventListener('click', function (ev) {
-        if (ranges && ranges.contains(ev.target)) return;   /* the tabs are their own control */
+        /* the tabs, the editor, the bell are controls of their own */
+        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell')) return;
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
@@ -348,18 +486,20 @@
   }
 
   /* ---- the screen --------------------------------------------------------- */
-  function absText(abs, unit) {
+  /* The absolute move, in the reading's own decimals (a cheap coin's four,
+   * everything else's two), never the price rule that would print $0.0100. */
+  function absText(abs, unit, dp) {
     if (!isNum(abs)) return '';
-    var a = Math.abs(abs);
-    if (unit === 'USD') return MP.fmt.usd(a, a < 10 ? 4 : 2);
-    return MP.fmt.num(a, 2);
+    var a = Math.abs(abs), d = isNum(dp) ? dp : 2;
+    if (unit === 'USD') return MP.fmt.usd(a, d);
+    return MP.fmt.num(a, d);
   }
 
   /* "↘ $1,480.12 (1.94%)" for a price; "↗ 0.16" for a statistic. */
   function changeText(c, unit) {
     if (!c) return MP.fmt.DASH;
     if (isNum(c.pct)) {
-      var abs = absText(c.abs, unit);
+      var abs = absText(c.abs, unit, c.dp);
       return (c.pct >= 0 ? UP : DOWN) + ' ' + (abs ? abs + ' ' : '') + '(' + Math.abs(c.pct).toFixed(2) + '%)';
     }
     if (isNum(c.delta)) {
@@ -414,6 +554,26 @@
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
 
+    /* instrument functions and alerts */
+    var relAnn = el('lcdRel');
+    if (relAnn) relAnn.classList.toggle('is-on', !off && !!r.rel);
+    pressKey('relBtn', !off && MP.funcs && MP.funcs.rel.get(currentId) !== null);
+    pressKey('minmaxBtn', !off && MP.funcs && MP.funcs.minmax.isShown(currentId));
+    var mmRow = el('lcdMinmax');
+    if (mmRow) {
+      var mm = !off && r.minmax;
+      mmRow.classList.toggle('is-idle', !mm);
+      setText('lcdMin', mm ? 'MIN ' + fmtLike(r, mm.min) : '');
+      setText('lcdMax', mm ? 'MAX ' + fmtLike(r, mm.max) : '');
+    }
+    var bell = el('lcdBell');
+    if (bell) {
+      var n = MP.alerts ? MP.alerts.count() : 0;
+      bell.classList.toggle('is-on', n > 0);
+      setText('lcdBellCount', n ? String(n) : '');
+      bell.setAttribute('aria-label', n ? n + ' alert' + (n === 1 ? '' : 's') + ' armed. Open the list.' : 'No alerts. Open the list.');
+    }
+
     var ranges = el('lcdRanges');
     if (ranges) {
       /* kept in the layout even when idle: the screen must not change height
@@ -435,11 +595,25 @@
     lcd.setAttribute('aria-label', describe(r, off));
   }
 
-  function refresh() {
-    if (held || !currentId) return;
+  /* A value formatted the way this reading formats its own. */
+  function fmtLike(r, v) {
+    if (!isNum(v)) return MP.fmt.DASH;
+    if (r.unit === 'USD') return MP.fmt.usd(v, Math.abs(v) < 10 ? 4 : 2);
+    if (r.unit === 'INDEX') return MP.fmt.num(v, 2);
+    return MP.fmt.num(v, isNum(r.dp) ? r.dp : 2) + (r.unit || '');
+  }
+
+  /* force: repaint even under HOLD (a function key was pressed). MIN/MAX
+   * keeps capturing under HOLD, as a real meter's does. */
+  function refresh(force) {
+    if (!currentId) return;
     var app = MP.app;
     if (!app || !app.reading) return;
-    paint(app.reading(currentId));
+    var r = app.reading(currentId);
+    if (MP.funcs) MP.funcs.minmax.track(currentId, r.value);
+    if (held && !force) return;
+    lastReading = r;
+    paint(MP.funcs ? MP.funcs.decorate(r, currentId) : r);
   }
 
   /* ---- routing ------------------------------------------------------------ */
@@ -448,6 +622,7 @@
     if (idx < 0) return;
     var changed = currentId !== null && currentId !== id;
     currentId = id;
+    if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
     if (changed && !dragging) detent(); /* a drag already clicked at the crossing */
@@ -477,6 +652,10 @@
     plateSvg: plateSvg,
     init: init,
     refresh: refresh,
+    changeText: changeText,
+    alarm: alarm,
+    beep: beep,
+    showAlerts: showAlerts,
     setHold: setHold,
     isHeld: function () { return held; },
     openDrawer: openDrawer,

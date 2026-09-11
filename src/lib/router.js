@@ -60,6 +60,9 @@
     dd: 'Drawdown'
   };
 
+  /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
+  var PANEL_TITLES = { alerts: 'Alerts' };
+
   var DEFAULT_VIEW = 'btc';
 
   /* Pure: '#corr' -> 'corr', '#coupling' -> 'corr'; anything unrecognised ->
@@ -71,26 +74,37 @@
   }
 
   var current = null;
+  var override = null;
   var listeners = [];
+
+  function applyPanel(target) {
+    var panel = override || PANELS[target];
+    var sections = document.querySelectorAll('.view[data-panel]');
+    for (var i = 0; i < sections.length; i++) {
+      sections[i].hidden = sections[i].getAttribute('data-panel') !== panel;
+    }
+    var title = document.getElementById('viewTitle');
+    if (title) title.textContent = (override && PANEL_TITLES[override]) || TITLES[target] || TITLES[DEFAULT_VIEW];
+  }
 
   function show(view) {
     var target = VIEWS.indexOf(view) >= 0 ? view : DEFAULT_VIEW;
     if (current === target) return target;
     current = target;
-
-    var panel = PANELS[target];
-    var sections = document.querySelectorAll('.view[data-panel]');
-    for (var i = 0; i < sections.length; i++) {
-      sections[i].hidden = sections[i].getAttribute('data-panel') !== panel;
-    }
-
-    var title = document.getElementById('viewTitle');
-    if (title) title.textContent = TITLES[target] || TITLES[DEFAULT_VIEW];
+    override = null;
+    applyPanel(target);
 
     for (var k = 0; k < listeners.length; k++) {
       try { listeners[k](target); } catch (e) { /* a listener must not break navigation */ }
     }
     return target;
+  }
+
+  /* Shows a stop-less panel (the alerts list) until the next stop change. */
+  function overridePanel(name) {
+    override = name && PANEL_TITLES[name] ? name : null;
+    if (current) applyPanel(current);
+    return override;
   }
 
   /* Navigate: writes the hash so the back button works, and shows the view
@@ -125,6 +139,8 @@
     parseHash: parseHash,
     show: show,
     go: go,
+    overridePanel: overridePanel,
+    currentPanel: function () { return override || (current ? PANELS[current] : null); },
     onChange: onChange,
     start: start,
     currentView: function () { return current; }

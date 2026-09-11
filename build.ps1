@@ -32,6 +32,8 @@ $libOrder = @(
     'src/lib/sources.js',
     'src/lib/session.js',
     'src/lib/router.js',
+    'src/lib/funcs.js',
+    'src/lib/alerts.js',
     'src/lib/meter.js',
     'src/lib/live.js',
     'src/lib/spotlight.js',

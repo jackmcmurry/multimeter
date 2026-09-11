@@ -31,6 +31,15 @@ US market is open.
 | VOL | BTC 30-session realized vol, annualized | current vols and the rolling column chart |
 | DD | BTC distance below its running peak | underwater curves and the episode table |
 
+The keys under the screen are the ones a real meter has. **REL** zeroes the
+reading where it stands, so the change line shows the move since the press.
+**MIN/MAX** captures the lowest and highest reading while it is on. **ALERT**
+sets a level on the current stop; when the reading crosses it the meter beeps
+three times, flashes, buzzes a phone and posts a notification if allowed, and
+the bell on the screen lists armed and fired alerts. Alerts are kept in this
+browser (`localStorage`, key `mm.alerts`) and evaluated only while the page
+is open. **HOLD** freezes the display; MIN/MAX keeps capturing underneath.
+
 Routing is hash-based (`#corr`), so a stop is linkable and the back button
 turns the dial. The old section hashes (`#home`, `#markets`, `#weekly`,
 `#coupling`, `#beta`, `#volatility`, `#drawdown`, `#about`) and the tickers

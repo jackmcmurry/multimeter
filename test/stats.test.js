@@ -237,6 +237,77 @@
       eq('ampersand label is escaped in the plate', M.plateSvg().indexOf('S&amp;P') > 0, true);
     }
 
+    /* ---- REL and MIN/MAX -------------------------------------------------- */
+    var FN = MP.funcs;
+    if (!FN) {
+      ok('funcs module is loaded', false, 'MP.funcs missing');
+    } else {
+      FN.reset();
+      ok('REL is off by default', FN.rel.get('btc') === null);
+      eq('REL press switches on with a value', FN.rel.toggle('btc', 100), true);
+      eq('REL holds the reference', FN.rel.get('btc'), 100);
+      eq('REL press again switches off', FN.rel.toggle('btc', 120), false);
+      eq('REL cannot hold a non-number', FN.rel.toggle('btc', NaN), false);
+      FN.rel.set('btc', 100);
+      var priced = FN.decorate({ value: 110, dp: 2, unit: 'USD', change: { pct: 1, abs: 1 } }, 'btc');
+      close('REL price shows percent since reference', priced.change.pct, 10, 1e-12);
+      close('REL price shows absolute move', priced.change.abs, 10, 1e-12);
+      eq('REL labels the change', priced.change.label, 'REL');
+      ok('REL flags the reading', priced.rel === true);
+      FN.rel.set('corr', 0.4);
+      var ratio = FN.decorate({ value: 0.55, dp: 2, unit: '', change: {} }, 'corr');
+      ok('REL statistic has no percent', isNaN(ratio.change.pct));
+      close('REL statistic shows a plain delta', ratio.change.delta, 0.15, 1e-12);
+      var untouched = FN.decorate({ value: 5, dp: 2, unit: 'USD', change: { pct: 2 } }, 'eth');
+      eq('no reference leaves the change alone', untouched.change.pct, 2);
+      FN.minmax.track('vol', 50);
+      ok('MIN/MAX ignores values while off', FN.minmax.get('vol') === null);
+      FN.minmax.show('vol', true);
+      FN.minmax.track('vol', 50); FN.minmax.track('vol', NaN); FN.minmax.track('vol', 42); FN.minmax.track('vol', 61);
+      eq('MIN/MAX minimum', FN.minmax.get('vol').min, 42);
+      eq('MIN/MAX maximum', FN.minmax.get('vol').max, 61);
+      eq('MIN/MAX ignores NaN in its count', FN.minmax.get('vol').n, 3);
+      ok('decorate attaches the capture when shown', FN.decorate({ value: 50, unit: '%', change: {} }, 'vol').minmax.max === 61);
+      FN.minmax.reset('vol');
+      ok('MIN/MAX reset clears the capture', FN.minmax.get('vol') === null);
+      FN.reset();
+    }
+
+    /* ---- alerts ----------------------------------------------------------- */
+    var AL = MP.alerts;
+    if (!AL) {
+      ok('alerts module is loaded', false, 'MP.alerts missing');
+    } else {
+      eq('a level above the reading fires on the way up', AL.infer(110, 100), 'above');
+      eq('a level below the reading fires on the way down', AL.infer(90, 100), 'below');
+      var list = [
+        { id: 'x1', stop: 'btc', level: 110, dir: 'above', unit: 'USD', created: 1, fired: null },
+        { id: 'x2', stop: 'btc', level: 90, dir: 'below', unit: 'USD', created: 1, fired: null },
+        { id: 'x3', stop: 'eth', level: 5, dir: 'above', unit: 'USD', created: 1, fired: null },
+        { id: 'x4', stop: 'btc', level: 100, dir: 'above', unit: 'USD', created: 1, fired: 7 }
+      ];
+      var quiet = AL.evaluate(list, 'btc', 100, 9);
+      eq('nothing fires between the levels', quiet.fired.length, 0);
+      var up = AL.evaluate(list, 'btc', 110, 9);
+      eq('reaching the level fires above', up.fired.length, 1);
+      eq('the right alert fired', up.fired[0].id, 'x1');
+      eq('fired alerts carry the time', up.fired[0].fired, 9);
+      ok('the input list is not mutated', list[0].fired === null);
+      var down = AL.evaluate(list, 'btc', 80, 9);
+      eq('falling through the level fires below', down.fired[0].id, 'x2');
+      eq('other stops are untouched', AL.evaluate(list, 'btc', 999, 9).fired.filter(function (a) { return a.stop === 'eth'; }).length, 0);
+      eq('already fired alerts stay fired once', AL.evaluate(list, 'btc', 999, 9).fired.filter(function (a) { return a.id === 'x4'; }).length, 0);
+      eq('a missing value fires nothing', AL.evaluate(list, 'btc', NaN, 9).fired.length, 0);
+      var desc = AL.describe(list[0], function (stop, v) { return '$' + v; });
+      eq('description reads as a sentence', desc, 'Bitcoin above $110');
+    }
+
+    if (R && R.overridePanel) {
+      eq('panel override accepts a known panel', R.overridePanel('alerts'), 'alerts');
+      eq('panel override rejects an unknown panel', R.overridePanel('nope'), null);
+      R.overridePanel(null);   /* back to the stop's own panel */
+    }
+
     var passed = results.filter(function (r) { return r.pass; }).length;
     var failures = results.filter(function (r) { return !r.pass; });
     return {

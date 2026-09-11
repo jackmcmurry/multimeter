@@ -177,7 +177,58 @@
   /* The meter's screen paints from app state; every renderer below ends by
    * asking it to repaint, so the LCD is never staler than the drawer. */
   function repaint() {
+    checkAlerts();
     if (MP.meter && MP.meter.refresh) MP.meter.refresh();
+  }
+
+  /* ---- alerts ------------------------------------------------------------- */
+
+  /* Every armed alert is checked against its own stop's current reading on
+   * every repaint, whatever the dial shows and whether or not HOLD is on. */
+  function checkAlerts() {
+    if (!MP.alerts) return;
+    var stops = MP.alerts.armedStops();
+    if (!stops.length) return;
+    var fired = [];
+    stops.forEach(function (stop) {
+      var res = MP.alerts.evaluate(MP.alerts.all(), stop, reading(stop).value, Date.now());
+      if (res.fired.length) {
+        MP.alerts.save(res.alerts);
+        fired = fired.concat(res.fired);
+      }
+    });
+    if (!fired.length) return;
+    if (MP.meter && MP.meter.alarm) {
+      MP.meter.alarm(fired.map(function (a) { return MP.alerts.describe(a, formatValue); }));
+    }
+    renderAlerts();
+  }
+
+  function renderAlerts() {
+    var host = el('alertRows');
+    if (!host || !MP.alerts) return;
+    var list = MP.alerts.all().slice().sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
+    host.innerHTML = list.length ? list.map(function (a) {
+      var when = a.fired ? 'fired ' + F.ago(a.fired) : 'armed · set ' + F.ago(a.created);
+      return '<li' + (a.fired ? ' class="is-fired"' : '') + '>' +
+        '<div class="row-name"><div class="row-code">' + F.escapeHtml(MP.alerts.describe(a, formatValue)) + '</div>' +
+        '<div class="row-desc">' + F.escapeHtml(when) + '</div></div>' +
+        '<span class="tag">' + (a.fired ? 'fired' : 'armed') + '</span>' +
+        '<button type="button" class="pill" data-del="' + F.escapeHtml(a.id) + '" aria-label="Delete alert">✕</button>' +
+        '</li>';
+    }).join('') : '<li class="row-desc">No alerts yet. Press ALERT on the meter to set one.</li>';
+  }
+
+  function wireAlerts() {
+    var host = el('alertRows');
+    if (!host) return;
+    host.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('[data-del]') : null;
+      if (!btn || !MP.alerts) return;
+      MP.alerts.remove(btn.getAttribute('data-del'));
+      renderAlerts();
+      repaint();
+    });
   }
 
   /* ---- the meter's reading ------------------------------------------------ */
@@ -259,13 +310,14 @@
   function pickReading(r, fallbackMode) {
     if (!r) return noReading('USD', fallbackMode, '1D');
     var pct = r.changePct;
+    var dp = S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2;
     return {
-      text: money(r.price), value: r.price, dp: S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2,
+      text: money(r.price), value: r.price, dp: dp,
       unit: 'USD', mode: r.mode,
       change: {
         pct: pct,
         abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
-        delta: NaN, suffix: '', label: r.changeLabel, dp: 2
+        delta: NaN, suffix: '', label: r.changeLabel, dp: dp
       },
       spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
       empty: !S.isNum(r.price), ranges: false, coin: null
@@ -876,6 +928,8 @@
       MP.router.start();
     }
     tickSession();
+    wireAlerts();
+    renderAlerts();
     renderHero();
     renderMarkets();
     renderAnalytics();
@@ -925,6 +979,8 @@
     renderSession: renderSession,
     reading: reading,
     formatValue: formatValue,
+    renderAlerts: renderAlerts,
+    checkAlerts: checkAlerts,
     applyTick: applyTick,
     liveProducts: liveProducts,
     productForStop: productForStop,

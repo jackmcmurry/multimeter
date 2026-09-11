@@ -183,6 +183,17 @@ body {
 .ann-hold.is-on { opacity: 1; color: var(--holster); }
 
 .ann-group { display: flex; align-items: center; gap: 14px; }
+.ann-rel { opacity: 0.18; }
+.ann-rel.is-on { opacity: 1; color: var(--holster); }
+.ann-bell {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 0; margin: 0;
+  color: var(--lcd-dim); opacity: 0.35; cursor: pointer;
+  font: inherit; letter-spacing: inherit;
+}
+.ann-bell b { font-weight: 700; }
+.ann-bell.is-on { opacity: 1; color: var(--holster); }
+.ann-bell:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .ann-live { display: inline-flex; align-items: center; gap: 6px; opacity: 0.18; }
 .ann-live .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .ann-live.is-on { opacity: 1; color: var(--up); }
@@ -234,6 +245,42 @@ body {
 .lcd-chg.is-down { color: var(--down); }
 
 /* range tabs, shown for the coins */
+/* MIN/MAX row: reserved height, faded when idle */
+.lcd-minmax { min-height: 18px; margin-top: 8px; justify-content: flex-start; gap: 22px; transition: opacity 200ms ease; }
+.lcd-minmax.is-idle { opacity: 0; }
+.lcd-minmax .ann { color: var(--lcd-ink); font-variant-numeric: tabular-nums; }
+
+/* the alert editor floats over the chart so the screen keeps its height */
+.lcd { position: relative; }
+.lcd-edit {
+  position: absolute;
+  left: 18px; right: 18px; top: 48px;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--lcd-dk);
+  border: 1px solid var(--lcd-tab);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+.lcd-edit .ann { color: var(--lcd-dim); display: block; margin-bottom: 8px; }
+.lcd-edit-row { display: flex; gap: 8px; align-items: center; }
+.lcd-edit input {
+  flex: 1; min-width: 0;
+  font-family: var(--f-ui); font-size: 22px; font-weight: 600;
+  color: var(--lcd-ink); background: var(--lcd); border: 1px solid var(--lcd-tab);
+  border-radius: 8px; padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
+.lcd-edit input:focus-visible { outline: 2px solid var(--holster); outline-offset: 1px; }
+
+/* the alarm: the bezel flashes red three times */
+.lcd.is-alarm { animation: alarm 420ms ease-in-out 3; }
+@keyframes alarm {
+  0%, 100% { border-color: var(--lcd-dk); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.5); }
+  50% { border-color: var(--hold); box-shadow: 0 0 0 3px var(--hold), 0 0 40px var(--down), inset 0 0 60px rgba(255, 107, 107, 0.25); }
+}
+
 .lcd-ranges { display: flex; gap: 6px; margin-top: 18px; transition: opacity 200ms ease; }
 .lcd-ranges.is-idle { opacity: 0; pointer-events: none; }
 .lcd-chg:empty::before { content: "—"; }
@@ -267,17 +314,20 @@ body {
 }
 
 /* ---- keys ---------------------------------------------------------------- */
-.keys { display: flex; justify-content: space-between; margin: 16px 6px 4px; }
+.keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; }
 .key {
   font-family: var(--f-ui);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--key-text);
   background: linear-gradient(180deg, var(--shell-lt), var(--key));
   border: 0;
   border-radius: 8px;
-  padding: 10px 24px;
+  padding: 11px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
   box-shadow: 0 3px 0 var(--key-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
   cursor: pointer;
   transition: transform 90ms ease, box-shadow 90ms ease;
@@ -499,6 +549,9 @@ body {
 .row-chg { text-align: right; }
 .row-chg .chg { font-size: 13px; }
 .row-spark { min-width: 0; }
+.rows.alerts li { grid-template-columns: minmax(0, 1fr) auto 36px; }
+.rows.alerts li.is-fired .row-code { color: var(--dim); text-decoration: line-through; }
+.rows.alerts .pill { padding: 4px 10px; }
 
 /* ---- stat strip ---------------------------------------------------------- */
 .strip {
@@ -586,6 +639,9 @@ tr.row-rule th {
   .lcd-price { font-size: 40px; }
   .lcd-chg { font-size: 16px; }
   .rng { padding: 8px 12px; font-size: 12px; }
+  .keys { gap: 6px; }
+  .key { font-size: 10.5px; letter-spacing: 0.04em; padding: 10px 2px; }
+  .lcd-edit { left: 12px; right: 12px; top: 40px; }
   .drawer { border-radius: 14px; padding: 14px 12px 18px; }
   .dial { width: 100%; }
   .dial-lab { font-size: 13.5px; }
@@ -618,10 +674,20 @@ tr.row-rule th {
             <span class="ann" id="lcdMode"></span>
             <span class="ann-group">
               <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
+              <span class="ann ann-rel" id="lcdRel">REL</span>
+              <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
               <span class="ann ann-hold" id="lcdHold">HOLD</span>
             </span>
           </div>
           <div class="lcd-chart" id="lcdChart"></div>
+          <form class="lcd-edit" id="lcdEdit" hidden>
+            <label class="ann" for="lcdEditLevel">Alert when the reading crosses</label>
+            <div class="lcd-edit-row">
+              <input id="lcdEditLevel" type="number" inputmode="decimal" step="any" autocomplete="off">
+              <button type="submit" class="rng is-on">SET</button>
+              <button type="button" class="rng" id="lcdEditCancel" aria-label="Cancel">✕</button>
+            </div>
+          </form>
           <div class="lcd-readout">
             <div class="lcd-price-row">
               <span class="lcd-price" id="lcdPrice"></span>
@@ -630,6 +696,10 @@ tr.row-rule th {
             <div class="lcd-row lcd-foot">
               <span class="lcd-chg" id="lcdChange"></span>
               <span class="ann" id="lcdChangeLabel"></span>
+            </div>
+            <div class="lcd-row lcd-minmax is-idle" id="lcdMinmax" aria-live="off">
+              <span class="ann" id="lcdMin"></span>
+              <span class="ann" id="lcdMax"></span>
             </div>
           </div>
           <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range">
@@ -642,6 +712,9 @@ tr.row-rule th {
 
         <div class="keys">
           <button type="button" class="key" id="detailBtn" aria-expanded="false" aria-controls="drawer">DATA</button>
+          <button type="button" class="key" id="relBtn" aria-pressed="false" title="Relative: zero the reading here">REL</button>
+          <button type="button" class="key" id="minmaxBtn" aria-pressed="false" title="Capture the lowest and highest reading">MIN/MAX</button>
+          <button type="button" class="key" id="alertBtn" aria-expanded="false" aria-controls="lcdEdit" title="Beep when the reading crosses a level">ALERT</button>
           <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
         </div>
 
@@ -759,6 +832,12 @@ tr.row-rule th {
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
+    <!-- ALERTS (reached from the bell on the screen) -->
+    <section class="view" data-panel="alerts" hidden>
+      <ul class="rows alerts" id="alertRows"></ul>
+      <p class="foot">Alerts live in this browser only and fire while the page is open: three beeps, a flash, and a notification if you allowed them.</p>
+    </section>
+
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
@@ -771,6 +850,9 @@ tr.row-rule th {
       <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
       <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
       <p><b>CORR</b> — bitcoin against the Nasdaq Composite over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — bitcoin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far bitcoin sits below its running peak.</p>
+
+      <h2>Keys</h2>
+      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. Alerts and the probe live in this browser only.</p>
 
       <h2>Method</h2>
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
@@ -2215,6 +2297,9 @@ tr.row-rule th {
     dd: 'Drawdown'
   };
 
+  /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
+  var PANEL_TITLES = { alerts: 'Alerts' };
+
   var DEFAULT_VIEW = 'btc';
 
   /* Pure: '#corr' -> 'corr', '#coupling' -> 'corr'; anything unrecognised ->
@@ -2226,26 +2311,37 @@ tr.row-rule th {
   }
 
   var current = null;
+  var override = null;
   var listeners = [];
+
+  function applyPanel(target) {
+    var panel = override || PANELS[target];
+    var sections = document.querySelectorAll('.view[data-panel]');
+    for (var i = 0; i < sections.length; i++) {
+      sections[i].hidden = sections[i].getAttribute('data-panel') !== panel;
+    }
+    var title = document.getElementById('viewTitle');
+    if (title) title.textContent = (override && PANEL_TITLES[override]) || TITLES[target] || TITLES[DEFAULT_VIEW];
+  }
 
   function show(view) {
     var target = VIEWS.indexOf(view) >= 0 ? view : DEFAULT_VIEW;
     if (current === target) return target;
     current = target;
-
-    var panel = PANELS[target];
-    var sections = document.querySelectorAll('.view[data-panel]');
-    for (var i = 0; i < sections.length; i++) {
-      sections[i].hidden = sections[i].getAttribute('data-panel') !== panel;
-    }
-
-    var title = document.getElementById('viewTitle');
-    if (title) title.textContent = TITLES[target] || TITLES[DEFAULT_VIEW];
+    override = null;
+    applyPanel(target);
 
     for (var k = 0; k < listeners.length; k++) {
       try { listeners[k](target); } catch (e) { /* a listener must not break navigation */ }
     }
     return target;
+  }
+
+  /* Shows a stop-less panel (the alerts list) until the next stop change. */
+  function overridePanel(name) {
+    override = name && PANEL_TITLES[name] ? name : null;
+    if (current) applyPanel(current);
+    return override;
   }
 
   /* Navigate: writes the hash so the back button works, and shows the view
@@ -2280,9 +2376,209 @@ tr.row-rule th {
     parseHash: parseHash,
     show: show,
     go: go,
+    overridePanel: overridePanel,
+    currentPanel: function () { return override || (current ? PANELS[current] : null); },
     onChange: onChange,
     start: start,
     currentView: function () { return current; }
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/funcs.js ==================================================== */
+/* ============================================================================
+ * funcs.js — the instrument functions a real meter has: REL and MIN/MAX.
+ *
+ * REL (relative) zeroes the reading where it stands: from then on the change
+ * line shows the move since that reference instead of the day's or range's.
+ * MIN/MAX captures the lowest and highest value seen while it is switched
+ * on. Both are per stop, live in memory only, and never touch app state:
+ * decorate() returns a copy of a reading with the function applied.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  var refs = {};      /* stop -> reference value */
+  var captures = {};  /* stop -> { min, max, n } */
+  var shown = {};     /* stop -> MIN/MAX switched on */
+
+  var rel = {
+    set: function (stop, value) { if (isNum(value)) refs[stop] = value; },
+    clear: function (stop) { delete refs[stop]; },
+    get: function (stop) { return Object.prototype.hasOwnProperty.call(refs, stop) ? refs[stop] : null; },
+    /* Press: on when off (if there is a value to hold), off when on. */
+    toggle: function (stop, value) {
+      if (Object.prototype.hasOwnProperty.call(refs, stop)) { delete refs[stop]; return false; }
+      if (!isNum(value)) return false;
+      refs[stop] = value;
+      return true;
+    }
+  };
+
+  var minmax = {
+    track: function (stop, value) {
+      if (!isNum(value) || !shown[stop]) return;
+      var c = captures[stop];
+      if (!c) { captures[stop] = { min: value, max: value, n: 1 }; return; }
+      if (value < c.min) c.min = value;
+      if (value > c.max) c.max = value;
+      c.n += 1;
+    },
+    get: function (stop) {
+      var c = captures[stop];
+      return c ? { min: c.min, max: c.max, n: c.n } : null;
+    },
+    reset: function (stop) { delete captures[stop]; },
+    show: function (stop, on) { shown[stop] = !!on; },
+    isShown: function (stop) { return !!shown[stop]; }
+  };
+
+  /* A reading with REL and MIN/MAX applied. Prices (USD, INDEX) get a percent
+   * and an absolute move since the reference; statistics get a plain delta
+   * in their own units. */
+  function decorate(r, stop) {
+    var out = {};
+    Object.keys(r).forEach(function (k) { out[k] = r[k]; });
+    out.change = r.change ? Object.assign({}, r.change) : null;
+
+    var ref = rel.get(stop);
+    if (ref !== null && isNum(r.value)) {
+      var priceLike = r.unit === 'USD' || r.unit === 'INDEX';
+      out.change = {
+        pct: priceLike && ref !== 0 ? (r.value / ref - 1) * 100 : NaN,
+        abs: priceLike ? r.value - ref : NaN,
+        delta: priceLike ? NaN : r.value - ref,
+        suffix: r.unit === '%' ? '%' : '',
+        label: 'REL',
+        dp: isNum(r.dp) ? r.dp : 2
+      };
+      out.rel = true;
+    }
+    out.minmax = minmax.isShown(stop) ? minmax.get(stop) : null;
+    return out;
+  }
+
+  function reset() { refs = {}; captures = {}; shown = {}; }
+
+  MP.funcs = { rel: rel, minmax: minmax, decorate: decorate, reset: reset };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/alerts.js =================================================== */
+/* ============================================================================
+ * alerts.js — the continuity beep: a level on any stop that sounds when it is
+ * crossed.
+ *
+ * An alert is { id, stop, level, dir, unit, created, fired }. The direction
+ * is inferred when it is set: a level above the current reading fires when
+ * the value reaches it from below, and the other way round. Alerts live in
+ * this browser (MP.store) and are evaluated on every repaint, so they fire
+ * only while the page is open. evaluate() is pure and returns copies.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var KEY = 'alerts';
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  function valid(a) {
+    return a && typeof a === 'object' && typeof a.id === 'string' && typeof a.stop === 'string' &&
+      isNum(a.level) && (a.dir === 'above' || a.dir === 'below');
+  }
+
+  var list = null;   /* loaded lazily, then kept in memory */
+
+  function all() {
+    if (list === null) {
+      var raw = MP.store ? MP.store.get(KEY, []) : [];
+      list = Array.isArray(raw) ? raw.filter(valid) : [];
+    }
+    return list;
+  }
+
+  function save(next) {
+    list = (next || []).filter(valid);
+    if (MP.store) MP.store.set(KEY, list);
+    return list;
+  }
+
+  function infer(level, current) {
+    return isNum(current) && level <= current ? 'below' : 'above';
+  }
+
+  /* Pure: which of `alerts` for `stop` are crossed by `value`. Fired alerts
+   * and other stops pass through untouched; the result is a new array. */
+  function evaluate(alerts, stop, value, now) {
+    var fired = [];
+    var next = (alerts || []).map(function (a) {
+      if (!valid(a) || a.stop !== stop || a.fired || !isNum(value)) return a;
+      var hit = a.dir === 'above' ? value >= a.level : value <= a.level;
+      if (!hit) return a;
+      var f = Object.assign({}, a, { fired: now || Date.now(), firedAt: value });
+      fired.push(f);
+      return f;
+    });
+    return { alerts: next, fired: fired };
+  }
+
+  function newId() {
+    return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function add(stop, level, current, unit) {
+    if (!isNum(level)) return null;
+    var a = { id: newId(), stop: stop, level: level, dir: infer(level, current), unit: unit || '', created: Date.now(), fired: null };
+    save(all().concat([a]));
+    return a;
+  }
+
+  function remove(id) {
+    save(all().filter(function (a) { return a.id !== id; }));
+  }
+
+  function forStop(stop) {
+    return all().filter(function (a) { return a.stop === stop; });
+  }
+
+  function armed() {
+    return all().filter(function (a) { return !a.fired; });
+  }
+
+  function armedStops() {
+    var out = [];
+    armed().forEach(function (a) { if (out.indexOf(a.stop) < 0) out.push(a.stop); });
+    return out;
+  }
+
+  function count() { return armed().length; }
+
+  /* "Bitcoin above $80,000.00" — fmt(stop, level) formats the level. */
+  function describe(a, fmt) {
+    var title = MP.router && MP.router.TITLES && MP.router.TITLES[a.stop] ? MP.router.TITLES[a.stop] : a.stop;
+    var level = typeof fmt === 'function' ? fmt(a.stop, a.level) : String(a.level);
+    return title + ' ' + a.dir + ' ' + level;
+  }
+
+  MP.alerts = {
+    KEY: KEY,
+    all: all,
+    save: save,
+    infer: infer,
+    evaluate: evaluate,
+    add: add,
+    remove: remove,
+    forStop: forStop,
+    armed: armed,
+    armedStops: armedStops,
+    count: count,
+    describe: describe,
+    /* tests only: forget the in-memory list so the next all() reloads */
+    _reset: function () { list = null; }
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -2612,13 +2908,151 @@ tr.row-rule th {
     }
   }
 
+  /* ---- REL, MIN/MAX, ALERT ------------------------------------------------ */
+  var lastReading = null;   /* the reading last painted, for the function keys */
+
+  function pressKey(id, on, attr) {
+    var btn = el(id);
+    if (!btn) return;
+    btn.classList.toggle('is-on', !!on);
+    btn.setAttribute(attr || 'aria-pressed', on ? 'true' : 'false');
+  }
+
+  function relPress() {
+    if (!MP.funcs || !lastReading) return;
+    primeAudio();
+    MP.funcs.rel.toggle(currentId, lastReading.value);
+    refresh(true);
+  }
+
+  /* On: start capturing. Off: clear. */
+  function minmaxPress() {
+    if (!MP.funcs) return;
+    primeAudio();
+    var fm = MP.funcs.minmax;
+    if (fm.isShown(currentId)) { fm.show(currentId, false); fm.reset(currentId); }
+    else fm.show(currentId, true);
+    refresh(true);
+  }
+
+  function openEditor() {
+    var form = el('lcdEdit'), input = el('lcdEditLevel');
+    if (!form || !input || !lastReading || currentId === 'off' || !isNum(lastReading.value)) return;
+    primeAudio();
+    var dp = isNum(lastReading.dp) ? lastReading.dp : 2;
+    input.value = String(Number(lastReading.value.toFixed(dp)));
+    input.step = dp ? String(Math.pow(10, -dp)) : '1';
+    form.hidden = false;
+    pressKey('alertBtn', true, 'aria-expanded');
+    input.focus();
+    input.select();
+  }
+
+  function closeEditor() {
+    var form = el('lcdEdit');
+    if (form) form.hidden = true;
+    pressKey('alertBtn', false, 'aria-expanded');
+  }
+
+  function submitEditor(ev) {
+    if (ev) ev.preventDefault();
+    var input = el('lcdEditLevel');
+    var level = input ? parseFloat(input.value) : NaN;
+    if (!isNum(level) || !lastReading || !MP.alerts) return;
+    /* asked inside the gesture, which is the only time browsers allow it */
+    if (root.Notification && root.Notification.permission === 'default') {
+      try { root.Notification.requestPermission(); } catch (e) { /* not available */ }
+    }
+    MP.alerts.add(currentId, level, lastReading.value, lastReading.unit);
+    closeEditor();
+    if (MP.app && MP.app.renderAlerts) MP.app.renderAlerts();
+    refresh(true);
+  }
+
+  function showAlerts() {
+    if (MP.router && MP.router.overridePanel) MP.router.overridePanel('alerts');
+    openDrawer(true);
+  }
+
+  /* ---- alarm -------------------------------------------------------------- */
+  var alarmTimer = null;
+
+  /* Three 1 kHz pulses: the continuity beep. Silent until a gesture has
+   * primed the audio context. */
+  function beep() {
+    if (!audio || audio.state !== 'running') return;
+    try {
+      var t = audio.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var t0 = t + i * 0.24;
+        var osc = audio.createOscillator(), gain = audio.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 1000;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.06, t0 + 0.006);
+        gain.gain.setValueAtTime(0.06, t0 + 0.11);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.135);
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.14);
+      }
+    } catch (e) { /* no sound is fine */ }
+  }
+
+  function notify(text) {
+    if (!root.Notification || root.Notification.permission !== 'granted') return;
+    var opts = { body: text, tag: 'mm-alert-' + Date.now() };
+    function plain() { try { void new root.Notification('Multimeter', opts); } catch (e) { /* page-context constructor unsupported */ } }
+    var sw = root.navigator && root.navigator.serviceWorker;
+    if (sw && sw.getRegistration) {
+      sw.getRegistration().then(function (reg) {
+        if (reg && reg.showNotification) return reg.showNotification('Multimeter', opts);
+        plain();
+      }).catch(plain);
+    } else {
+      plain();
+    }
+  }
+
+  /* Beep, flash the screen, pulse the phone, and notify — once per crossing. */
+  function alarm(messages) {
+    beep();
+    var lcd = el('lcd');
+    if (lcd) {
+      lcd.classList.remove('is-alarm');
+      void lcd.offsetWidth;
+      lcd.classList.add('is-alarm');
+      clearTimeout(alarmTimer);
+      alarmTimer = setTimeout(function () { lcd.classList.remove('is-alarm'); }, 1300);
+    }
+    if (root.navigator && typeof root.navigator.vibrate === 'function') {
+      try { root.navigator.vibrate([80, 80, 80, 80, 80]); } catch (e) { /* not permitted */ }
+    }
+    (messages || []).forEach(notify);
+  }
+
   function wireButtons() {
     var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd'), ranges = el('lcdRanges');
+    var rel = el('relBtn'), minmax = el('minmaxBtn'), alertBtn = el('alertBtn');
+    var form = el('lcdEdit'), cancel = el('lcdEditCancel'), bell = el('lcdBell');
     if (hold) hold.addEventListener('click', function () { setHold(!held); });
     if (detail) detail.addEventListener('click', function () { openDrawer(); });
+    if (rel) rel.addEventListener('click', relPress);
+    if (minmax) minmax.addEventListener('click', minmaxPress);
+    if (alertBtn) alertBtn.addEventListener('click', function () {
+      if (form && !form.hidden) closeEditor(); else openEditor();
+    });
+    if (form) {
+      form.addEventListener('submit', submitEditor);
+      form.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { closeEditor(); ev.preventDefault(); } });
+    }
+    if (cancel) cancel.addEventListener('click', closeEditor);
+    if (bell) bell.addEventListener('click', showAlerts);
     if (lcd) {
       lcd.addEventListener('click', function (ev) {
-        if (ranges && ranges.contains(ev.target)) return;   /* the tabs are their own control */
+        /* the tabs, the editor, the bell are controls of their own */
+        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell')) return;
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
@@ -2638,18 +3072,20 @@ tr.row-rule th {
   }
 
   /* ---- the screen --------------------------------------------------------- */
-  function absText(abs, unit) {
+  /* The absolute move, in the reading's own decimals (a cheap coin's four,
+   * everything else's two), never the price rule that would print $0.0100. */
+  function absText(abs, unit, dp) {
     if (!isNum(abs)) return '';
-    var a = Math.abs(abs);
-    if (unit === 'USD') return MP.fmt.usd(a, a < 10 ? 4 : 2);
-    return MP.fmt.num(a, 2);
+    var a = Math.abs(abs), d = isNum(dp) ? dp : 2;
+    if (unit === 'USD') return MP.fmt.usd(a, d);
+    return MP.fmt.num(a, d);
   }
 
   /* "↘ $1,480.12 (1.94%)" for a price; "↗ 0.16" for a statistic. */
   function changeText(c, unit) {
     if (!c) return MP.fmt.DASH;
     if (isNum(c.pct)) {
-      var abs = absText(c.abs, unit);
+      var abs = absText(c.abs, unit, c.dp);
       return (c.pct >= 0 ? UP : DOWN) + ' ' + (abs ? abs + ' ' : '') + '(' + Math.abs(c.pct).toFixed(2) + '%)';
     }
     if (isNum(c.delta)) {
@@ -2704,6 +3140,26 @@ tr.row-rule th {
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
 
+    /* instrument functions and alerts */
+    var relAnn = el('lcdRel');
+    if (relAnn) relAnn.classList.toggle('is-on', !off && !!r.rel);
+    pressKey('relBtn', !off && MP.funcs && MP.funcs.rel.get(currentId) !== null);
+    pressKey('minmaxBtn', !off && MP.funcs && MP.funcs.minmax.isShown(currentId));
+    var mmRow = el('lcdMinmax');
+    if (mmRow) {
+      var mm = !off && r.minmax;
+      mmRow.classList.toggle('is-idle', !mm);
+      setText('lcdMin', mm ? 'MIN ' + fmtLike(r, mm.min) : '');
+      setText('lcdMax', mm ? 'MAX ' + fmtLike(r, mm.max) : '');
+    }
+    var bell = el('lcdBell');
+    if (bell) {
+      var n = MP.alerts ? MP.alerts.count() : 0;
+      bell.classList.toggle('is-on', n > 0);
+      setText('lcdBellCount', n ? String(n) : '');
+      bell.setAttribute('aria-label', n ? n + ' alert' + (n === 1 ? '' : 's') + ' armed. Open the list.' : 'No alerts. Open the list.');
+    }
+
     var ranges = el('lcdRanges');
     if (ranges) {
       /* kept in the layout even when idle: the screen must not change height
@@ -2725,11 +3181,25 @@ tr.row-rule th {
     lcd.setAttribute('aria-label', describe(r, off));
   }
 
-  function refresh() {
-    if (held || !currentId) return;
+  /* A value formatted the way this reading formats its own. */
+  function fmtLike(r, v) {
+    if (!isNum(v)) return MP.fmt.DASH;
+    if (r.unit === 'USD') return MP.fmt.usd(v, Math.abs(v) < 10 ? 4 : 2);
+    if (r.unit === 'INDEX') return MP.fmt.num(v, 2);
+    return MP.fmt.num(v, isNum(r.dp) ? r.dp : 2) + (r.unit || '');
+  }
+
+  /* force: repaint even under HOLD (a function key was pressed). MIN/MAX
+   * keeps capturing under HOLD, as a real meter's does. */
+  function refresh(force) {
+    if (!currentId) return;
     var app = MP.app;
     if (!app || !app.reading) return;
-    paint(app.reading(currentId));
+    var r = app.reading(currentId);
+    if (MP.funcs) MP.funcs.minmax.track(currentId, r.value);
+    if (held && !force) return;
+    lastReading = r;
+    paint(MP.funcs ? MP.funcs.decorate(r, currentId) : r);
   }
 
   /* ---- routing ------------------------------------------------------------ */
@@ -2738,6 +3208,7 @@ tr.row-rule th {
     if (idx < 0) return;
     var changed = currentId !== null && currentId !== id;
     currentId = id;
+    if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
     if (changed && !dragging) detent(); /* a drag already clicked at the crossing */
@@ -2767,6 +3238,10 @@ tr.row-rule th {
     plateSvg: plateSvg,
     init: init,
     refresh: refresh,
+    changeText: changeText,
+    alarm: alarm,
+    beep: beep,
+    showAlerts: showAlerts,
     setHold: setHold,
     isHeld: function () { return held; },
     openDrawer: openDrawer,
@@ -3622,7 +4097,58 @@ tr.row-rule th {
   /* The meter's screen paints from app state; every renderer below ends by
    * asking it to repaint, so the LCD is never staler than the drawer. */
   function repaint() {
+    checkAlerts();
     if (MP.meter && MP.meter.refresh) MP.meter.refresh();
+  }
+
+  /* ---- alerts ------------------------------------------------------------- */
+
+  /* Every armed alert is checked against its own stop's current reading on
+   * every repaint, whatever the dial shows and whether or not HOLD is on. */
+  function checkAlerts() {
+    if (!MP.alerts) return;
+    var stops = MP.alerts.armedStops();
+    if (!stops.length) return;
+    var fired = [];
+    stops.forEach(function (stop) {
+      var res = MP.alerts.evaluate(MP.alerts.all(), stop, reading(stop).value, Date.now());
+      if (res.fired.length) {
+        MP.alerts.save(res.alerts);
+        fired = fired.concat(res.fired);
+      }
+    });
+    if (!fired.length) return;
+    if (MP.meter && MP.meter.alarm) {
+      MP.meter.alarm(fired.map(function (a) { return MP.alerts.describe(a, formatValue); }));
+    }
+    renderAlerts();
+  }
+
+  function renderAlerts() {
+    var host = el('alertRows');
+    if (!host || !MP.alerts) return;
+    var list = MP.alerts.all().slice().sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
+    host.innerHTML = list.length ? list.map(function (a) {
+      var when = a.fired ? 'fired ' + F.ago(a.fired) : 'armed · set ' + F.ago(a.created);
+      return '<li' + (a.fired ? ' class="is-fired"' : '') + '>' +
+        '<div class="row-name"><div class="row-code">' + F.escapeHtml(MP.alerts.describe(a, formatValue)) + '</div>' +
+        '<div class="row-desc">' + F.escapeHtml(when) + '</div></div>' +
+        '<span class="tag">' + (a.fired ? 'fired' : 'armed') + '</span>' +
+        '<button type="button" class="pill" data-del="' + F.escapeHtml(a.id) + '" aria-label="Delete alert">✕</button>' +
+        '</li>';
+    }).join('') : '<li class="row-desc">No alerts yet. Press ALERT on the meter to set one.</li>';
+  }
+
+  function wireAlerts() {
+    var host = el('alertRows');
+    if (!host) return;
+    host.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('[data-del]') : null;
+      if (!btn || !MP.alerts) return;
+      MP.alerts.remove(btn.getAttribute('data-del'));
+      renderAlerts();
+      repaint();
+    });
   }
 
   /* ---- the meter's reading ------------------------------------------------ */
@@ -3704,13 +4230,14 @@ tr.row-rule th {
   function pickReading(r, fallbackMode) {
     if (!r) return noReading('USD', fallbackMode, '1D');
     var pct = r.changePct;
+    var dp = S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2;
     return {
-      text: money(r.price), value: r.price, dp: S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2,
+      text: money(r.price), value: r.price, dp: dp,
       unit: 'USD', mode: r.mode,
       change: {
         pct: pct,
         abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
-        delta: NaN, suffix: '', label: r.changeLabel, dp: 2
+        delta: NaN, suffix: '', label: r.changeLabel, dp: dp
       },
       spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
       empty: !S.isNum(r.price), ranges: false, coin: null
@@ -4321,6 +4848,8 @@ tr.row-rule th {
       MP.router.start();
     }
     tickSession();
+    wireAlerts();
+    renderAlerts();
     renderHero();
     renderMarkets();
     renderAnalytics();
@@ -4370,6 +4899,8 @@ tr.row-rule th {
     renderSession: renderSession,
     reading: reading,
     formatValue: formatValue,
+    renderAlerts: renderAlerts,
+    checkAlerts: checkAlerts,
     applyTick: applyTick,
     liveProducts: liveProducts,
     productForStop: productForStop,
