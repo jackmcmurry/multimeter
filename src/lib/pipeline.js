@@ -20,6 +20,9 @@
  *   history    once per session, an hour after the close: ^IXIC, ^GSPC and
  *              BTCUSD daily closes from FMP, QQQ daily closes from Alpha
  *              Vantage.
+ *   findings   whenever history is rewritten (or missing for the session):
+ *              the write-up's statistics, computed here from that history
+ *              with MP.findings — no calls at all.
  *
  * Budget on the free plans, per weekday: about 90 FMP calls of 250 and 10
  * Alpha Vantage calls of 25.
@@ -158,7 +161,8 @@
     var prev = {
       spotlight: opts.read('spotlight') || {},
       quotes: opts.read('quotes') || {},
-      history: opts.read('history') || {}
+      history: opts.read('history') || {},
+      findings: opts.read('findings') || null
     };
     var session = SES.status(now);
     var closeSession = SES.lastCompletedSession(now, CLOSE_GRACE_MIN);
@@ -338,6 +342,19 @@
         spx: spxDaily || h.spx || null,
         qqq: avKey ? (qqqDaily || h.qqq || null) : null
       };
+    }
+
+    /* ---- findings: the write-up's numbers, from the history --------------- */
+    var histNow = out.history || prev.history;
+    var findingsDue = !!out.history || force === 'all' || force === 'findings' ||
+      !prev.findings || prev.findings.forSession !== eodSession;
+    if (findingsDue && MP.findings) {
+      var findings = histNow && histNow.btc && histNow.ixic ? MP.findings.compute(histNow, now) : null;
+      if (findings) {
+        out.findings = Object.assign(findings, { generatedAt: nowIso, forSession: eodSession });
+      } else if (out.history || !prev.findings) {
+        warnings.push('findings: not enough daily history yet');
+      }
     }
 
     return result;

@@ -19,7 +19,7 @@ on:
       force:
         description: Refresh even if the schedule says nothing is due
         type: choice
-        options: [none, all, quotes, history, spotlight]
+        options: [none, all, quotes, history, spotlight, findings, note]
         default: all
 
 permissions:

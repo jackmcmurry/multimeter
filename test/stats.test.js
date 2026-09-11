@@ -239,6 +239,64 @@
       eq('the probe hash routes', R ? R.parseHash('#probe') : '', 'probe');
     }
 
+    /* ---- findings ---------------------------------------------------------- */
+    var FD = MP.findings;
+    if (!FD) {
+      ok('findings module is loaded', false, 'MP.findings missing');
+    } else {
+      /* coin = index squared: log returns exactly double, correlation exactly 1 */
+      var fIdx = [], fCoin = [], fPx = 100;
+      for (var fd = 0; fd < 330; fd++) {
+        fPx *= 1 + (((fd * 7919) % 13) - 6) / 400;
+        var fDay = new Date(Date.UTC(2025, 9, 1 + fd)).toISOString().slice(0, 10);
+        fIdx.push({ date: fDay, price: fPx });
+        fCoin.push({ date: fDay, price: fPx * fPx / 100 });
+      }
+      var fnd = FD.compute({ btc: fCoin, ixic: fIdx }, Date.UTC(2026, 8, 11));
+      ok('findings computed for a year of closes', !!fnd);
+      eq('findings count the common sessions', fnd.sessions, 330);
+      close('findings 90-session correlation is 1', fnd.pairs.ixic.coupling[1].correlation, 1, 1e-3);
+      close('findings 90-session beta is 2', fnd.pairs.ixic.coupling[1].beta, 2, 1e-3);
+      eq('rolling series has one point per window end', fnd.pairs.ixic.rolling90.length, 330 - 1 - 90 + 1);
+      eq('a perfectly coupled pair is coupled throughout', fnd.pairs.ixic.regimes.coupledShare, 1);
+      eq('a perfectly coupled pair is never decoupled', fnd.pairs.ixic.regimes.decoupledShare, 0);
+      eq('regime now reads coupled', fnd.pairs.ixic.regimes.current, 'coupled');
+      eq('longest coupled run spans the whole series', fnd.pairs.ixic.regimes.longestCoupled.sessions, fnd.pairs.ixic.rolling90.length);
+      eq('no breaks when the correlation never falls', fnd.pairs.ixic.breaks.length, 0);
+      eq('same-sign share is 1 for a squared series', fnd.pairs.ixic.agreement.all, 1);
+      close('volatility ratio is 2', fnd.pairs.ixic.vol.ratio, 2, 1e-2);
+      ok('the S&P pair is null when absent', fnd.pairs.spx === null);
+      ok('drawdown block present for bitcoin', fnd.drawdowns.btc && fnd.drawdowns.btc.max <= 0);
+      ok('too little history yields null', FD.compute({ btc: fCoin.slice(0, 40), ixic: fIdx }, 0) === null);
+      ok('missing history yields null', FD.compute(null, 0) === null);
+      eq('label reads coupled', FD.label(fnd), 'coupled');
+
+      /* a regime flip: coupled for 160 sessions, then the coin mirrors the index */
+      var gIdx = [], gCoin = [], gPx = 100, gCoinPx = 100;
+      for (var gd = 0; gd < 260; gd++) {
+        var r = (((gd * 7919) % 13) - 6) / 400;
+        gPx *= 1 + r;
+        gCoinPx *= gd < 160 ? Math.pow(1 + r, 2) : Math.pow(1 + r, -2);
+        var gDay = new Date(Date.UTC(2025, 9, 1 + gd)).toISOString().slice(0, 10);
+        gIdx.push({ date: gDay, price: gPx });
+        gCoin.push({ date: gDay, price: gCoinPx });
+      }
+      var flip = FD.compute({ btc: gCoin, ixic: gIdx }, 0);
+      ok('a flipped pair spends time decoupled', flip.pairs.ixic.regimes.decoupledShare > 0);
+      eq('the decoupled run ends at the last date', flip.pairs.ixic.regimes.longestDecoupled.to, gIdx[gIdx.length - 1].date);
+      /* a 90-session window turns over 20 sessions at most 20/90 of the way, so
+       * the largest 20-session fall from +1 to -1 is about 0.44 */
+      ok('the flip is recorded as the largest break', flip.pairs.ixic.breaks.length > 0 && flip.pairs.ixic.breaks[0].drop > 0.3);
+      ok('the largest break happens while the flip is in the window', flip.pairs.ixic.breaks[0].to > gIdx[160].date);
+      eq('regime now reads decoupled', flip.pairs.ixic.regimes.current, 'decoupled');
+
+      var words = FD.narrative(fnd);
+      ok('narrative has several sentences', words.length >= 4);
+      ok('every narrative sentence ends with a period', words.every(function (s) { return /\.$/.test(s); }));
+      ok('every narrative sentence carries a number', words.every(function (s) { return /\d/.test(s); }));
+      eq('narrative of nothing is empty', FD.narrative(null).length, 0);
+    }
+
     /* ---- statistics for any pair ------------------------------------------ */
     var APP = MP.app;
     if (APP && APP.analyticsFor) {

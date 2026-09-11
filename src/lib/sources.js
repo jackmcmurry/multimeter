@@ -25,7 +25,9 @@
   var SNAPSHOT = {
     quotes: 'data/quotes.json',
     history: 'data/history.json',
-    spotlight: 'data/spotlight.json'
+    spotlight: 'data/spotlight.json',
+    findings: 'data/findings.json',
+    note: 'data/note.json'
   };
 
   function parsePayload(payload) {
@@ -404,6 +406,20 @@
     };
   }
 
+  /* findings.json is the data job's own output; the page re-checks only the
+   * parts it dereferences without guards. */
+  function normalizeFindingsSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    var ix = p.pairs && p.pairs.ixic;
+    if (!ix || !Array.isArray(ix.coupling) || !Array.isArray(ix.rolling90) || !ix.regimes || !ix.vol || !ix.scatter) return null;
+    ix.rolling90 = ix.rolling90.filter(function (e) { return e && typeof e.date === 'string' && (e.value === null || isFinite(toNum(e.value))); });
+    ix.breaks = Array.isArray(ix.breaks) ? ix.breaks : [];
+    if (!p.drawdowns || typeof p.drawdowns !== 'object') p.drawdowns = {};
+    if (p.pairs.spx && (!Array.isArray(p.pairs.spx.coupling) || !p.pairs.spx.regimes)) p.pairs.spx = null;
+    return p;
+  }
+
   MP.sources = {
     COINGECKO: COINGECKO,
     COINBASE_WS: COINBASE_WS,
@@ -423,6 +439,7 @@
     normalizeQuotesSnapshot: normalizeQuotesSnapshot,
     normalizeHistorySnapshot: normalizeHistorySnapshot,
     normalizeSpotlightSnapshot: normalizeSpotlightSnapshot,
+    normalizeFindingsSnapshot: normalizeFindingsSnapshot,
     isoDay: isoDay,
     parsePayload: parsePayload,
     toNum: toNum

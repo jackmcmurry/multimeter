@@ -489,6 +489,23 @@ body {
 .pill.share:hover { background: var(--hover); color: var(--holster); }
 .pill.is-busy { opacity: 0.5; pointer-events: none; }
 
+/* ---- the write-up page --------------------------------------------------- */
+.findings { max-width: 900px; margin-top: 8px; }
+.findings .drawer-head h2 { font-size: 20px; letter-spacing: 0.02em; text-transform: none; color: var(--text); }
+.findings .prose { max-width: 72ch; }
+.findings .prose h2:first-child { margin-top: 26px; }
+.findings .strip { margin: 4px 0 26px; }
+.findings .chartbox { margin-top: 10px; }
+.narrative p { color: var(--text); }
+.findings-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px;
+  margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--rule);
+  font-size: 12.5px; color: var(--dim);
+}
+.findings-links a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
+.findings-links a:hover { color: var(--holster); }
+.pill.share[href] { text-decoration: none; display: inline-block; }
+
 /* installed to a home screen: keep clear of the status bar */
 @media (display-mode: standalone) {
   .stage { padding-top: max(24px, env(safe-area-inset-top)); }
@@ -917,6 +934,9 @@ tr.row-rule th {
       <p>Correlation and beta use log returns taken <i>after</i> intersecting both instruments on dates each actually traded. Bitcoin trades weekends and the index does not, so without that step BTC's Monday return spans one day while the index's spans three.</p>
       <p>Beta is BTC regressed on the index — the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
       <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
+
+      <h2>Findings</h2>
+      <p>The statistics feed a running write-up, <a href="findings.html">Is bitcoin a tech stock?</a>: how often bitcoin and the Nasdaq have moved together, how long each regime lasted, when the coupling broke, and what that does and does not tell you. Every number on it comes from the same daily history the meter uses.</p>
 
       <h2>Sources</h2>
       <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
@@ -1513,6 +1533,13 @@ tr.row-rule th {
     var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
 
     var s = open(w, h);
+    /* optional horizontal bands (regime thresholds), under everything else */
+    (opts.bands || []).forEach(function (b) {
+      var top = Math.min(b.to, dom[1]), bottom = Math.max(b.from, dom[0]);
+      if (!(top > bottom)) return;
+      s += '<rect x="' + p.l + '" y="' + y(top).toFixed(2) + '" width="' + (w - p.r - p.l) + '" height="' +
+        (y(bottom) - y(top)).toFixed(2) + '" fill="' + (b.color || 'currentColor') + '" fill-opacity="' + (b.opacity || 0.08) + '"/>';
+    });
     s += yAxis(ticks, y, p, w, fmt);
     /* plot frame: left and bottom rules only */
     s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
@@ -1818,7 +1845,9 @@ tr.row-rule th {
   var SNAPSHOT = {
     quotes: 'data/quotes.json',
     history: 'data/history.json',
-    spotlight: 'data/spotlight.json'
+    spotlight: 'data/spotlight.json',
+    findings: 'data/findings.json',
+    note: 'data/note.json'
   };
 
   function parsePayload(payload) {
@@ -2197,6 +2226,20 @@ tr.row-rule th {
     };
   }
 
+  /* findings.json is the data job's own output; the page re-checks only the
+   * parts it dereferences without guards. */
+  function normalizeFindingsSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    var ix = p.pairs && p.pairs.ixic;
+    if (!ix || !Array.isArray(ix.coupling) || !Array.isArray(ix.rolling90) || !ix.regimes || !ix.vol || !ix.scatter) return null;
+    ix.rolling90 = ix.rolling90.filter(function (e) { return e && typeof e.date === 'string' && (e.value === null || isFinite(toNum(e.value))); });
+    ix.breaks = Array.isArray(ix.breaks) ? ix.breaks : [];
+    if (!p.drawdowns || typeof p.drawdowns !== 'object') p.drawdowns = {};
+    if (p.pairs.spx && (!Array.isArray(p.pairs.spx.coupling) || !p.pairs.spx.regimes)) p.pairs.spx = null;
+    return p;
+  }
+
   MP.sources = {
     COINGECKO: COINGECKO,
     COINBASE_WS: COINBASE_WS,
@@ -2216,6 +2259,7 @@ tr.row-rule th {
     normalizeQuotesSnapshot: normalizeQuotesSnapshot,
     normalizeHistorySnapshot: normalizeHistorySnapshot,
     normalizeSpotlightSnapshot: normalizeSpotlightSnapshot,
+    normalizeFindingsSnapshot: normalizeFindingsSnapshot,
     isoDay: isoDay,
     parsePayload: parsePayload,
     toNum: toNum

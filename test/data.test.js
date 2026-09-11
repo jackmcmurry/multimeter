@@ -145,6 +145,12 @@
     ok('chart with one point is unusable', chart.normalize({ prices: [[1, 2]] }) === null);
     eq('chart keeps a stamp per point', parsedChart.stamps.length, 3);
 
+    /* findings snapshot */
+    ok('findings snapshot without pairs is null', SRC.normalizeFindingsSnapshot({ version: 1 }) === null);
+    var fsnap = SRC.normalizeFindingsSnapshot({ pairs: { ixic: { coupling: [], rolling90: [{ date: '2026-01-02', value: 0.4 }, { bad: 1 }], regimes: {}, vol: {}, scatter: {} } } });
+    ok('findings snapshot keeps the good rolling rows', fsnap && fsnap.pairs.ixic.rolling90.length === 1);
+    ok('findings snapshot fills missing collections', fsnap && Array.isArray(fsnap.pairs.ixic.breaks) && typeof fsnap.drawdowns === 'object');
+
     /* CoinGecko search (the probe jack) */
     var search = SRC.coinSearch('sol coin');
     ok('search URL encodes the query', search.url.indexOf('/search?query=sol%20coin') > 0);
@@ -397,6 +403,13 @@
     t.eq('crypto runner-up recorded', s1.crypto.runnerUp.symbol, 'DOGE');
     t.eq('missing coin counted as skipped', s1.crypto.skipped, 1);
     t.eq('crypto history starts with this week', s1.cryptoHistory[0].symbol, 'SOL');
+    t.ok('findings written with the history', !!r1.out.findings);
+    t.eq('findings keyed to the completed session', r1.out.findings.forSession, '2026-09-11');
+    t.eq('findings carry three coupling windows', r1.out.findings.pairs.ixic.coupling.length, 3);
+    t.ok('findings rolling series matches the sessions', r1.out.findings.pairs.ixic.rolling90.length === r1.out.findings.sessions - 90);
+    t.ok('findings regime shares are sane', (function (g) { return g.coupledShare >= 0 && g.coupledShare <= 1 && g.coupledShare + g.decoupledShare <= 1.0001; })(r1.out.findings.pairs.ixic.regimes));
+    t.ok('findings regime is one of the three', ['coupled', 'middle', 'decoupled'].indexOf(r1.out.findings.pairs.ixic.regimes.current) >= 0);
+    t.ok('findings include the S&P pair', !!r1.out.findings.pairs.spx);
     t.eq('FMP calls: 15 scan + 1 series + 3 quotes + 3 history', r1.calls.fmp, 22);
     t.eq('Alpha Vantage calls: quote + daily', r1.calls.av, 2);
     t.eq('CoinGecko calls: one scan', r1.calls.cg, 1);
@@ -432,6 +445,7 @@
 
     var r6 = await step(db, api, '2026-09-14T21:05:00Z');
     t.ok('history refreshes after the grace', !!r6.out.history);
+    t.ok('findings recomputed with the history', !!r6.out.findings && r6.out.findings.forSession === '2026-09-14');
     t.ok('no further quote reads once final', !r6.out.quotes);
     t.ok('pick detail refreshes with history', !!r6.out.spotlight);
 
@@ -450,6 +464,7 @@
     var r9 = await step(down, downApi, '2026-09-14T13:05:00Z');
     t.ok('every FMP call failed', r9.calls.fmp > 0 && r9.failed.fmp === r9.calls.fmp);
     t.ok('failed scan keeps no pick', r9.out.spotlight && r9.out.spotlight.current === null);
+    t.ok('no findings without history', !r9.out.findings);
     t.eq('failed read is not marked final', r9.out.quotes.finalFor, null);
     var r10 = await step(down, downApi, '2026-09-14T13:20:00Z');
     t.eq('failed scan is not retried within three hours', r10.calls.fmp, 2);

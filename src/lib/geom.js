@@ -158,6 +158,13 @@
     var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
 
     var s = open(w, h);
+    /* optional horizontal bands (regime thresholds), under everything else */
+    (opts.bands || []).forEach(function (b) {
+      var top = Math.min(b.to, dom[1]), bottom = Math.max(b.from, dom[0]);
+      if (!(top > bottom)) return;
+      s += '<rect x="' + p.l + '" y="' + y(top).toFixed(2) + '" width="' + (w - p.r - p.l) + '" height="' +
+        (y(bottom) - y(top)).toFixed(2) + '" fill="' + (b.color || 'currentColor') + '" fill-opacity="' + (b.opacity || 0.08) + '"/>';
+    });
     s += yAxis(ticks, y, p, w, fmt);
     /* plot frame: left and bottom rules only */
     s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';

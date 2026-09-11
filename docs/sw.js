@@ -13,11 +13,12 @@
  * The cache name carries the build hash, so a new build purges the old one.
  * ========================================================================== */
 /* eslint-env serviceworker */
-var VERSION = 'dd59216b819c';
+var VERSION = '4f1dbbed869d';
 var CACHE = 'mm-' + VERSION;
 var SHELL = [
   './',
   './index.html',
+  './findings.html',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-180.png',
@@ -103,8 +104,9 @@ self.addEventListener('fetch', function (event) {
     event.respondWith(networkFirst(req, stripSearch(req), null));
     return;
   }
-  if (req.mode === 'navigate' || /\/index\.html$/.test(url.pathname)) {
-    event.respondWith(networkFirst(req, req, './index.html'));
+  if (req.mode === 'navigate' || /\/(index|findings)\.html$/.test(url.pathname)) {
+    var page = /\/findings\.html$/.test(url.pathname) ? './findings.html' : './index.html';
+    event.respondWith(networkFirst(req, req, page));
     return;
   }
   if (/\/icons\/|\/manifest\.webmanifest$/.test(url.pathname)) {

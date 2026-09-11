@@ -1,0 +1,2516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Is bitcoin a tech stock? — Multimeter</title>
+<meta name="description" content="A running answer from daily closes: how tightly bitcoin's returns track the Nasdaq and the S&amp;P, when the coupling held, when it broke, and what that does and does not tell you.">
+<meta name="theme-color" content="#0b0d12">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Is bitcoin a tech stock?">
+<meta property="og:description" content="A running answer from daily closes: correlation regimes, beta, volatility and drawdowns for bitcoin against the Nasdaq and the S&amp;P 500.">
+<link rel="icon" href="icons/icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+[hidden] { display: none !important; }
+/* ============================================================================
+ * styles.css — Multimeter.
+ *
+ * The page is a handheld digital multimeter in the classic field-instrument
+ * livery: a graphite body in a yellow rubber holster, a backlit dark display
+ * up top with a luminous readout, a rotary function switch in the middle and
+ * three input jacks along the bottom. The detail drawer beneath it is a dark
+ * card so the charts and tables read as the instrument's manual, not more
+ * instrument.
+ *
+ * Type: Space Grotesk for the body, the labels and the big price, JetBrains
+ * Mono for the display's small annunciators.
+ *
+ * SINGLE THEME BY CHOICE — a physical object has one colour, so every colour
+ * is painted explicitly rather than swapped with the viewer's theme.
+ * ========================================================================== */
+
+:root {
+  /* the bench it sits on */
+  --bg: #0b0d12;
+
+  /* holster and body */
+  --holster: #f6b71f;
+  --holster-dk: #c98f0c;
+  --holster-lt: #ffd35a;
+  --shell: #23272e;
+  --shell-dk: #15181d;
+  --shell-lt: #333942;
+
+  /* display */
+  --lcd: #0a1216;
+  --lcd-dk: #040709;
+  --lcd-ink: #e6fff5;
+  --lcd-dim: #6d8c86;
+  --up: #2ee59d;
+  --down: #ff6b6b;
+
+  /* controls */
+  --knob: #14171c;
+  --knob-lt: #2c3139;
+  --knob-mark: #f6b71f;
+  --key: #333942;
+  --key-dk: #0f1215;
+  --key-text: #eef1f5;
+  --hold: #ef4a4a;
+  --hold-dk: #9c2323;
+  --jack: #07080a;
+  --jack-ring: #ef4a4a;
+  --led: #2ee59d;
+  --led-off: #26332e;
+
+  /* the drawer card and everything printed on it */
+  --card: #14171d;
+  --text: #eef1f5;
+  --dim: #97a3b4;
+  --rule: #262b34;
+  --cell: #1b2028;
+  --hover: #232933;
+  --gold: #f6b71f;
+
+  --c-btc: #f7931a;
+  --c-eth: #8c9eff;
+  --c-idx: #5eb1ff;
+  --c-spx: #ff9f43;
+  --c-qqq: #34d399;
+  --c-probe: #c084fc;
+
+  --pos: #2ee59d;
+  --neg: #ff6b6b;
+
+  --lcd-tab: #17303a;
+
+  --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-lcd: "JetBrains Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.muted { color: var(--dim); }
+
+/* ---- stage --------------------------------------------------------------- */
+.stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 12px 48px;
+}
+
+/* ---- the meter body ------------------------------------------------------ */
+.meter { width: min(100%, 900px); }
+
+.holster {
+  background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
+  border-radius: 36px;
+  padding: 14px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 var(--holster-dk),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.shell {
+  background: linear-gradient(180deg, var(--shell-lt), var(--shell) 12%, var(--shell) 90%, var(--shell-dk));
+  border-radius: 26px;
+  padding: 16px 18px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px 12px;
+}
+.brand { font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: var(--text); }
+.model { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); }
+
+/* ---- display ------------------------------------------------------------- */
+.lcd {
+  display: block;
+  width: 100%;
+  background: radial-gradient(120% 90% at 50% 0%, #10201f 0%, var(--lcd) 60%);
+  color: var(--lcd-ink);
+  border: 3px solid var(--lcd-dk);
+  border-radius: 12px;
+  padding: 14px 18px 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 4px 14px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
+  font-family: var(--f-lcd);
+  cursor: pointer;
+  text-align: left;
+}
+.lcd:focus-visible { outline: 3px solid var(--holster); outline-offset: 3px; }
+
+.lcd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 18px;
+}
+.ann {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--lcd-dim);
+}
+.ann-hold { opacity: 0.18; }
+.ann-hold.is-on { opacity: 1; color: var(--holster); }
+
+.ann-group { display: flex; align-items: center; gap: 14px; }
+.ann-rel { opacity: 0.18; }
+.ann-rel.is-on { opacity: 1; color: var(--holster); }
+.ann-bell {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 0; margin: 0;
+  color: var(--lcd-dim); opacity: 0.35; cursor: pointer;
+  font: inherit; letter-spacing: inherit;
+}
+.ann-bell b { font-weight: 700; }
+.ann-bell.is-on { opacity: 1; color: var(--holster); }
+.ann-bell:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.ann-live { display: inline-flex; align-items: center; gap: 6px; opacity: 0.18; }
+.ann-live .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ann-live.is-on { opacity: 1; color: var(--up); }
+.ann-live.is-on .dot { animation: live-pulse 1.2s ease-in-out infinite; }
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* the chart has the top of the screen to itself; a fixed aspect keeps the
+ * screen the same height whether or not a series has arrived */
+.lcd-chart { display: block; width: 100%; aspect-ratio: 600 / 250; margin: 10px 0 0; }
+.lcd-chart .chart { display: block; width: 100%; height: auto; color: inherit; }
+
+/* the readout is its own band beneath a hairline, never over the chart */
+.lcd-readout {
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.lcd-price-row { display: flex; align-items: baseline; gap: 12px; }
+.lcd-price {
+  font-family: var(--f-ui);
+  font-size: clamp(40px, 7.5vw, 68px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--lcd-ink);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 18px rgba(46, 229, 157, 0.12);
+}
+.lcd-unit {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--lcd-dim);
+}
+
+.lcd-foot { margin-top: 10px; }
+.lcd-chg {
+  font-family: var(--f-ui);
+  font-size: 19px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--lcd-dim);
+}
+.lcd-chg.is-up { color: var(--up); }
+.lcd-chg.is-down { color: var(--down); }
+
+/* range tabs, shown for the coins */
+/* MIN/MAX row: reserved height, faded when idle */
+.lcd-minmax { min-height: 18px; margin-top: 8px; justify-content: flex-start; gap: 22px; transition: opacity 200ms ease; }
+.lcd-minmax.is-idle { opacity: 0; }
+.lcd-minmax .ann { color: var(--lcd-ink); font-variant-numeric: tabular-nums; }
+
+/* the alert editor floats over the chart so the screen keeps its height */
+.lcd { position: relative; }
+.lcd-edit {
+  position: absolute;
+  left: 18px; right: 18px; top: 48px;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--lcd-dk);
+  border: 1px solid var(--lcd-tab);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+.lcd-edit .ann { color: var(--lcd-dim); display: block; margin-bottom: 8px; }
+.lcd-edit-row { display: flex; gap: 8px; align-items: center; }
+.lcd-edit input {
+  flex: 1; min-width: 0;
+  font-family: var(--f-ui); font-size: 22px; font-weight: 600;
+  color: var(--lcd-ink); background: var(--lcd); border: 1px solid var(--lcd-tab);
+  border-radius: 8px; padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
+.lcd-edit input:focus-visible { outline: 2px solid var(--holster); outline-offset: 1px; }
+
+/* the alarm: the bezel flashes red three times */
+.lcd.is-alarm { animation: alarm 420ms ease-in-out 3; }
+@keyframes alarm {
+  0%, 100% { border-color: var(--lcd-dk); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.5); }
+  50% { border-color: var(--hold); box-shadow: 0 0 0 3px var(--hold), 0 0 40px var(--down), inset 0 0 60px rgba(255, 107, 107, 0.25); }
+}
+
+.lcd-ranges { display: flex; gap: 6px; margin-top: 18px; transition: opacity 200ms ease; }
+.lcd-ranges.is-idle { opacity: 0; pointer-events: none; }
+.lcd-chg:empty::before { content: "—"; }
+.rng {
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lcd-dim);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.rng:hover { color: var(--lcd-ink); }
+.rng.is-on { background: var(--lcd-tab); color: var(--lcd-ink); }
+.rng:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+
+.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart, .lcd.is-off .lcd-price { opacity: 0.1; }
+.lcd-price:empty::before { content: "—"; }
+
+/* a change of stop refreshes the readout with a short fade */
+.lcd.is-swap .lcd-chart, .lcd.is-swap .lcd-readout, .lcd.is-swap #lcdMode {
+  animation: lcd-swap 260ms ease-out;
+}
+@keyframes lcd-swap {
+  from { opacity: 0.15; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- keys ---------------------------------------------------------------- */
+.keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; }
+.key {
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--key-text);
+  background: linear-gradient(180deg, var(--shell-lt), var(--key));
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--key-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.key:active, .key.is-on { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-dk); }
+.key.is-on { color: var(--holster); }
+.key:focus-visible { outline: 3px solid var(--holster); outline-offset: 2px; }
+.key-hold {
+  color: var(--key-text);
+  background: linear-gradient(180deg, #ff6e6e, var(--hold));
+  box-shadow: 0 3px 0 var(--hold-dk), 0 6px 10px rgba(0, 0, 0, 0.45);
+}
+.key-hold:active, .key-hold.is-held {
+  background: var(--hold-dk);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--hold-dk);
+}
+
+/* ---- dial ---------------------------------------------------------------- */
+.dial {
+  position: relative;
+  width: 80%;
+  aspect-ratio: 1 / 1;
+  margin: 4px auto 6px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.dial-plate { display: block; width: 100%; height: 100%; }
+.dial-face { fill: var(--shell-dk); stroke: var(--key-dk); stroke-width: 1.2; }
+.dial-arc { fill: none; stroke: var(--dim); stroke-width: 1.2; opacity: 0.45; }
+.dial-tick { stroke: var(--text); stroke-width: 2.5; }
+.dial-hit { fill: transparent; pointer-events: all; cursor: pointer; transition: fill 200ms ease; }
+.dial-lab {
+  fill: var(--text);
+  font-family: var(--f-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  transition: fill 200ms ease;
+}
+.dial-stop.is-on .dial-lab { fill: var(--holster); }
+.dial-stop.is-on .dial-hit { fill: var(--holster); fill-opacity: 0.16; }
+
+.knob {
+  position: absolute;
+  inset: 27%;   /* radius ≈ 85 of the plate's 184 half-width: inside the 92 face ring */
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, var(--knob-lt), var(--knob) 68%);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.5);
+  /* a spring: overshoots the detent a touch, then settles */
+  transition: transform 520ms cubic-bezier(0.22, 1.6, 0.36, 1), scale 120ms ease;
+  cursor: grab;
+}
+.knob:active { cursor: grabbing; }
+/* under a finger the knob follows exactly and sits a hair lower */
+.knob.is-dragging { transition: scale 120ms ease; scale: 0.985; cursor: grabbing; }
+.knob.is-dragging::before { box-shadow: 0 0 14px rgba(246, 183, 31, 0.8); }
+.knob::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  width: 6.5%;
+  height: 34%;
+  margin-left: -3.25%;
+  border-radius: 4px;
+  background: var(--knob-mark);
+  box-shadow: 0 0 8px rgba(246, 183, 31, 0.5);
+}
+/* a grip: fine ridges round the rim, the part a thumb catches */
+.knob::after {
+  content: "";
+  position: absolute;
+  inset: 3%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.07) 0deg 3deg, transparent 3deg 7.5deg);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 67%);
+  mask: radial-gradient(circle, transparent 66%, #000 67%);
+}
+.knob.is-detent { animation: detent 240ms ease-out; }
+@keyframes detent {
+  0% { scale: 1; }
+  35% { scale: 0.965; }
+  100% { scale: 1; }
+}
+.knob:focus-visible { outline: 3px solid var(--holster); outline-offset: 5px; }
+
+/* ---- jacks --------------------------------------------------------------- */
+.jacks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 26px;
+  padding-top: 4px;
+}
+.jack {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--jack);
+  border: 4px solid var(--jack-ring);
+  box-shadow: inset 0 0 0 3px var(--shell-lt), 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.jack-com { border-color: var(--knob-lt); }
+.jack-com.is-closed { background: var(--led-off); }
+.jack-com.is-open { background: var(--led); box-shadow: inset 0 0 0 3px var(--shell-lt), 0 0 14px var(--led); }
+.jack-text {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* ---- drawer -------------------------------------------------------------- */
+.drawer {
+  width: min(100%, 900px);
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 18px 20px 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.drawer-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.drawer-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--holster);
+}
+.drawer-head .muted { font-size: 12px; }
+.drawer-tools { display: flex; align-items: center; gap: 12px; }
+.pill.share { background: var(--cell); color: var(--holster); }
+.pill.share:hover { background: var(--hover); color: var(--holster); }
+.pill.is-busy { opacity: 0.5; pointer-events: none; }
+
+/* ---- the write-up page --------------------------------------------------- */
+.findings { max-width: 900px; margin-top: 8px; }
+.findings .drawer-head h2 { font-size: 20px; letter-spacing: 0.02em; text-transform: none; color: var(--text); }
+.findings .prose { max-width: 72ch; }
+.findings .prose h2:first-child { margin-top: 26px; }
+.findings .strip { margin: 4px 0 26px; }
+.findings .chartbox { margin-top: 10px; }
+.narrative p { color: var(--text); }
+.findings-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px;
+  margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--rule);
+  font-size: 12.5px; color: var(--dim);
+}
+.findings-links a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
+.findings-links a:hover { color: var(--holster); }
+.pill.share[href] { text-decoration: none; display: inline-block; }
+
+/* installed to a home screen: keep clear of the status bar */
+@media (display-mode: standalone) {
+  .stage { padding-top: max(24px, env(safe-area-inset-top)); }
+}
+
+/* ---- hero (the weekly-pick panels) --------------------------------------- */
+.hero { margin-bottom: 14px; }
+.hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.hero-asset { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.hero-top .muted { font-size: 12px; }
+
+.hero-price {
+  font-size: clamp(30px, 8vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.hero-price.is-empty { color: var(--dim); }
+
+.hero-sub { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
+.hero-sub .muted { font-size: 12px; }
+
+.chg {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chg.is-up { color: var(--pos); }
+.chg.is-down { color: var(--neg); }
+.chg.is-flat { color: var(--dim); }
+
+/* ---- range pills --------------------------------------------------------- */
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.pill {
+  font-family: inherit;
+  font-size: 12px; font-weight: 600;
+  color: var(--dim);
+  background: none; border: 0;
+  padding: 6px 14px; border-radius: 999px;
+  cursor: pointer;
+}
+.pill:hover { background: var(--hover); color: var(--text); }
+.pill.is-on { background: var(--cell); color: var(--holster); }
+.pill:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.pill[disabled] { opacity: 0.45; cursor: default; }
+
+/* ---- chart shell --------------------------------------------------------- */
+.chartbox { margin: 4px 0 0; min-height: 40px; }
+.chart { display: block; width: 100%; height: auto; color: var(--dim); }
+.chart-empty { color: var(--dim); }
+
+.gx-grid { stroke: var(--rule); stroke-width: 0.6; }
+.gx-axis { stroke: var(--rule); stroke-width: 0.8; }
+.gx-zero { stroke: var(--dim); stroke-width: 0.7; stroke-dasharray: 3 3; }
+.gx-tick { font-size: 9.5px; fill: currentColor; font-variant-numeric: tabular-nums; }
+.gx-title { font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ---- market rows --------------------------------------------------------- */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 96px 76px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--rule);
+}
+.rows li:last-child { border-bottom: 0; }
+.row-name { min-width: 0; }
+.row-code { font-size: 14px; font-weight: 600; }
+.row-desc { font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-px { font-size: 15px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.row-chg { text-align: right; }
+.row-chg .chg { font-size: 13px; }
+.row-spark { min-width: 0; }
+.rows.alerts li { grid-template-columns: minmax(0, 1fr) auto 36px; }
+
+/* the probe jack's search and results */
+.probe-search {
+  display: block; width: 100%;
+  font-family: var(--f-ui); font-size: 15px; font-weight: 500;
+  color: var(--text); background: var(--cell);
+  border: 1px solid var(--rule); border-radius: 10px;
+  padding: 12px 14px; margin: 4px 0 6px;
+}
+.probe-search:focus-visible { outline: 2px solid var(--holster); outline-offset: 1px; }
+.rows.picks li { grid-template-columns: minmax(0, 1fr); padding: 0; }
+.pick {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 12px 6px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  border-radius: 8px;
+}
+.pick:hover { background: var(--hover); }
+.pick:focus-visible { outline: 2px solid var(--holster); outline-offset: -2px; }
+
+/* the statistics pair selector */
+.stats-picker { margin-bottom: 14px; }
+.picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.picker .pills { margin-top: 0; }
+.picker-label { font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.stats-picker .foot { margin: 10px 0 0; }
+.rows.alerts li.is-fired .row-code { color: var(--dim); text-decoration: line-through; }
+.rows.alerts .pill { padding: 4px 10px; }
+
+/* ---- stat strip ---------------------------------------------------------- */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 16px 20px;
+  margin-bottom: 18px;
+}
+.stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-value {
+  margin-top: 2px;
+  font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.foot { margin: 8px 0 22px; font-size: 12.5px; color: var(--dim); }
+
+/* ---- tables -------------------------------------------------------------- */
+.table-scroll, .table-host { overflow-x: auto; margin-top: 8px; }
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+table.data th, table.data td {
+  padding: 9px 10px 9px 0;
+  text-align: right;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+table.data thead th {
+  font-size: 11px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+table.data th[scope="row"], table.data thead th:first-child { text-align: left; }
+table.data tbody tr:last-child th, table.data tbody tr:last-child td { border-bottom: 0; }
+.dim { color: var(--dim); }
+.neg { color: var(--neg); }
+tr.row-rule th {
+  text-align: left; padding-top: 16px;
+  font-size: 11px; font-weight: 600; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.tag { font-size: 12px; color: var(--dim); }
+
+/* ---- notices ------------------------------------------------------------- */
+.notice {
+  margin: 12px 0;
+  padding: 9px 12px;
+  font-size: 13px;
+  background: var(--cell);
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+}
+.notice-bad { border-left-color: var(--neg); }
+.notice-quiet { border-left-color: var(--rule); color: var(--dim); }
+
+/* ---- about --------------------------------------------------------------- */
+.prose { max-width: 68ch; }
+.prose h2 {
+  margin: 26px 0 6px;
+  font-size: 12px; font-weight: 700; color: var(--holster);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.prose h2:first-child { margin-top: 0; }
+.prose p { margin: 0 0 10px; font-size: 14px; color: var(--dim); }
+.prose b { color: var(--text); font-weight: 600; }
+.prose a {
+  color: var(--text);
+  text-decoration-color: var(--holster);
+  text-underline-offset: 3px;
+}
+.prose a:hover { color: var(--holster); }
+.prose a:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width: 480px) {
+  .stage { padding: 10px 6px 32px; gap: 12px; }
+  .holster { border-radius: 28px; padding: 10px; }
+  .shell { border-radius: 20px; padding: 12px 12px 14px; }
+  .lcd { padding: 12px 14px 12px; }
+  .lcd-price { font-size: 40px; }
+  .lcd-chg { font-size: 16px; }
+  .rng { padding: 8px 12px; font-size: 12px; }
+  .keys { gap: 6px; }
+  .key { font-size: 10.5px; letter-spacing: 0.04em; padding: 10px 2px; }
+  .lcd-edit { left: 12px; right: 12px; top: 40px; }
+  .drawer { border-radius: 14px; padding: 14px 12px 18px; }
+  .dial { width: 100%; }
+  .dial-lab { font-size: 13.5px; }
+  .rows li { grid-template-columns: minmax(0, 1fr) 84px 64px; }
+  .row-spark { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+</style>
+</head>
+<body>
+
+<main class="stage">
+  <article class="drawer findings">
+    <header class="drawer-head">
+      <h2>Is bitcoin a tech stock?</h2>
+      <span class="drawer-tools">
+        <a class="pill share" href="index.html">&larr; Meter</a>
+      </span>
+    </header>
+
+    <div id="findingsNotice"></div>
+
+    <div class="strip">
+      <div><div class="stat-label">Regime now</div><div class="stat-value" data-f="regime">—</div></div>
+      <div><div class="stat-label">Corr 90d · Nasdaq</div><div class="stat-value" data-f="corr90-ixic">—</div></div>
+      <div><div class="stat-label">Beta 90d</div><div class="stat-value" data-f="beta90-ixic">—</div></div>
+      <div><div class="stat-label">R² 90d</div><div class="stat-value" data-f="r2-90-ixic">—</div></div>
+    </div>
+
+    <section class="prose">
+      <h2>The question</h2>
+      <p>Bitcoin is often described as a leveraged bet on technology stocks: when the Nasdaq sells off, bitcoin sells off harder, and when tech rallies, bitcoin rallies more. If that is true, bitcoin is not a separate asset at all but a high-beta version of one you may already own. If it is only sometimes true, the interesting question becomes <b>when</b>, and how to tell. This page keeps a running answer from daily closes, recomputed by a scheduled job after each US session, and the <a href="index.html">meter</a> shows the same statistics live.</p>
+
+      <h2>Why it matters</h2>
+      <p>A holding only diversifies a portfolio when its returns move independently of the rest. A tech-heavy investor who adds bitcoin during a coupled regime adds volatility without adding diversification. The same person during a decoupled regime gets something genuinely different. Neither state is permanent, so a single correlation figure is less useful than knowing how often each regime occurs, how long it lasts, and how abruptly it ends.</p>
+
+      <h2>Method</h2>
+      <p>The sample is <span data-f="sessions">—</span> trading sessions from <span data-f="from">—</span> to <span data-f="to">—</span>. Bitcoin trades every calendar day and the index does not, so the two series are first intersected on the dates each actually traded; otherwise bitcoin's Monday return spans one day while the index's spans three. Returns are daily log returns. Correlation, beta and R² are computed over the last 30, 90 and 252 sessions. Regimes are read off a rolling 90-session correlation: above 0.5 counts as <b>coupled</b>, below 0.2 as <b>decoupled</b>, and the band between as loosely coupled. A <b>break</b> is the fall in that rolling correlation over any 20-session span; the three largest are listed. Volatility is the sample standard deviation of 30 sessions of log returns, annualized by √252. Drawdowns run on each asset's own history, since a drawdown belongs to one price path.</p>
+    </section>
+
+    <section class="prose">
+      <h2>What the numbers show</h2>
+      <p>The rolling 90-session correlation, with the coupled band shaded green and the decoupled band red:</p>
+    </section>
+    <div class="chartbox" id="chartRoll"></div>
+    <p class="foot">Rolling 90-session correlation of daily log returns, BTC against the Nasdaq Composite.</p>
+
+    <section class="prose">
+      <p>The correlation was above 0.5 on <span data-f="coupledShare">—</span> of sessions and below 0.2 on <span data-f="decoupledShare">—</span>, with the remaining <span data-f="middleShare">—</span> in between. The longest coupled stretch was <span data-f="longestCoupled">—</span>; the longest decoupled stretch was <span data-f="longestDecoupled">—</span>. Over the full year the beta against the Nasdaq is <span data-f="beta252-ixic">—</span> with an R² of <span data-f="r2-252-ixic">—</span>, meaning the index explains about <span data-f="r2-252-pct">—</span> of the day-to-day variance in bitcoin's returns. Against the S&amp;P 500 the 90-session correlation is <span data-f="corr90-spx">—</span>.</p>
+    </section>
+    <div class="table-host" id="couplingTable"></div>
+
+    <section class="prose">
+      <h2>When the coupling broke</h2>
+      <p>The largest falls in the rolling correlation over any 20-session span. A large fall means the two stopped moving together quickly, whichever direction each then went.</p>
+    </section>
+    <div class="table-host" id="breaksTable"></div>
+
+    <section class="prose">
+      <h2>The shape of the relationship</h2>
+      <p>Each square is one of the last <span data-f="scatterN">—</span> sessions: the Nasdaq's return across, bitcoin's up. The line is the least-squares fit; its slope, <span data-f="scatterBeta">—</span>, is the 90-session beta. The axes are scaled separately because bitcoin's returns run several times the index's, so read the slope as a shape rather than an angle.</p>
+    </section>
+    <div class="chartbox" id="chartScatter"></div>
+    <p class="foot">Daily log returns, axes scaled independently.</p>
+
+    <section class="prose">
+      <h2>Volatility</h2>
+      <p>Bitcoin's 30-session realized volatility is <span data-f="volBtc">—</span> annualized against the Nasdaq's <span data-f="volIdx">—</span>, a ratio of <span data-f="volRatio">—</span>. Over the year the averages were <span data-f="volBtcYear">—</span> and <span data-f="volIdxYear">—</span>. This is the "leveraged" half of the leveraged-bet claim: even when the two move together, bitcoin moves several times as far.</p>
+    </section>
+    <div class="chartbox" id="chartVol"></div>
+    <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+
+    <section class="prose">
+      <h2>Drawdowns</h2>
+      <p>Bitcoin is <span data-f="ddBtcNow">—</span> from its peak in this window. Its deepest drawdown was <span data-f="ddBtcMax">—</span>; the Nasdaq's was <span data-f="ddIdxMax">—</span>. The two closed in the same direction on <span data-f="agreement252">—</span> of the last 252 sessions and <span data-f="agreementAll">—</span> of the whole sample.</p>
+    </section>
+    <div class="table-scroll" id="ddTable"></div>
+
+    <section class="prose">
+      <h2>In words</h2>
+      <div class="narrative" id="narrative"></div>
+      <p class="foot">These sentences are generated from the figures above by a fixed template. They add nothing the numbers do not say.</p>
+
+      <h2>Caveats</h2>
+      <p>The sample is about a year of daily closes, which is short: a single episode can dominate the regime shares. Correlation is not causation; nothing here says which side leads or why they move together. The 0.5 and 0.2 thresholds are conventions, chosen to be legible rather than derived. Bitcoin's daily close is a UTC-day bar while the index closes at 16:00 New York time, so the pairing is approximate by hours. Prices come from Financial Modeling Prep and CoinGecko and may be delayed, revised, or wrong.</p>
+
+      <h2>Standing</h2>
+      <p>Market data for reference only. Nothing on this page is investment advice, a recommendation, or a solicitation to trade. The regime labels describe the past; they say nothing about the next session.</p>
+    </section>
+
+    <footer class="findings-foot">
+      <span class="muted">As of <span data-f="asOf">—</span> · generated <span data-f="generatedAt">—</span></span>
+      <span class="findings-links">
+        <a href="index.html">The meter</a> · <a href="index.html#note">Today's reading</a> · <a href="https://github.com/jackmcmurry/multimeter">Source</a>
+      </span>
+    </footer>
+  </article>
+</main>
+
+<script>
+/* ==== src/lib/stats.js ==================================================== */
+/* ============================================================================
+ * stats.js — return-series statistics. Pure functions: no DOM, no network.
+ *
+ * Conventions used throughout the app:
+ *   - A "series" is [{ date: 'YYYY-MM-DD', price: Number }], any order.
+ *   - Paired statistics (correlation, beta) are computed on returns taken
+ *     AFTER intersecting the two series on common dates, so both legs span
+ *     identical calendar intervals (e.g. a Friday->Monday gap is a
+ *     Friday->Monday gap for both). This matters when pairing a 7-day market
+ *     (BTC) with a 5-day one (equity indices).
+ *   - Returns are log returns; volatility is annualized with sqrt(252)
+ *     because the paired calendar is the US equity session calendar.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var TRADING_DAYS = 252;
+  var MS_PER_DAY = 86400000;
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  function mean(xs) {
+    var n = xs.length;
+    if (!n) return NaN;
+    var s = 0;
+    for (var i = 0; i < n; i++) s += xs[i];
+    return s / n;
+  }
+
+  /* Sample statistics by default (ddof = 1). */
+  function variance(xs, ddof) {
+    ddof = ddof === undefined ? 1 : ddof;
+    var n = xs.length;
+    if (n - ddof <= 0) return NaN;
+    var m = mean(xs), s = 0;
+    for (var i = 0; i < n; i++) { var d = xs[i] - m; s += d * d; }
+    return s / (n - ddof);
+  }
+
+  function stdev(xs, ddof) { return Math.sqrt(variance(xs, ddof)); }
+
+  function covariance(xs, ys, ddof) {
+    ddof = ddof === undefined ? 1 : ddof;
+    var n = Math.min(xs.length, ys.length);
+    if (n - ddof <= 0) return NaN;
+    var mx = mean(xs.slice(0, n)), my = mean(ys.slice(0, n)), s = 0;
+    for (var i = 0; i < n; i++) s += (xs[i] - mx) * (ys[i] - my);
+    return s / (n - ddof);
+  }
+
+  function pearson(xs, ys) {
+    var n = Math.min(xs.length, ys.length);
+    if (n < 2) return NaN;
+    var a = xs.slice(0, n), b = ys.slice(0, n);
+    var sx = stdev(a), sy = stdev(b);
+    if (!sx || !sy || !isNum(sx) || !isNum(sy)) return NaN;
+    return covariance(a, b) / (sx * sy);
+  }
+
+  /* Beta of `asset` against `bench`: cov(a,b) / var(b). */
+  function beta(asset, bench) {
+    var vb = variance(bench);
+    if (!vb || !isNum(vb)) return NaN;
+    return covariance(asset, bench) / vb;
+  }
+
+  /* Ordinary least squares fit of ys on xs. slope === beta when xs is the
+   * benchmark's return series. */
+  function regression(xs, ys) {
+    var n = Math.min(xs.length, ys.length);
+    if (n < 2) return { slope: NaN, intercept: NaN, r2: NaN, n: n };
+    var a = xs.slice(0, n), b = ys.slice(0, n);
+    var slope = beta(b, a);
+    var intercept = mean(b) - slope * mean(a);
+    var r = pearson(a, b);
+    return { slope: slope, intercept: intercept, r2: isNum(r) ? r * r : NaN, n: n };
+  }
+
+  /* Log returns: r[i] = ln(p[i] / p[i-1]). Length is prices.length - 1. */
+  function logReturns(prices) {
+    var out = [];
+    for (var i = 1; i < prices.length; i++) {
+      var prev = prices[i - 1], cur = prices[i];
+      out.push(isNum(prev) && isNum(cur) && prev > 0 && cur > 0 ? Math.log(cur / prev) : NaN);
+    }
+    return out;
+  }
+
+  /* Drop index pairs where either leg is not finite, keeping alignment. */
+  function pairwiseClean(xs, ys) {
+    var n = Math.min(xs.length, ys.length), a = [], b = [];
+    for (var i = 0; i < n; i++) {
+      if (isNum(xs[i]) && isNum(ys[i])) { a.push(xs[i]); b.push(ys[i]); }
+    }
+    return { a: a, b: b };
+  }
+
+  function annualizedVol(returns, periodsPerYear) {
+    var ppy = periodsPerYear || TRADING_DAYS;
+    var clean = returns.filter(isNum);
+    if (clean.length < 2) return NaN;
+    return stdev(clean) * Math.sqrt(ppy);
+  }
+
+  /* Rolling window over xs. Returns [{ index, value }] where index is the
+   * position of the window's LAST element. */
+  function rolling(xs, window, fn) {
+    var out = [];
+    if (window <= 0) return out;
+    for (var i = window - 1; i < xs.length; i++) {
+      out.push({ index: i, value: fn(xs.slice(i - window + 1, i + 1)) });
+    }
+    return out;
+  }
+
+  /* Rolling window over two aligned arrays. */
+  function rollingPair(xs, ys, window, fn) {
+    var out = [], n = Math.min(xs.length, ys.length);
+    if (window <= 0) return out;
+    for (var i = window - 1; i < n; i++) {
+      out.push({
+        index: i,
+        value: fn(xs.slice(i - window + 1, i + 1), ys.slice(i - window + 1, i + 1))
+      });
+    }
+    return out;
+  }
+
+  function byDateAsc(p, q) { return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }
+
+  function sortSeries(series) { return series.slice().sort(byDateAsc); }
+
+  /* Intersect two series on common dates. Returns ascending arrays. */
+  function alignByDate(seriesA, seriesB) {
+    var lookup = {};
+    for (var i = 0; i < seriesB.length; i++) lookup[seriesB[i].date] = seriesB[i].price;
+    var dates = [], a = [], b = [];
+    var sorted = sortSeries(seriesA);
+    for (var j = 0; j < sorted.length; j++) {
+      var d = sorted[j].date, pa = sorted[j].price, pb = lookup[d];
+      if (pb !== undefined && isNum(pa) && isNum(pb)) { dates.push(d); a.push(pa); b.push(pb); }
+    }
+    return { dates: dates, a: a, b: b };
+  }
+
+  function dayGap(fromDate, toDate) {
+    var a = Date.parse(fromDate + 'T00:00:00Z'), b = Date.parse(toDate + 'T00:00:00Z');
+    if (isNaN(a) || isNaN(b)) return null;
+    return Math.round((b - a) / MS_PER_DAY);
+  }
+
+  /* Percentage below the running peak, per observation. */
+  function drawdownSeries(prices) {
+    var peak = -Infinity, out = [];
+    for (var i = 0; i < prices.length; i++) {
+      if (isNum(prices[i]) && prices[i] > peak) peak = prices[i];
+      out.push(isNum(prices[i]) && peak > 0 ? prices[i] / peak - 1 : NaN);
+    }
+    return out;
+  }
+
+  function maxDrawdown(prices) {
+    var dd = drawdownSeries(prices).filter(isNum);
+    return dd.length ? Math.min.apply(null, dd) : NaN;
+  }
+
+  /* Peak-to-trough episodes, deepest first.
+   * An episode opens when price falls below the running peak and closes when
+   * price regains that peak; an unrecovered episode is marked `ongoing`. */
+  function drawdownEpisodes(dates, prices, opts) {
+    opts = opts || {};
+    var minDepth = Math.abs(opts.minDepth === undefined ? 0.05 : opts.minDepth);
+    var limit = opts.limit === undefined ? Infinity : opts.limit;
+
+    var episodes = [], cur = null;
+    var peak = prices[0], peakIdx = 0;
+
+    for (var i = 1; i < prices.length; i++) {
+      var p = prices[i];
+      if (!isNum(p)) continue;
+      if (p >= peak) {
+        if (cur) { cur.recoveryIndex = i; episodes.push(cur); cur = null; }
+        peak = p; peakIdx = i;
+      } else {
+        if (!cur) cur = { peakIndex: peakIdx, peak: peak, troughIndex: i, trough: p, recoveryIndex: null };
+        if (p < cur.trough) { cur.trough = p; cur.troughIndex = i; }
+      }
+    }
+    if (cur) episodes.push(cur);
+
+    return episodes.map(function (e) {
+      return {
+        peakDate: dates[e.peakIndex],
+        peakPrice: e.peak,
+        troughDate: dates[e.troughIndex],
+        troughPrice: e.trough,
+        depth: e.trough / e.peak - 1,
+        recoveryDate: e.recoveryIndex === null ? null : dates[e.recoveryIndex],
+        declineDays: dayGap(dates[e.peakIndex], dates[e.troughIndex]),
+        recoveryDays: e.recoveryIndex === null ? null : dayGap(dates[e.troughIndex], dates[e.recoveryIndex]),
+        ongoing: e.recoveryIndex === null
+      };
+    }).filter(function (e) {
+      return isNum(e.depth) && e.depth <= -minDepth;
+    }).sort(function (x, y) {
+      return x.depth - y.depth;
+    }).slice(0, limit);
+  }
+
+  /* Last `count` elements (or all of them). */
+  function tail(xs, count) {
+    return count >= xs.length ? xs.slice() : xs.slice(xs.length - count);
+  }
+
+  /* Correlation / beta / R-squared over a set of trailing window lengths. */
+  function couplingWindows(assetReturns, benchReturns, windows) {
+    return windows.map(function (w) {
+      var pair = pairwiseClean(tail(assetReturns, w), tail(benchReturns, w));
+      var n = pair.a.length;
+      return {
+        window: w,
+        n: n,
+        correlation: n >= 3 ? pearson(pair.a, pair.b) : NaN,
+        beta: n >= 3 ? beta(pair.a, pair.b) : NaN,
+        r2: n >= 3 ? Math.pow(pearson(pair.a, pair.b), 2) : NaN
+      };
+    });
+  }
+
+  MP.stats = {
+    TRADING_DAYS: TRADING_DAYS,
+    isNum: isNum,
+    mean: mean,
+    variance: variance,
+    stdev: stdev,
+    covariance: covariance,
+    pearson: pearson,
+    beta: beta,
+    regression: regression,
+    logReturns: logReturns,
+    pairwiseClean: pairwiseClean,
+    annualizedVol: annualizedVol,
+    rolling: rolling,
+    rollingPair: rollingPair,
+    sortSeries: sortSeries,
+    alignByDate: alignByDate,
+    dayGap: dayGap,
+    drawdownSeries: drawdownSeries,
+    maxDrawdown: maxDrawdown,
+    drawdownEpisodes: drawdownEpisodes,
+    tail: tail,
+    couplingWindows: couplingWindows
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/format.js =================================================== */
+/* ============================================================================
+ * format.js — display formatting. Pure functions, no DOM.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var DASH = '—';
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+
+  function usd(n, dp) {
+    if (!isNum(n)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: 'USD',
+      minimumFractionDigits: dp, maximumFractionDigits: dp
+    }).format(n);
+  }
+
+  function num(n, dp) {
+    if (!isNum(n)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: dp, maximumFractionDigits: dp
+    }).format(n);
+  }
+
+  function compact(n) {
+    if (!isNum(n)) return DASH;
+    return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+  }
+
+  /* 0.0234 -> "2.34%" */
+  function pct(fraction, dp) {
+    if (!isNum(fraction)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return (fraction * 100).toFixed(dp) + '%';
+  }
+
+  /* 0.0234 -> "+2.34%", -0.0234 -> "-2.34%" */
+  function signedPct(fraction, dp) {
+    if (!isNum(fraction)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    var v = fraction * 100;
+    return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(dp) + '%';
+  }
+
+  /* Already-a-percentage inputs (APIs that hand back 1.06 for 1.06%). */
+  function signedPctPoints(points, dp) {
+    if (!isNum(points)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return (points >= 0 ? '+' : '−') + Math.abs(points).toFixed(dp) + '%';
+  }
+
+  function ratio(n, dp) {
+    if (!isNum(n)) return DASH;
+    dp = dp === undefined ? 2 : dp;
+    return n.toFixed(dp);
+  }
+
+  /* '2026-09-10' -> '10 Sep 26' */
+  function shortDate(iso) {
+    if (!iso) return DASH;
+    var parts = String(iso).slice(0, 10).split('-');
+    if (parts.length !== 3) return String(iso);
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var mi = parseInt(parts[1], 10) - 1;
+    if (mi < 0 || mi > 11) return String(iso);
+    return parts[2] + ' ' + months[mi] + ' ' + parts[0].slice(2);
+  }
+
+  function clockTime(ts) {
+    if (!isNum(ts)) return DASH;
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function ago(ts) {
+    if (!isNum(ts)) return 'awaiting data';
+    var s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+    if (s < 5) return 'just now';
+    if (s < 60) return s + 's ago';
+    var m = Math.round(s / 60);
+    if (m < 60) return m + 'm ago';
+    return Math.round(m / 60) + 'h ago';
+  }
+
+  function days(n) {
+    if (n === null || n === undefined || !isNum(n)) return DASH;
+    return n + 'd';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  MP.fmt = {
+    DASH: DASH,
+    usd: usd,
+    num: num,
+    compact: compact,
+    pct: pct,
+    signedPct: signedPct,
+    signedPctPoints: signedPctPoints,
+    ratio: ratio,
+    shortDate: shortDate,
+    clockTime: clockTime,
+    ago: ago,
+    days: days,
+    escapeHtml: escapeHtml
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/geom.js ===================================================== */
+/* ============================================================================
+ * geom.js — SVG chart kit. Rectilinear only: stair-stepped paths, hard-edged
+ * columns, square point marks, diagonal hatching, tick-marked crosshair axes.
+ * No curves, no gradients, no rounded joins anywhere.
+ *
+ * Every renderer returns an SVG string sized in viewBox units. Text is drawn
+ * with fill="currentColor" so the caller's theme token decides its colour.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var isNum = function (x) { return typeof x === 'number' && isFinite(x); };
+
+  var uid = 0;
+  function nextId(prefix) { uid += 1; return prefix + uid; }
+
+  var PAD = { l: 46, r: 12, t: 12, b: 20 };
+
+  function scale(domain, range) {
+    var d0 = domain[0], span = (domain[1] - domain[0]) || 1;
+    var r0 = range[0], rSpan = range[1] - range[0];
+    return function (v) { return r0 + ((v - d0) / span) * rSpan; };
+  }
+
+  function extent(values) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < values.length; i++) {
+      if (!isNum(values[i])) continue;
+      if (values[i] < lo) lo = values[i];
+      if (values[i] > hi) hi = values[i];
+    }
+    if (lo === Infinity) return [0, 1];
+    if (lo === hi) return [lo - Math.abs(lo || 1) * 0.05, hi + Math.abs(hi || 1) * 0.05];
+    return [lo, hi];
+  }
+
+  function niceTicks(min, max, count) {
+    if (!isNum(min) || !isNum(max)) return [];
+    if (min === max) { min -= 0.5; max += 0.5; }
+    var span = max - min;
+    var raw = span / Math.max(1, count);
+    var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+    var err = raw / mag;
+    var step = mag * (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1);
+    var out = [];
+    var start = Math.ceil(min / step) * step;
+    for (var v = start; v <= max + step * 1e-9; v += step) {
+      out.push(Math.abs(v) < step * 1e-9 ? 0 : Math.round(v / step) * step);
+    }
+    return out;
+  }
+
+  function pad(over) {
+    return {
+      l: over && over.l !== undefined ? over.l : PAD.l,
+      r: over && over.r !== undefined ? over.r : PAD.r,
+      t: over && over.t !== undefined ? over.t : PAD.t,
+      b: over && over.b !== undefined ? over.b : PAD.b
+    };
+  }
+
+  /* Stair path through evenly spaced values: horizontal then vertical only. */
+  function stairPath(values, x, y) {
+    var d = '', started = false, prevY = null;
+    for (var i = 0; i < values.length; i++) {
+      if (!isNum(values[i])) continue;
+      var xi = x(i), yi = y(values[i]);
+      if (!started) { d += 'M' + xi.toFixed(2) + ',' + yi.toFixed(2); started = true; }
+      else { d += 'H' + xi.toFixed(2) + 'V' + yi.toFixed(2); }
+      prevY = yi;
+    }
+    return { d: d, started: started, lastY: prevY };
+  }
+
+  function axisText(x, yPos, text, anchor, cls) {
+    return '<text x="' + x.toFixed(2) + '" y="' + yPos.toFixed(2) + '" text-anchor="' + anchor +
+      '" class="' + (cls || 'gx-tick') + '" fill="currentColor">' + text + '</text>';
+  }
+
+  /* Y grid: hairline rules with left-hand labels. */
+  function yAxis(ticks, y, p, w, fmt) {
+    var s = '';
+    for (var i = 0; i < ticks.length; i++) {
+      var yy = y(ticks[i]);
+      s += '<line x1="' + p.l + '" y1="' + yy.toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + yy.toFixed(2) +
+        '" class="gx-grid"/>';
+      s += axisText(p.l - 5, yy + 3, fmt(ticks[i]), 'end');
+    }
+    return s;
+  }
+
+  /* X labels at first / middle / last index. */
+  function xLabels(labels, x, p, h) {
+    if (!labels || !labels.length) return '';
+    var yPos = h - p.b + 13;
+    var last = labels.length - 1;
+    var mid = Math.floor(last / 2);
+    var s = axisText(p.l, yPos, labels[0], 'start');
+    if (last > 1) s += axisText(x(mid), yPos, labels[mid], 'middle');
+    if (last > 0) s += axisText(x(last), yPos, labels[last], 'end');
+    return s;
+  }
+
+  function open(w, h, cls) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="chart ' + (cls || '') +
+      '" role="img" preserveAspectRatio="xMidYMid meet">';
+  }
+
+  /* -------------------------------------------------------------------------
+   * 1. sparkStep — axis-free stair line with a square end mark.
+   * ---------------------------------------------------------------------- */
+  function sparkStep(opts) {
+    var values = (opts.values || []).filter(isNum);
+    var w = opts.w || 300, h = opts.h || 56;
+    var color = opts.color || 'currentColor';
+    if (values.length < 2) {
+      return open(w, h, 'chart-empty') +
+        axisText(w / 2, h / 2 + 3, 'no series', 'middle') + '</svg>';
+    }
+    var p = { l: 2, r: 8, t: 6, b: 6 };
+    var dom = extent(values);
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var path = stairPath(values, x, y);
+    var lastX = x(values.length - 1), lastY = y(values[values.length - 1]);
+    var s = open(w, h);
+    /* Flat-opacity fill, no gradient — keeps the chart rectilinear. */
+    if (opts.area) {
+      s += '<path d="' + path.d + 'V' + (h - p.b).toFixed(2) + 'H' + x(0).toFixed(2) + 'Z" ' +
+        'fill="' + color + '" fill-opacity="0.12" stroke="none"/>';
+    }
+    s += '<path d="' + path.d + '" fill="none" stroke="' + color + '" stroke-width="' +
+      (opts.strokeWidth || 1.5) + '" stroke-linejoin="miter" stroke-linecap="butt" ' +
+      'vector-effect="non-scaling-stroke"/>';
+    s += '<rect x="' + (lastX - 2.5).toFixed(2) + '" y="' + (lastY - 2.5).toFixed(2) +
+      '" width="5" height="5" fill="' + color + '"/>';
+    return s + '</svg>';
+  }
+
+  /* -------------------------------------------------------------------------
+   * 2. stepChart — one or more stair series on a shared scale, optional zero
+   *    rule. Used for the rolling-correlation panel.
+   * ---------------------------------------------------------------------- */
+  function stepChart(opts) {
+    var series = opts.series || [];
+    var w = opts.w || 900, h = opts.h || 190;
+    var p = pad(opts.pad);
+    var fmt = opts.yFmt || function (v) { return String(v); };
+    var all = [];
+    series.forEach(function (s) { all = all.concat((s.values || []).filter(isNum)); });
+    if (all.length < 2) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+    }
+    var dom = opts.yDomain || extent(all);
+    var maxLen = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
+    var x = scale([0, Math.max(1, maxLen - 1)], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
+
+    var s = open(w, h);
+    /* optional horizontal bands (regime thresholds), under everything else */
+    (opts.bands || []).forEach(function (b) {
+      var top = Math.min(b.to, dom[1]), bottom = Math.max(b.from, dom[0]);
+      if (!(top > bottom)) return;
+      s += '<rect x="' + p.l + '" y="' + y(top).toFixed(2) + '" width="' + (w - p.r - p.l) + '" height="' +
+        (y(bottom) - y(top)).toFixed(2) + '" fill="' + (b.color || 'currentColor') + '" fill-opacity="' + (b.opacity || 0.08) + '"/>';
+    });
+    s += yAxis(ticks, y, p, w, fmt);
+    /* plot frame: left and bottom rules only */
+    s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    s += '<line x1="' + p.l + '" y1="' + (h - p.b) + '" x2="' + (w - p.r) + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    if (opts.zeroLine && dom[0] < 0 && dom[1] > 0) {
+      s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) +
+        '" class="gx-zero"/>';
+    }
+    series.forEach(function (ser) {
+      var path = stairPath(ser.values || [], x, y);
+      if (!path.started) return;
+      s += '<path d="' + path.d + '" fill="none" stroke="' + (ser.color || 'currentColor') +
+        '" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
+      var li = (ser.values || []).length - 1;
+      if (isNum(ser.values[li])) {
+        s += '<rect x="' + (x(li) - 2.5).toFixed(2) + '" y="' + (y(ser.values[li]) - 2.5).toFixed(2) +
+          '" width="5" height="5" fill="' + (ser.color || 'currentColor') + '"/>';
+      }
+    });
+    s += xLabels(opts.xLabels, x, p, h);
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 3. columnChart — grouped hard-edged columns. Used for rolling volatility.
+   * ---------------------------------------------------------------------- */
+  function columnChart(opts) {
+    var series = opts.series || [];
+    var w = opts.w || 900, h = opts.h || 190;
+    var p = pad(opts.pad);
+    var fmt = opts.yFmt || function (v) { return String(v); };
+    var all = [];
+    series.forEach(function (s) { all = all.concat((s.values || []).filter(isNum)); });
+    if (!all.length) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+    }
+    var hi = Math.max.apply(null, all);
+    var dom = [0, hi * 1.08];
+    var maxLen = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
+    var plotW = (w - p.r) - p.l;
+    var slot = plotW / Math.max(1, maxLen);
+    var groupW = Math.max(1.2, Math.min(slot * 0.84, 14));
+    var barW = Math.max(0.8, groupW / Math.max(1, series.length));
+    var y = scale(dom, [h - p.b, p.t]);
+    var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
+
+    var s = open(w, h);
+    s += yAxis(ticks, y, p, w, fmt);
+    s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    s += '<line x1="' + p.l + '" y1="' + (h - p.b) + '" x2="' + (w - p.r) + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+
+    var base = h - p.b;
+    series.forEach(function (ser, si) {
+      var vals = ser.values || [];
+      for (var i = 0; i < vals.length; i++) {
+        if (!isNum(vals[i])) continue;
+        var cx = p.l + slot * (i + 0.5);
+        var x0 = cx - groupW / 2 + si * barW;
+        var yTop = y(vals[i]);
+        var barH = Math.max(0.6, base - yTop);
+        s += '<rect x="' + x0.toFixed(2) + '" y="' + yTop.toFixed(2) + '" width="' + barW.toFixed(2) +
+          '" height="' + barH.toFixed(2) + '" fill="' + (ser.color || 'currentColor') + '"/>';
+      }
+    });
+    s += xLabels(opts.xLabels, scale([0, Math.max(1, maxLen - 1)], [p.l + slot / 2, w - p.r - slot / 2]), p, h);
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 4. scatterFit — square marks with an OLS line and zero crosshairs. The
+   *    slope drawn here IS the beta reported in the table.
+   * ---------------------------------------------------------------------- */
+  function scatterFit(opts) {
+    var xs = opts.xs || [], ys = opts.ys || [];
+    var w = opts.w || 420, h = opts.h || 300;
+    var p = pad(opts.pad || { l: 44, r: 14, t: 14, b: 30 });
+    var fmt = opts.fmt || function (v) { return (v * 100).toFixed(0) + '%'; };
+    var n = Math.min(xs.length, ys.length);
+    if (n < 3) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting returns', 'middle') + '</svg>';
+    }
+    var xd = extent(xs), yd = extent(ys);
+    /* Each axis is scaled to its own spread, kept symmetric about zero so the
+     * crosshairs stay centred and the sign of a move stays readable. The axes
+     * are NOT squared to a common scale: bitcoin's returns run several times
+     * the index's, and forcing one scale collapses the cloud into a vertical
+     * sliver. The slope therefore reads as a shape, not a gradient, so the
+     * numeric beta is reported in the caption beside the chart. */
+    var xLim = Math.max(Math.abs(xd[0]), Math.abs(xd[1])) * 1.08 || 0.01;
+    var yLim = Math.max(Math.abs(yd[0]), Math.abs(yd[1])) * 1.08 || 0.01;
+    var x = scale([-xLim, xLim], [p.l, w - p.r]);
+    var y = scale([-yLim, yLim], [h - p.b, p.t]);
+    var yTicks = niceTicks(-yLim, yLim, 4);
+    var xTicks = niceTicks(-xLim, xLim, 4);
+
+    var s = open(w, h);
+    for (var t = 0; t < yTicks.length; t++) {
+      s += '<line x1="' + p.l + '" y1="' + y(yTicks[t]).toFixed(2) + '" x2="' + (w - p.r) +
+        '" y2="' + y(yTicks[t]).toFixed(2) + '" class="gx-grid"/>';
+      s += axisText(p.l - 5, y(yTicks[t]) + 3, fmt(yTicks[t]), 'end');
+    }
+    for (var xt = 0; xt < xTicks.length; xt++) {
+      if (xTicks[xt] === 0) continue;
+      s += axisText(x(xTicks[xt]), h - p.b + 13, fmt(xTicks[xt]), 'middle');
+    }
+    /* zero crosshair */
+    s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) + '" class="gx-zero"/>';
+    s += '<line x1="' + x(0).toFixed(2) + '" y1="' + p.t + '" x2="' + x(0).toFixed(2) + '" y2="' + (h - p.b) + '" class="gx-zero"/>';
+
+    /* OLS line, clipped to the square domain */
+    var fit = opts.fit;
+    if (fit && isNum(fit.slope) && isNum(fit.intercept)) {
+      var x1 = -xLim, x2 = xLim;
+      var y1 = fit.intercept + fit.slope * x1, y2 = fit.intercept + fit.slope * x2;
+      /* Clamp each endpoint to the y domain, solving back for x, so the line
+       * spans the plot without escaping the viewBox. */
+      if (fit.slope !== 0) {
+        if (y1 < -yLim) { y1 = -yLim; x1 = (y1 - fit.intercept) / fit.slope; }
+        else if (y1 > yLim) { y1 = yLim; x1 = (y1 - fit.intercept) / fit.slope; }
+        if (y2 < -yLim) { y2 = -yLim; x2 = (y2 - fit.intercept) / fit.slope; }
+        else if (y2 > yLim) { y2 = yLim; x2 = (y2 - fit.intercept) / fit.slope; }
+      }
+      s += '<line x1="' + x(x1).toFixed(2) + '" y1="' + y(y1).toFixed(2) + '" x2="' + x(x2).toFixed(2) +
+        '" y2="' + y(y2).toFixed(2) + '" stroke="' + (opts.fitColor || 'currentColor') +
+        '" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
+    }
+
+    /* square marks */
+    var mark = opts.markSize || 3.2;
+    for (var i = 0; i < n; i++) {
+      if (!isNum(xs[i]) || !isNum(ys[i])) continue;
+      s += '<rect x="' + (x(xs[i]) - mark / 2).toFixed(2) + '" y="' + (y(ys[i]) - mark / 2).toFixed(2) +
+        '" width="' + mark + '" height="' + mark + '" fill="' + (opts.pointColor || 'currentColor') +
+        '" fill-opacity="0.72"/>';
+    }
+
+    if (opts.xTitle) s += axisText(w - p.r, h - 4, opts.xTitle, 'end', 'gx-title');
+    if (opts.yTitle) {
+      s += '<text x="' + (p.l - 34) + '" y="' + (p.t + 4) + '" class="gx-title" fill="currentColor" ' +
+        'transform="rotate(-90 ' + (p.l - 34) + ' ' + (p.t + 4) + ')" text-anchor="end">' + opts.yTitle + '</text>';
+    }
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 5. underwaterChart — drawdown depth as a hatched region hanging from 0.
+   * ---------------------------------------------------------------------- */
+  function underwaterChart(opts) {
+    var values = opts.values || [];
+    var w = opts.w || 900, h = opts.h || 150;
+    var p = pad(opts.pad);
+    var color = opts.color || 'currentColor';
+    var fmt = opts.yFmt || function (v) { return (v * 100).toFixed(0) + '%'; };
+    var finite = values.filter(isNum);
+    if (finite.length < 2) {
+      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+    }
+    var lo = Math.min.apply(null, finite);
+    var dom = [Math.min(lo * 1.1, -0.02), 0];
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var ticks = niceTicks(dom[0], dom[1], 3);
+    var hatchId = nextId('hatch');
+
+    var s = open(w, h);
+    s += '<defs><pattern id="' + hatchId + '" patternUnits="userSpaceOnUse" width="5" height="5">' +
+      '<path d="M0,5 L5,0" stroke="' + color + '" stroke-width="0.9" fill="none"/></pattern></defs>';
+    s += yAxis(ticks, y, p, w, fmt);
+
+    /* stair outline, then close it back along the zero line to make the region */
+    var path = stairPath(values, x, y);
+    if (path.started) {
+      var lastIdx = values.length - 1;
+      var area = path.d + 'V' + y(0).toFixed(2) + 'H' + x(0).toFixed(2) + 'Z';
+      s += '<path d="' + area + '" fill="url(#' + hatchId + ')" stroke="none" fill-opacity="0.85"/>';
+      s += '<path d="' + path.d + '" fill="none" stroke="' + color + '" stroke-width="1.4" ' +
+        'stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
+      if (isNum(values[lastIdx])) {
+        s += '<rect x="' + (x(lastIdx) - 2.5).toFixed(2) + '" y="' + (y(values[lastIdx]) - 2.5).toFixed(2) +
+          '" width="5" height="5" fill="' + color + '"/>';
+      }
+    }
+    /* zero rule sits on top of the hatching */
+    s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) +
+      '" class="gx-axis"/>';
+    s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+    s += xLabels(opts.xLabels, x, p, h);
+    s += '</svg>';
+    return s;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 6. smoothLine — the one curved chart in the kit, for the meter's screen.
+   *    A monotone cubic line (no overshoot between samples) over a soft
+   *    gradient, with the latest point marked: the shape a phone's price
+   *    chart has, so the display reads as a modern backlit panel while the
+   *    printed charts in the drawer stay rectilinear.
+   * ---------------------------------------------------------------------- */
+  function sign(x) { return x < 0 ? -1 : 1; }
+
+  /* Tangent at the middle of three points, limited so the curve stays
+   * monotone between samples (Fritsch–Carlson, as d3's curveMonotoneX). */
+  function slope3(x0, y0, x1, y1, x2, y2) {
+    var h0 = x1 - x0, h1 = x2 - x1;
+    var s0 = (y1 - y0) / (h0 || (h1 < 0 && -0));
+    var s1 = (y2 - y1) / (h1 || (h0 < 0 && -0));
+    var p = (s0 * h1 + s1 * h0) / (h0 + h1);
+    return (sign(s0) + sign(s1)) * Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p)) || 0;
+  }
+
+  function slope2(x0, y0, x1, y1, t) {
+    var h = x1 - x0;
+    return h ? (3 * (y1 - y0) / h - t) / 2 : t;
+  }
+
+  function monotonePath(xs, ys) {
+    var n = xs.length;
+    if (n < 2) return '';
+    if (n === 2) return 'M' + xs[0].toFixed(2) + ',' + ys[0].toFixed(2) + 'L' + xs[1].toFixed(2) + ',' + ys[1].toFixed(2);
+    var t = new Array(n);
+    for (var i = 1; i < n - 1; i++) t[i] = slope3(xs[i - 1], ys[i - 1], xs[i], ys[i], xs[i + 1], ys[i + 1]);
+    t[0] = slope2(xs[0], ys[0], xs[1], ys[1], t[1]);
+    t[n - 1] = slope2(xs[n - 2], ys[n - 2], xs[n - 1], ys[n - 1], t[n - 2]);
+    var d = 'M' + xs[0].toFixed(2) + ',' + ys[0].toFixed(2);
+    for (var k = 0; k < n - 1; k++) {
+      var dx = (xs[k + 1] - xs[k]) / 3;
+      d += 'C' + (xs[k] + dx).toFixed(2) + ',' + (ys[k] + dx * t[k]).toFixed(2) +
+        ' ' + (xs[k + 1] - dx).toFixed(2) + ',' + (ys[k + 1] - dx * t[k + 1]).toFixed(2) +
+        ' ' + xs[k + 1].toFixed(2) + ',' + ys[k + 1].toFixed(2);
+    }
+    return d;
+  }
+
+  function smoothLine(opts) {
+    var values = (opts.values || []).filter(isNum);
+    var w = opts.w || 600, h = opts.h || 200;
+    var color = opts.color || 'currentColor';
+    if (values.length < 2) return open(w, h, 'chart-empty') + '</svg>';
+    var p = { l: 4, r: 12, t: 12, b: 4 };
+    var dom = extent(values);
+    var x = scale([0, values.length - 1], [p.l, w - p.r]);
+    var y = scale(dom, [h - p.b, p.t]);
+    var xs = [], ys = [];
+    for (var i = 0; i < values.length; i++) { xs.push(x(i)); ys.push(y(values[i])); }
+    var d = monotonePath(xs, ys);
+    var gid = nextId('glow');
+    var lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
+
+    var s = open(w, h, 'chart-smooth');
+    s += '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" style="stop-color:' + color + ';stop-opacity:0.32"/>' +
+      '<stop offset="1" style="stop-color:' + color + ';stop-opacity:0"/></linearGradient></defs>';
+    s += '<path d="' + d + 'V' + (h - p.b).toFixed(2) + 'H' + xs[0].toFixed(2) + 'Z" fill="url(#' + gid + ')" stroke="none"/>';
+    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
+      '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
+    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
+    return s + '</svg>';
+  }
+
+  MP.geom = {
+    sparkStep: sparkStep,
+    smoothLine: smoothLine,
+    monotonePath: monotonePath,
+    stepChart: stepChart,
+    columnChart: columnChart,
+    scatterFit: scatterFit,
+    underwaterChart: underwaterChart,
+    niceTicks: niceTicks,
+    extent: extent
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/sources.js ================================================== */
+/* ============================================================================
+ * sources.js — where every number comes from, and the normalizers that turn
+ * each upstream payload into the app's own shapes.
+ *
+ * Two kinds of source:
+ *   - CoinGecko's public REST API, fetched straight from the visitor's
+ *     browser. No key, CORS-enabled, so bitcoin stays live.
+ *   - Snapshot files under data/, written by the scheduled GitHub Action
+ *     (scripts/update-data.js) from Financial Modeling Prep and Alpha
+ *     Vantage. Those APIs need keys, and a key must never ship in a public
+ *     page, so the job holds them as repository secrets and publishes only
+ *     the results.
+ *
+ * The FMP and Alpha Vantage normalizers live here too, so the page's tests and
+ * the data job share one reading of every payload. Each was written against a
+ * response observed from the live API; see test/data.test.js for the fixtures.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var COINGECKO = 'https://api.coingecko.com/api/v3';
+
+  /* Relative to the page, so the site works under any GitHub Pages path. */
+  var SNAPSHOT = {
+    quotes: 'data/quotes.json',
+    history: 'data/history.json',
+    spotlight: 'data/spotlight.json',
+    findings: 'data/findings.json',
+    note: 'data/note.json'
+  };
+
+  function parsePayload(payload) {
+    if (typeof payload === 'string') {
+      try { return JSON.parse(payload); } catch (e) { return null; }
+    }
+    return payload;
+  }
+
+  function toNum(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : NaN;
+    if (typeof v !== 'string') return NaN;
+    var n = parseFloat(v.replace(/[%,$\s]/g, ''));
+    return isFinite(n) ? n : NaN;
+  }
+
+  function ascendingByDate(rows) {
+    return rows.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+  }
+
+  function isoDay(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  /* ---- CoinGecko (browser) ------------------------------------------------ */
+
+  /* GET /coins/markets?vs_currency=usd&ids=bitcoin&sparkline=true
+   * -> [ { current_price, price_change_percentage_24h, market_cap,
+   *        total_volume, circulating_supply, max_supply, market_cap_rank,
+   *        last_updated, sparkline_in_7d: { price: [...] } } ]              */
+  function coinSpot(coin) {
+    return {
+      id: coin.id || null,
+      symbol: coin.symbol ? String(coin.symbol).toUpperCase() : null,
+      name: coin.name || null,
+      price: toNum(coin.current_price),
+      changePct: toNum(coin.price_change_percentage_24h),   /* percentage points */
+      change7d: toNum(coin.price_change_percentage_7d_in_currency),
+      marketCap: toNum(coin.market_cap),
+      volume: toNum(coin.total_volume),
+      supply: toNum(coin.circulating_supply),
+      maxSupply: toNum(coin.max_supply),
+      rank: toNum(coin.market_cap_rank),
+      sparkline: ((coin.sparkline_in_7d && coin.sparkline_in_7d.price) || []).map(toNum),
+      updatedAt: Date.parse(coin.last_updated) || null
+    };
+  }
+
+  var btcSpot = {
+    url: COINGECKO + '/coins/markets?vs_currency=usd&ids=bitcoin&sparkline=true',
+    normalize: function (payload) {
+      var p = parsePayload(payload);
+      var coin = Array.isArray(p) ? p[0] : null;
+      if (!coin || !isFinite(toNum(coin.current_price))) return null;
+      return coinSpot(coin);
+    }
+  };
+
+  /* The same endpoint for several coins in one request, with the 7-day change
+   * included: the page reads BTC, ETH and the crypto of the week together,
+   * and the data job's weekly scan reads a whole universe. Resolves to a map
+   * of CoinGecko id -> coinSpot, or null when nothing usable came back. */
+  function coinsMarkets(ids, opts) {
+    var spark = !(opts && opts.sparkline === false);
+    return {
+      url: COINGECKO + '/coins/markets?vs_currency=usd&ids=' + encodeURIComponent(ids.join(',')) +
+        '&sparkline=' + (spark ? 'true' : 'false') + '&price_change_percentage=7d',
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!Array.isArray(p)) return null;
+        var out = {}, any = false;
+        for (var i = 0; i < p.length; i++) {
+          var coin = p[i];
+          if (!coin || !coin.id || !isFinite(toNum(coin.current_price))) continue;
+          out[coin.id] = coinSpot(coin);
+          any = true;
+        }
+        return any ? out : null;
+      }
+    };
+  }
+
+  /* GET /coins/{id}/market_chart?vs_currency=usd&days=N
+   * -> { prices: [[ms, price], ...], market_caps: [...], total_volumes: [...] }
+   * CoinGecko picks the granularity: ~5-minute for 1 day, hourly up to 90
+   * days, daily beyond. */
+  function btcChart(days) { return coinChart('bitcoin', days); }
+
+  function coinChart(id, days) {
+    return {
+      url: COINGECKO + '/coins/' + encodeURIComponent(id) + '/market_chart?vs_currency=usd&days=' + encodeURIComponent(days),
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!p || !Array.isArray(p.prices)) return null;
+        var prices = [], stamps = [];
+        for (var i = 0; i < p.prices.length; i++) {
+          var row = p.prices[i];
+          var v = toNum(row && row[1]);
+          if (isFinite(v)) { prices.push(v); stamps.push(toNum(row[0])); }
+        }
+        if (prices.length < 2) return null;
+        return { prices: prices, stamps: stamps, startTs: stamps[0], endTs: stamps[stamps.length - 1] };
+      }
+    };
+  }
+
+  /* GET /search?query=sol -> { coins: [{ id, name, api_symbol, symbol,
+   * market_cap_rank, thumb, large }], exchanges, ... } sorted by market cap.
+   * Keyless. The probe jack offers the first eight. */
+  function coinSearch(query) {
+    return {
+      url: COINGECKO + '/search?query=' + encodeURIComponent(String(query || '').trim()),
+      normalize: function (payload) {
+        var p = parsePayload(payload);
+        if (!p || !Array.isArray(p.coins)) return null;
+        var out = [];
+        for (var i = 0; i < p.coins.length && out.length < 8; i++) {
+          var c = p.coins[i];
+          if (!c || !c.id || !c.symbol) continue;
+          out.push({
+            id: String(c.id),
+            symbol: String(c.symbol).toUpperCase(),
+            name: c.name || String(c.symbol).toUpperCase(),
+            rank: toNum(c.market_cap_rank)
+          });
+        }
+        return out;
+      }
+    };
+  }
+
+  /* A coinChart result over 365 days arrives as one point per day, stamped
+   * 00:00 UTC — which is the close of the PREVIOUS day, the way FMP dates its
+   * daily bars. Shifting each stamp back one millisecond dates midnight
+   * points to the day they close and leaves an intra-day "now" point on its
+   * own day; the last point per day wins. */
+  function dailySeries(entry) {
+    if (!entry || !Array.isArray(entry.prices) || !Array.isArray(entry.stamps)) return null;
+    var byDay = {}, order = [];
+    for (var i = 0; i < entry.prices.length; i++) {
+      var ts = toNum(entry.stamps[i]), v = toNum(entry.prices[i]);
+      if (!isFinite(ts) || !isFinite(v)) continue;
+      var day = isoDay(new Date(ts - 1));
+      if (!byDay.hasOwnProperty(day)) order.push(day);
+      byDay[day] = v;
+    }
+    if (!order.length) return null;
+    return ascendingByDate(order.map(function (d) { return { date: d, price: byDay[d] }; }));
+  }
+
+  /* ---- Coinbase Exchange WebSocket (browser) ------------------------------ */
+
+  /* wss://ws-feed.exchange.coinbase.com, channels ticker + heartbeat.
+   * A ticker frame:
+   *   { type:'ticker', product_id:'BTC-USD', price:'76780.01', open_24h:'78290.5',
+   *     volume_24h, low_24h, high_24h, best_bid, best_ask, side, time, trade_id,
+   *     last_size }
+   * A rejected subscription:
+   *   { type:'error', message:'Failed to subscribe', reason:'XYZ-USD is not a valid product' }
+   * No key and no headers: the feed is public. */
+  var COINBASE_WS = 'wss://ws-feed.exchange.coinbase.com';
+
+  var coinbaseWs = {
+    url: COINBASE_WS,
+
+    /* 'sol' -> 'SOL-USD' */
+    productFor: function (symbol) {
+      var s = String(symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return s ? s + '-USD' : null;
+    },
+
+    subscribeMessage: function (products) {
+      return { type: 'subscribe', product_ids: (products || []).slice(), channels: ['ticker', 'heartbeat'] };
+    },
+
+    unsubscribeMessage: function (products) {
+      return { type: 'unsubscribe', product_ids: (products || []).slice(), channels: ['ticker', 'heartbeat'] };
+    },
+
+    /* -> { product, price, open24h, pct24h, time } or null for anything that
+     * is not a priced ticker (heartbeats, subscriptions, errors). */
+    normalizeTicker: function (msg) {
+      var p = parsePayload(msg);
+      if (!p || p.type !== 'ticker' || !p.product_id) return null;
+      var price = toNum(p.price);
+      if (!isFinite(price)) return null;
+      var open = toNum(p.open_24h);
+      return {
+        product: String(p.product_id),
+        price: price,
+        open24h: isFinite(open) ? open : NaN,
+        pct24h: isFinite(open) && open > 0 ? (price / open - 1) * 100 : NaN,   /* percentage points */
+        time: Date.parse(p.time) || null
+      };
+    },
+
+    errorReason: function (msg) {
+      var p = parsePayload(msg);
+      if (!p || p.type !== 'error') return null;
+      return p.reason || p.message || 'error';
+    },
+
+    /* The product a rejection names, if any: 'XYZ-USD is not a valid product' -> 'XYZ-USD'. */
+    productIn: function (text) {
+      var m = /\b([A-Z0-9]{2,10}-USD)\b/.exec(String(text || ''));
+      return m ? m[1] : null;
+    }
+  };
+
+  /* ---- Financial Modeling Prep (data job) --------------------------------- */
+
+  /* /stable/quote?symbol=
+   * -> [ { symbol, name, price, changePercentage, change, volume, dayLow,
+   *        dayHigh, yearHigh, yearLow, marketCap, priceAvg50, priceAvg200,
+   *        exchange, open, previousClose, timestamp } ]
+   * The same shape for an index (^IXIC) and a stock. `timestamp` is seconds. */
+  function normalizeFmpQuote(payload) {
+    var p = parsePayload(payload);
+    var q = Array.isArray(p) ? p[0] : p;
+    if (!q || !q.symbol || !isFinite(toNum(q.price))) return null;
+    var ts = toNum(q.timestamp);
+    return {
+      symbol: q.symbol,
+      name: q.name || null,
+      price: toNum(q.price),
+      changePct: toNum(q.changePercentage),        /* percentage points */
+      change: toNum(q.change),
+      dayLow: toNum(q.dayLow),
+      dayHigh: toNum(q.dayHigh),
+      prevClose: toNum(q.previousClose),
+      open: toNum(q.open),
+      volume: toNum(q.volume),
+      marketCap: toNum(q.marketCap),
+      yearHigh: toNum(q.yearHigh),
+      yearLow: toNum(q.yearLow),
+      avg50: toNum(q.priceAvg50),
+      avg200: toNum(q.priceAvg200),
+      exchange: q.exchange || null,
+      timestamp: isFinite(ts) ? ts * 1000 : null
+    };
+  }
+
+  /* /stable/historical-price-eod/light?symbol=&from=&to=
+   * -> [ { symbol, date: 'YYYY-MM-DD', price, volume } ] (newest first).
+   * Serves indexes (^IXIC), crypto pairs (BTCUSD) and stocks alike. */
+  function normalizeEodLight(payload) {
+    var p = parsePayload(payload);
+    if (!Array.isArray(p)) return null;
+    var rows = [];
+    for (var i = 0; i < p.length; i++) {
+      var d = p[i] && p[i].date ? String(p[i].date).slice(0, 10) : null;
+      var v = toNum(p[i] && p[i].price);
+      if (d && isFinite(v)) rows.push({ date: d, price: v });
+    }
+    return rows.length ? ascendingByDate(rows) : null;
+  }
+
+  /* /stable/stock-price-change?symbol=
+   * -> [ { symbol, '1D', '5D', '1M', '3M', '6M', ytd, '1Y', ... } ]
+   * All values are percentage points. '5D' is the spotlight's selection basis. */
+  function normalizeQuoteChange(payload) {
+    var p = parsePayload(payload);
+    var q = Array.isArray(p) ? p[0] : p;
+    if (!q || !q.symbol) return null;
+    return {
+      symbol: q.symbol,
+      d1: toNum(q['1D']),
+      d5: toNum(q['5D']),
+      m1: toNum(q['1M']),
+      m3: toNum(q['3M']),
+      m6: toNum(q['6M']),
+      ytd: toNum(q.ytd),
+      y1: toNum(q['1Y'])
+    };
+  }
+
+  /* ---- Alpha Vantage (data job) ------------------------------------------- */
+
+  /* function=GLOBAL_QUOTE
+   * -> { 'Global Quote': { '01. symbol', '05. price', '08. previous close',
+   *      '10. change percent': '-1.0638%', ... } }                           */
+  function normalizeAvQuote(payload) {
+    var p = parsePayload(payload);
+    var q = p && p['Global Quote'];
+    if (!q || !isFinite(toNum(q['05. price']))) return null;
+    return {
+      symbol: q['01. symbol'] || null,
+      price: toNum(q['05. price']),
+      changePct: toNum(q['10. change percent']),    /* percentage points */
+      change: toNum(q['09. change']),
+      dayLow: toNum(q['04. low']),
+      dayHigh: toNum(q['03. high']),
+      open: toNum(q['02. open']),
+      prevClose: toNum(q['08. previous close']),
+      volume: toNum(q['06. volume']),
+      tradingDay: q['07. latest trading day'] || null
+    };
+  }
+
+  /* function=TIME_SERIES_DAILY, outputsize=compact (100 sessions)
+   * -> { 'Time Series (Daily)': { 'YYYY-MM-DD': { '4. close': '708.6900' } } } */
+  function normalizeAvDaily(payload) {
+    var p = parsePayload(payload);
+    var table = p && p['Time Series (Daily)'];
+    if (!table) return null;
+    var rows = [];
+    Object.keys(table).forEach(function (day) {
+      var close = toNum(table[day]['4. close']);
+      if (isFinite(close)) rows.push({ date: String(day).slice(0, 10), price: close });
+    });
+    return rows.length ? ascendingByDate(rows) : null;
+  }
+
+  /* ---- snapshot files (browser) ------------------------------------------- */
+  /* The job has already normalized everything, so the page only re-checks
+   * shapes: a hand-edited or half-written file degrades to "no data". */
+
+  function readSeries(rows) {
+    if (!Array.isArray(rows)) return null;
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r && typeof r.date === 'string' && isFinite(toNum(r.price))) {
+        out.push({ date: r.date.slice(0, 10), price: toNum(r.price) });
+      }
+    }
+    return out.length ? ascendingByDate(out) : null;
+  }
+
+  function readQuote(q) {
+    return q && typeof q === 'object' && isFinite(toNum(q.price)) ? q : null;
+  }
+
+  function stampOf(iso) {
+    var t = Date.parse(iso);
+    return isFinite(t) ? t : null;
+  }
+
+  function normalizeQuotesSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      ixic: readQuote(p.ixic),
+      spx: readQuote(p.spx),
+      qqq: readQuote(p.qqq),
+      spotlight: readQuote(p.spotlight)
+    };
+  }
+
+  function normalizeHistorySnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      btc: readSeries(p.btc),
+      ixic: readSeries(p.ixic),
+      spx: readSeries(p.spx),
+      qqq: readSeries(p.qqq)
+    };
+  }
+
+  function normalizeSpotlightSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      current: p.current && p.current.symbol ? p.current : null,
+      history: Array.isArray(p.history) ? p.history.filter(function (h) { return h && h.symbol; }) : [],
+      change: p.change && typeof p.change === 'object' ? p.change : null,
+      series: readSeries(p.series),
+      crypto: p.crypto && p.crypto.id && p.crypto.symbol ? p.crypto : null,
+      cryptoHistory: Array.isArray(p.cryptoHistory) ? p.cryptoHistory.filter(function (h) { return h && h.symbol; }) : []
+    };
+  }
+
+  /* findings.json is the data job's own output; the page re-checks only the
+   * parts it dereferences without guards. */
+  function normalizeFindingsSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    var ix = p.pairs && p.pairs.ixic;
+    if (!ix || !Array.isArray(ix.coupling) || !Array.isArray(ix.rolling90) || !ix.regimes || !ix.vol || !ix.scatter) return null;
+    ix.rolling90 = ix.rolling90.filter(function (e) { return e && typeof e.date === 'string' && (e.value === null || isFinite(toNum(e.value))); });
+    ix.breaks = Array.isArray(ix.breaks) ? ix.breaks : [];
+    if (!p.drawdowns || typeof p.drawdowns !== 'object') p.drawdowns = {};
+    if (p.pairs.spx && (!Array.isArray(p.pairs.spx.coupling) || !p.pairs.spx.regimes)) p.pairs.spx = null;
+    return p;
+  }
+
+  MP.sources = {
+    COINGECKO: COINGECKO,
+    COINBASE_WS: COINBASE_WS,
+    SNAPSHOT: SNAPSHOT,
+    coinbaseWs: coinbaseWs,
+    btcSpot: btcSpot,
+    coinsMarkets: coinsMarkets,
+    btcChart: btcChart,
+    coinChart: coinChart,
+    coinSearch: coinSearch,
+    dailySeries: dailySeries,
+    normalizeFmpQuote: normalizeFmpQuote,
+    normalizeEodLight: normalizeEodLight,
+    normalizeQuoteChange: normalizeQuoteChange,
+    normalizeAvQuote: normalizeAvQuote,
+    normalizeAvDaily: normalizeAvDaily,
+    normalizeQuotesSnapshot: normalizeQuotesSnapshot,
+    normalizeHistorySnapshot: normalizeHistorySnapshot,
+    normalizeSpotlightSnapshot: normalizeSpotlightSnapshot,
+    normalizeFindingsSnapshot: normalizeFindingsSnapshot,
+    isoDay: isoDay,
+    parsePayload: parsePayload,
+    toNum: toNum
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/findings.js ================================================= */
+/* ============================================================================
+ * findings.js — the running answer to "is bitcoin a tech stock?"
+ *
+ * Pure: daily closes in, one findings object out, computed by the data job
+ * from the same history the meter's statistics use and published as
+ * data/findings.json for the write-up page. Everything here is descriptive:
+ * regimes are conventional thresholds on a rolling correlation, "breaks" are
+ * the largest falls in it, and narrative() turns the numbers into sentences
+ * with nothing added — no causes, no forecasts. Numbers are rounded here so
+ * the file is small and the browser and Node agree to the digit.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var S = MP.stats;
+
+  var WINDOWS = [30, 90, 252];
+  var ROLL = 90;                   /* the rolling-correlation window */
+  var BREAK_SPAN = 20;             /* sessions over which a "break" is measured */
+  var MIN_SESSIONS = ROLL + 2;
+  var VOL_WINDOW = 30;
+  var ANNUALIZE = 252;
+  var VOL_POINTS = 120;
+  var SCATTER_SESSIONS = 90;
+  var MAX_POINTS = 400;
+  var COUPLED = 0.5;               /* correlation above this: coupled */
+  var DECOUPLED = 0.2;             /* below this: decoupled */
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function r4(v) { return isNum(v) ? Math.round(v * 1e4) / 1e4 : null; }
+  function r3(v) { return isNum(v) ? Math.round(v * 1e3) / 1e3 : null; }
+  function values(entries) { return entries.map(function (e) { return e.value; }); }
+  function last(list) { return list.length ? list[list.length - 1] : null; }
+
+  /* Keeps at most `max` points, always including the last one. */
+  function thin(list, max) {
+    if (list.length <= max) return list;
+    var step = Math.ceil(list.length / max), out = [];
+    for (var i = 0; i < list.length; i += step) out.push(list[i]);
+    if (out[out.length - 1] !== list[list.length - 1]) out.push(list[list.length - 1]);
+    return out;
+  }
+
+  /* The longest run of consecutive points satisfying `test`. */
+  function longestRun(roll, test) {
+    var best = null, start = -1;
+    for (var i = 0; i <= roll.length; i++) {
+      var on = i < roll.length && isNum(roll[i].value) && test(roll[i].value);
+      if (on && start < 0) start = i;
+      if (!on && start >= 0) {
+        var len = i - start;
+        if (!best || len > best.sessions) best = { from: roll[start].date, to: roll[i - 1].date, sessions: len };
+        start = -1;
+      }
+    }
+    return best;
+  }
+
+  function regimes(roll) {
+    var n = 0, coupled = 0, decoupled = 0;
+    for (var i = 0; i < roll.length; i++) {
+      var v = roll[i].value;
+      if (!isNum(v)) continue;
+      n += 1;
+      if (v > COUPLED) coupled += 1;
+      else if (v < DECOUPLED) decoupled += 1;
+    }
+    var lastValue = roll.length ? roll[roll.length - 1].value : null;
+    return {
+      coupledShare: n ? r4(coupled / n) : null,
+      decoupledShare: n ? r4(decoupled / n) : null,
+      middleShare: n ? r4((n - coupled - decoupled) / n) : null,
+      current: !isNum(lastValue) ? null : lastValue > COUPLED ? 'coupled' : lastValue < DECOUPLED ? 'decoupled' : 'middle',
+      longestCoupled: longestRun(roll, function (v) { return v > COUPLED; }),
+      longestDecoupled: longestRun(roll, function (v) { return v < DECOUPLED; })
+    };
+  }
+
+  /* The three largest falls in the rolling correlation over BREAK_SPAN
+   * sessions, greedy and non-overlapping. */
+  function breaks(roll) {
+    var cands = [];
+    for (var i = BREAK_SPAN; i < roll.length; i++) {
+      var a = roll[i - BREAK_SPAN].value, b = roll[i].value;
+      if (!isNum(a) || !isNum(b)) continue;
+      var drop = a - b;
+      if (drop > 0) cands.push({ i: i, from: roll[i - BREAK_SPAN].date, to: roll[i].date, before: r4(a), after: r4(b), drop: r4(drop) });
+    }
+    cands.sort(function (p, q) { return q.drop - p.drop; });
+    var out = [], taken = [];
+    for (var k = 0; k < cands.length && out.length < 3; k++) {
+      var c = cands[k], clash = false;
+      for (var t = 0; t < taken.length; t++) if (Math.abs(taken[t] - c.i) < BREAK_SPAN) { clash = true; break; }
+      if (clash) continue;
+      taken.push(c.i);
+      out.push({ from: c.from, to: c.to, before: c.before, after: c.after, drop: c.drop });
+    }
+    return out;
+  }
+
+  /* Share of sessions on which both legs moved the same way. */
+  function agreement(rb, ri, count) {
+    var a = S.tail(rb, count), b = S.tail(ri, count);
+    var n = Math.min(a.length, b.length), same = 0, used = 0;
+    for (var i = 0; i < n; i++) {
+      if (!isNum(a[i]) || !isNum(b[i]) || a[i] === 0 || b[i] === 0) continue;
+      used += 1;
+      if ((a[i] > 0) === (b[i] > 0)) same += 1;
+    }
+    return used ? r4(same / used) : null;
+  }
+
+  function pairBlock(coin, index) {
+    if (!coin || !index) return null;
+    var pair = S.alignByDate(coin, index);
+    if (pair.dates.length < MIN_SESSIONS) return null;
+
+    var rb = S.logReturns(pair.a), ri = S.logReturns(pair.b);
+    var retDates = pair.dates.slice(1);
+    var rollFull = S.rollingPair(rb, ri, ROLL, S.pearson).map(function (e) {
+      return { date: retDates[e.index], value: r4(e.value) };
+    });
+
+    var volFn = function (w) { return S.annualizedVol(w, ANNUALIZE); };
+    var bv = S.rolling(rb, VOL_WINDOW, volFn), iv = S.rolling(ri, VOL_WINDOW, volFn);
+    var bvLast = last(bv), ivLast = last(iv);
+    var bvYear = S.mean(values(S.tail(bv, 252))), ivYear = S.mean(values(S.tail(iv, 252)));
+    var bvTail = S.tail(bv, VOL_POINTS), ivTail = S.tail(iv, VOL_POINTS);
+
+    var sc = S.pairwiseClean(S.tail(ri, SCATTER_SESSIONS), S.tail(rb, SCATTER_SESSIONS));
+    var fit = S.regression(sc.a, sc.b);
+
+    return {
+      sessions: pair.dates.length,
+      from: pair.dates[0],
+      to: pair.dates[pair.dates.length - 1],
+      coupling: S.couplingWindows(rb, ri, WINDOWS).map(function (c) {
+        return { window: c.window, n: c.n, correlation: r4(c.correlation), beta: r4(c.beta), r2: r4(c.r2) };
+      }),
+      rolling90: thin(rollFull, MAX_POINTS),
+      regimes: regimes(rollFull),
+      breaks: breaks(rollFull),
+      agreement: { all: agreement(rb, ri, rb.length), last252: agreement(rb, ri, 252) },
+      vol: {
+        coin: bvLast ? r4(bvLast.value) : null,
+        index: ivLast ? r4(ivLast.value) : null,
+        ratio: bvLast && ivLast && ivLast.value ? r3(bvLast.value / ivLast.value) : null,
+        coinYear: r4(bvYear),
+        indexYear: r4(ivYear),
+        series: {
+          dates: bvTail.map(function (e) { return retDates[e.index]; }),
+          coin: values(bvTail).map(r3),
+          index: values(ivTail).map(r3)
+        }
+      },
+      scatter: {
+        xs: sc.a.map(r4),
+        ys: sc.b.map(r4),
+        fit: { slope: r4(fit.slope), intercept: r4(fit.intercept), r2: r4(fit.r2), n: fit.n }
+      }
+    };
+  }
+
+  function drawdownBlock(series, minDepth) {
+    if (!series || series.length < 2) return null;
+    var sorted = S.sortSeries(series);
+    var prices = sorted.map(function (p) { return p.price; });
+    var dates = sorted.map(function (p) { return p.date; });
+    var dd = S.drawdownSeries(prices);
+    var eps = S.drawdownEpisodes(dates, prices, { minDepth: minDepth, limit: 6 });
+    var recovered = eps.filter(function (e) { return !e.ongoing; });
+    var longest = 0;
+    recovered.forEach(function (e) { if (isNum(e.recoveryDays) && e.recoveryDays > longest) longest = e.recoveryDays; });
+    var deepest = eps[0] || null;
+    return {
+      now: r4(dd[dd.length - 1]),
+      max: r4(S.maxDrawdown(prices)),
+      episodes: eps.length,
+      recovered: recovered.length,
+      longestRecoveryDays: recovered.length ? longest : null,
+      deepest: deepest ? {
+        peakDate: deepest.peakDate, troughDate: deepest.troughDate, recoveryDate: deepest.recoveryDate || null,
+        depth: r4(deepest.depth), declineDays: deepest.declineDays, recoveryDays: deepest.ongoing ? null : deepest.recoveryDays,
+        ongoing: !!deepest.ongoing
+      } : null
+    };
+  }
+
+  /* history: { btc, ixic, spx } daily closes. Null until bitcoin and the
+   * Nasdaq share at least MIN_SESSIONS dates. */
+  function compute(history, now) {
+    if (!history || !history.btc || !history.ixic) return null;
+    var ixic = pairBlock(history.btc, history.ixic);
+    if (!ixic) return null;
+    var spx = history.spx ? pairBlock(history.btc, history.spx) : null;
+    return {
+      version: 1,
+      computedAt: new Date(now === undefined ? Date.now() : now).toISOString(),
+      asOf: ixic.to,
+      from: ixic.from,
+      to: ixic.to,
+      sessions: ixic.sessions,
+      primary: 'ixic',
+      pairs: { ixic: ixic, spx: spx },
+      drawdowns: {
+        btc: drawdownBlock(history.btc, 0.05),
+        ixic: drawdownBlock(history.ixic, 0.03),
+        spx: history.spx ? drawdownBlock(history.spx, 0.03) : null
+      }
+    };
+  }
+
+  /* ---- words from the numbers ------------------------------------------- */
+  function pct(v, dp) { return (v * 100).toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function day(iso) { return MP.fmt && MP.fmt.shortDate ? MP.fmt.shortDate(iso) : String(iso); }
+  function windowAt(pair, w) {
+    if (!pair) return null;
+    for (var i = 0; i < pair.coupling.length; i++) if (pair.coupling[i].window === w) return pair.coupling[i];
+    return null;
+  }
+
+  function label(f) {
+    var cur = f && f.pairs && f.pairs.ixic ? f.pairs.ixic.regimes.current : null;
+    return cur === 'coupled' ? 'coupled' : cur === 'decoupled' ? 'decoupled' : cur === 'middle' ? 'loosely coupled' : 'unknown';
+  }
+
+  /* Sentences built only from the findings; each is omitted when a number it
+   * needs is missing. No causes, no forecasts. */
+  function narrative(f) {
+    var out = [];
+    if (!f || !f.pairs || !f.pairs.ixic) return out;
+    var p = f.pairs.ixic, q = f.pairs.spx;
+    var c90 = windowAt(p, 90), c252 = windowAt(p, 252), s90 = windowAt(q, 90);
+
+    if (c90 && isNum(c90.correlation)) {
+      out.push('Over the ' + f.sessions + ' sessions to ' + day(f.to) + ', the correlation between bitcoin\'s daily returns and the Nasdaq Composite\'s was ' +
+        c90.correlation.toFixed(2) + ' across the last 90 sessions' +
+        (s90 && isNum(s90.correlation) ? ', and ' + s90.correlation.toFixed(2) + ' against the S&P 500' : '') + '.');
+    }
+    if (c252 && isNum(c252.beta) && isNum(c252.r2)) {
+      out.push('Against the Nasdaq over ' + c252.n + ' sessions the beta is ' + c252.beta.toFixed(2) + ' with an R² of ' + c252.r2.toFixed(2) +
+        ', so the index accounts for about ' + pct(c252.r2, 0) + ' of the variance in bitcoin\'s daily returns.');
+    }
+    var rg = p.regimes;
+    if (rg && isNum(rg.coupledShare) && isNum(rg.decoupledShare)) {
+      var s = 'The rolling 90-session correlation was above 0.5 on ' + pct(rg.coupledShare, 0) + ' of sessions and below 0.2 on ' + pct(rg.decoupledShare, 0);
+      if (rg.longestCoupled) s += '; the longest coupled stretch ran ' + rg.longestCoupled.sessions + ' sessions, ' + day(rg.longestCoupled.from) + ' to ' + day(rg.longestCoupled.to);
+      out.push(s + '.');
+    }
+    if (p.breaks && p.breaks.length) {
+      var b = p.breaks[0];
+      out.push('The sharpest fall in that correlation came in the 20 sessions to ' + day(b.to) + ', from ' + b.before.toFixed(2) + ' to ' + b.after.toFixed(2) + '.');
+    }
+    if (p.vol && isNum(p.vol.coin) && isNum(p.vol.index) && isNum(p.vol.ratio)) {
+      out.push('Bitcoin\'s 30-session realized volatility is ' + pct(p.vol.coin, 0) + ' annualized against the Nasdaq\'s ' + pct(p.vol.index, 0) + ', a ratio of ' + p.vol.ratio.toFixed(1) + '×.');
+    }
+    var db = f.drawdowns && f.drawdowns.btc, di = f.drawdowns && f.drawdowns.ixic;
+    if (db && isNum(db.now) && isNum(db.max) && di && isNum(di.max)) {
+      out.push('Bitcoin sits ' + pct(-db.now, 1) + ' below its peak in this window; its deepest drawdown was ' + pct(-db.max, 1) +
+        (db.deepest ? ' from ' + day(db.deepest.peakDate) : '') + ', the Nasdaq\'s ' + pct(-di.max, 1) + '.');
+    }
+    if (p.agreement && isNum(p.agreement.last252)) {
+      out.push('The two closed in the same direction on ' + pct(p.agreement.last252, 0) + ' of the last 252 sessions.');
+    }
+    return out;
+  }
+
+  MP.findings = {
+    compute: compute,
+    narrative: narrative,
+    label: label,
+    config: { WINDOWS: WINDOWS, ROLL: ROLL, BREAK_SPAN: BREAK_SPAN, MIN_SESSIONS: MIN_SESSIONS, COUPLED: COUPLED, DECOUPLED: DECOUPLED }
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/findings-page.js ============================================ */
+/* ============================================================================
+ * findings-page.js — fills the write-up (findings.html) from data/findings.json.
+ *
+ * The prose is written by hand in the template; every number in it is a
+ * <span data-f="…"> slot filled here, so the page can never disagree with
+ * the data. Charts are the meter's own kit. Nothing is fetched but the one
+ * findings file, which the data job writes from the daily history.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+  var F = MP.fmt, G = MP.geom, SRC = MP.sources, FI = MP.findings;
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function el(id) { return document.getElementById(id); }
+  function setHtml(id, html) { var n = el(id); if (n) n.innerHTML = html; }
+  function pct(v, dp) { return isNum(v) ? (v * 100).toFixed(dp === undefined ? 1 : dp) + '%' : F.DASH; }
+  function num(v, dp) { return isNum(v) ? v.toFixed(dp === undefined ? 2 : dp) : F.DASH; }
+  function pair(f, k) { return f.pairs && f.pairs[k] ? f.pairs[k] : null; }
+  function win(f, k, w) {
+    var p = pair(f, k);
+    if (!p) return null;
+    for (var i = 0; i < p.coupling.length; i++) if (p.coupling[i].window === w) return p.coupling[i];
+    return null;
+  }
+  function run(r) { return r ? r.sessions + ' sessions, ' + F.shortDate(r.from) + ' to ' + F.shortDate(r.to) : 'none in this sample'; }
+  function utc(iso) { var t = Date.parse(iso); return isFinite(t) ? new Date(t).toUTCString().replace(/:\d\d GMT$/, ' UTC') : F.DASH; }
+
+  var SLOTS = {
+    sessions: function (f) { return String(f.sessions); },
+    from: function (f) { return F.shortDate(f.from); },
+    to: function (f) { return F.shortDate(f.to); },
+    asOf: function (f) { return F.shortDate(f.asOf); },
+    generatedAt: function (f) { return utc(f.generatedAt || f.computedAt); },
+    regime: function (f) { return FI.label(f); },
+    'corr90-ixic': function (f) { var c = win(f, 'ixic', 90); return c ? num(c.correlation) : F.DASH; },
+    'beta90-ixic': function (f) { var c = win(f, 'ixic', 90); return c ? num(c.beta) : F.DASH; },
+    'r2-90-ixic': function (f) { var c = win(f, 'ixic', 90); return c ? num(c.r2) : F.DASH; },
+    'corr90-spx': function (f) { var c = win(f, 'spx', 90); return c ? num(c.correlation) : F.DASH; },
+    'beta252-ixic': function (f) { var c = win(f, 'ixic', 252); return c ? num(c.beta) : F.DASH; },
+    'r2-252-ixic': function (f) { var c = win(f, 'ixic', 252); return c ? num(c.r2) : F.DASH; },
+    'r2-252-pct': function (f) { var c = win(f, 'ixic', 252); return c ? pct(c.r2, 0) : F.DASH; },
+    coupledShare: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.regimes.coupledShare, 0) : F.DASH; },
+    decoupledShare: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.regimes.decoupledShare, 0) : F.DASH; },
+    middleShare: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.regimes.middleShare, 0) : F.DASH; },
+    longestCoupled: function (f) { var p = pair(f, 'ixic'); return p ? run(p.regimes.longestCoupled) : F.DASH; },
+    longestDecoupled: function (f) { var p = pair(f, 'ixic'); return p ? run(p.regimes.longestDecoupled) : F.DASH; },
+    scatterN: function (f) { var p = pair(f, 'ixic'); return p ? String(p.scatter.fit.n) : F.DASH; },
+    scatterBeta: function (f) { var p = pair(f, 'ixic'); return p ? num(p.scatter.fit.slope) : F.DASH; },
+    volBtc: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.vol.coin, 0) : F.DASH; },
+    volIdx: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.vol.index, 0) : F.DASH; },
+    volRatio: function (f) { var p = pair(f, 'ixic'); return p && isNum(p.vol.ratio) ? p.vol.ratio.toFixed(1) + '×' : F.DASH; },
+    volBtcYear: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.vol.coinYear, 0) : F.DASH; },
+    volIdxYear: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.vol.indexYear, 0) : F.DASH; },
+    ddBtcNow: function (f) { var d = f.drawdowns && f.drawdowns.btc; return d ? pct(d.now, 1) : F.DASH; },
+    ddBtcMax: function (f) { var d = f.drawdowns && f.drawdowns.btc; return d ? pct(d.max, 1) : F.DASH; },
+    ddIdxMax: function (f) { var d = f.drawdowns && f.drawdowns.ixic; return d ? pct(d.max, 1) : F.DASH; },
+    agreement252: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.agreement.last252, 0) : F.DASH; },
+    agreementAll: function (f) { var p = pair(f, 'ixic'); return p ? pct(p.agreement.all, 0) : F.DASH; }
+  };
+
+  function fill(f) {
+    var nodes = document.querySelectorAll('[data-f]');
+    for (var i = 0; i < nodes.length; i++) {
+      var name = nodes[i].getAttribute('data-f');
+      var fn = SLOTS[name];
+      var text = F.DASH;
+      if (fn) { try { text = fn(f); } catch (e) { text = F.DASH; } }
+      nodes[i].textContent = text;
+    }
+  }
+
+  function couplingRows(f, k, code) {
+    var p = pair(f, k);
+    if (!p) return '';
+    return '<tr class="row-rule"><th scope="row" colspan="5">BTC vs ' + F.escapeHtml(code) + '</th></tr>' +
+      p.coupling.map(function (c) {
+        return '<tr><th scope="row">' + c.window + 'd</th><td>' + num(c.correlation, 3) + '</td><td>' + num(c.beta, 3) +
+          '</td><td>' + num(c.r2, 3) + '</td><td class="dim">' + c.n + '</td></tr>';
+      }).join('');
+  }
+
+  function charts(f) {
+    var p = pair(f, 'ixic');
+    if (!p) return;
+    setHtml('chartRoll', G.stepChart({
+      series: [{ values: p.rolling90.map(function (e) { return e.value; }), color: 'var(--c-idx)' }],
+      w: 900, h: 230, yDomain: [-1, 1], zeroLine: true, tickCount: 4,
+      yFmt: function (v) { return v.toFixed(1); },
+      xLabels: p.rolling90.map(function (e) { return F.shortDate(e.date); }),
+      bands: [{ from: FI.config.COUPLED, to: 1, color: 'var(--pos)' }, { from: -1, to: FI.config.DECOUPLED, color: 'var(--neg)' }]
+    }));
+    setHtml('couplingTable',
+      '<table class="data"><thead><tr><th scope="col">Window</th><th scope="col">Corr</th><th scope="col">Beta</th>' +
+      '<th scope="col">R²</th><th scope="col">n</th></tr></thead><tbody>' +
+      couplingRows(f, 'ixic', '^IXIC') + couplingRows(f, 'spx', '^GSPC') + '</tbody></table>');
+    setHtml('breaksTable', p.breaks.length
+      ? '<table class="data"><thead><tr><th scope="col">Sessions</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Fall</th></tr></thead><tbody>' +
+        p.breaks.map(function (b) {
+          return '<tr><th scope="row">' + F.shortDate(b.from) + ' → ' + F.shortDate(b.to) + '</th><td>' + num(b.before) + '</td><td>' + num(b.after) +
+            '</td><td class="neg">−' + num(b.drop) + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<p class="foot">No fall of note: the correlation never dropped over any 20-session span in this window.</p>');
+    setHtml('chartScatter', G.scatterFit({
+      xs: p.scatter.xs, ys: p.scatter.ys, fit: p.scatter.fit, w: 560, h: 320,
+      pointColor: 'var(--c-btc)', fitColor: 'var(--gold)', xTitle: '^IXIC', yTitle: 'BTC'
+    }));
+    setHtml('chartVol', G.columnChart({
+      series: [{ values: p.vol.series.coin, color: 'var(--c-btc)' }, { values: p.vol.series.index, color: 'var(--c-idx)' }],
+      w: 900, h: 190, yFmt: function (v) { return (v * 100).toFixed(0) + '%'; },
+      xLabels: p.vol.series.dates.map(F.shortDate)
+    }));
+    var dd = f.drawdowns || {};
+    var rows = [['BTC', dd.btc], ['^IXIC', dd.ixic], ['^GSPC', dd.spx]].filter(function (r) { return r[1]; });
+    setHtml('ddTable', '<table class="data"><thead><tr><th scope="col">Asset</th><th scope="col">Now</th><th scope="col">Deepest</th>' +
+      '<th scope="col">Peak</th><th scope="col">Trough</th><th scope="col">Recovered</th><th scope="col">Episodes</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        var d = r[1], e = d.deepest;
+        return '<tr><th scope="row">' + F.escapeHtml(r[0]) + '</th><td class="neg">' + pct(d.now, 1) + '</td><td class="neg">' + pct(d.max, 1) + '</td>' +
+          '<td class="dim">' + (e ? F.shortDate(e.peakDate) : F.DASH) + '</td><td class="dim">' + (e ? F.shortDate(e.troughDate) : F.DASH) + '</td>' +
+          '<td>' + (e ? (e.ongoing ? '<span class="tag">not yet</span>' : F.shortDate(e.recoveryDate)) : F.DASH) + '</td>' +
+          '<td class="dim">' + d.episodes + '</td></tr>';
+      }).join('') + '</tbody></table>');
+    setHtml('narrative', FI.narrative(f).map(function (s) { return '<p>' + F.escapeHtml(s) + '</p>'; }).join(''));
+  }
+
+  function notice(level, text) {
+    setHtml('findingsNotice', '<p class="notice notice-' + level + '">' + F.escapeHtml(text) + '</p>');
+  }
+
+  function load() {
+    var url = SRC.SNAPSHOT.findings + '?t=' + Math.floor(Date.now() / 60000);
+    return fetch(url).then(function (res) {
+      if (res.status === 404) throw Object.assign(new Error('missing'), { status: 404 });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (payload) {
+      var f = SRC.normalizeFindingsSnapshot(payload);
+      if (!f) throw new Error('unusable');
+      fill(f);
+      charts(f);
+      setHtml('findingsNotice', '');
+      document.body.classList.add('has-findings');
+    }).catch(function (err) {
+      if (err && err.status === 404) notice('quiet', 'Findings appear after the first scheduled update writes daily history. The prose below describes the method; the numbers fill in then.');
+      else notice('bad', 'Could not load the findings. Retrying on the next visit.');
+    });
+  }
+
+  function start() {
+    load();
+    var nav = root.navigator;
+    if (nav && 'serviceWorker' in nav && root.location && root.location.protocol !== 'file:') {
+      try { nav.serviceWorker.register('sw.js').catch(function () { /* no offline shell */ }); } catch (e) { /* unavailable */ }
+    }
+  }
+
+  MP.findingsPage = { SLOTS: SLOTS, fill: fill, charts: charts, load: load };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+</body>
+</html>

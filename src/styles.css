@@ -466,6 +466,23 @@ body {
 .pill.share:hover { background: var(--hover); color: var(--holster); }
 .pill.is-busy { opacity: 0.5; pointer-events: none; }
 
+/* ---- the write-up page --------------------------------------------------- */
+.findings { max-width: 900px; margin-top: 8px; }
+.findings .drawer-head h2 { font-size: 20px; letter-spacing: 0.02em; text-transform: none; color: var(--text); }
+.findings .prose { max-width: 72ch; }
+.findings .prose h2:first-child { margin-top: 26px; }
+.findings .strip { margin: 4px 0 26px; }
+.findings .chartbox { margin-top: 10px; }
+.narrative p { color: var(--text); }
+.findings-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px;
+  margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--rule);
+  font-size: 12.5px; color: var(--dim);
+}
+.findings-links a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
+.findings-links a:hover { color: var(--holster); }
+.pill.share[href] { text-decoration: none; display: inline-block; }
+
 /* installed to a home screen: keep clear of the status bar */
 @media (display-mode: standalone) {
   .stage { padding-top: max(24px, env(safe-area-inset-top)); }

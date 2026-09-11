@@ -40,8 +40,18 @@ $libOrder = @(
     'src/lib/spotlight.js',
     'src/lib/app.js'
 )
+# The write-up page: the same stylesheet, a smaller kit, and its own filler.
+$findingsOrder = @(
+    'src/lib/stats.js',
+    'src/lib/format.js',
+    'src/lib/geom.js',
+    'src/lib/sources.js',
+    'src/lib/findings.js',
+    'src/lib/findings-page.js'
+)
 # The data job's logic ships only in the debug bundle, where the tests drive it.
 $debugOrder = @(
+    'src/lib/findings.js',
     'src/lib/pipeline.js',
     'test/stats.test.js',
     'test/data.test.js',
@@ -72,18 +82,25 @@ function Write-Text([string]$relative, [string]$text) {
 }
 
 $template = Read-Text 'src/index.template.html'
+$findingsTemplate = Read-Text 'src/findings.template.html'
 $css = Read-Text 'src/styles.css'
 
 $cssMarker = '/* @inject styles.css */'
 $libMarker = '/* @inject lib */'
 
-if ($template.IndexOf($cssMarker) -lt 0) { throw "template is missing the CSS marker" }
-if ($template.IndexOf($libMarker) -lt 0) { throw "template is missing the lib marker" }
+foreach ($t in @(@('index', $template), @('findings', $findingsTemplate))) {
+    if ($t[1].IndexOf($cssMarker) -lt 0) { throw "$($t[0]) template is missing the CSS marker" }
+    if ($t[1].IndexOf($libMarker) -lt 0) { throw "$($t[0]) template is missing the lib marker" }
+}
 
 # ---- release ---------------------------------------------------------------
 $release = $template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $libOrder))
 $releaseKb = Write-Text 'docs/index.html' $release
 Write-Output "release  docs/index.html              $releaseKb KB  ($($libOrder.Count) modules)"
+
+$findingsPage = $findingsTemplate.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $findingsOrder))
+$findingsKb = Write-Text 'docs/findings.html' $findingsPage
+Write-Output "findings docs/findings.html           $findingsKb KB  ($($findingsOrder.Count) modules)"
 
 # ---- installable shell -----------------------------------------------------
 # The service worker's cache name carries a hash of everything it serves, so
@@ -91,7 +108,7 @@ Write-Output "release  docs/index.html              $releaseKb KB  ($($libOrder.
 $swTemplate = Read-Text 'src/sw.template.js'
 $manifest = Read-Text 'src/manifest.webmanifest'
 $sha = [System.Security.Cryptography.SHA256]::Create()
-$digest = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($release + $swTemplate + $manifest))
+$digest = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($release + $findingsPage + $swTemplate + $manifest))
 $version = (($digest | ForEach-Object { $_.ToString('x2') }) -join '').Substring(0, 12)
 $sw = $swTemplate.Replace('/* @version */', $version)
 Write-Text 'docs/sw.js' $sw | Out-Null
@@ -103,6 +120,7 @@ if (-not $ReleaseOnly) {
     $debug = $template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources ($libOrder + $debugOrder)))
     $debugKb = Write-Text 'dist/multimeter.debug.html' $debug
     Write-Output "debug    dist/multimeter.debug.html   $debugKb KB  (+ data job, tests, synthetic render)"
+    Write-Text 'dist/findings.html' $findingsPage | Out-Null
 
     $distData = Join-Path $here 'dist/data'
     if (-not (Test-Path $distData)) { New-Item -ItemType Directory -Path $distData | Out-Null }
@@ -117,13 +135,18 @@ if (-not $ReleaseOnly) {
 
 # ---- sanity checks ---------------------------------------------------------
 $problems = @()
-if ($release.IndexOf('@inject') -ge 0) { $problems += 'an inject marker survived into the release bundle' }
-foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline')) {
-    if ($release.IndexOf($leak) -ge 0) { $problems += "$leak leaked into the release bundle" }
+$bundles = @{ 'release' = $release; 'findings' = $findingsPage }
+foreach ($name in $bundles.Keys) {
+    $b = $bundles[$name]
+    if ($b.IndexOf('@inject') -ge 0) { $problems += "an inject marker survived into the $name bundle" }
+    foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline', 'MP.note')) {
+        if ($b.IndexOf($leak) -ge 0) { $problems += "$leak leaked into the $name bundle" }
+    }
+    if (-not $b.StartsWith('<!doctype html>')) { $problems += "$name bundle must start with <!doctype html>" }
+    # A key, or even a key parameter or header name, in a public page is a leak waiting to happen.
+    if ($b.IndexOf('apikey=') -ge 0) { $problems += "$name bundle contains an apikey= parameter" }
+    if ($b.IndexOf('x-api-key') -ge 0) { $problems += "$name bundle mentions the x-api-key header" }
 }
-if (-not $release.StartsWith('<!doctype html>')) { $problems += 'release bundle must start with <!doctype html>' }
-# A key, or even a key parameter, in a public page is a leak waiting to happen.
-if ($release.IndexOf('apikey=') -ge 0) { $problems += 'release bundle contains an apikey= parameter' }
 
 # The installable shell must be complete: a stamped worker, a manifest that
 # parses with the icon sizes installability needs, and icons that exist.
@@ -151,12 +174,12 @@ foreach ($m in [regex]::Matches($css, '(--[a-zA-Z0-9-]+)\s*:')) {
 [void]$declared.Add('--series')
 
 $dangling = [System.Collections.Generic.HashSet[string]]::new()
-foreach ($m in [regex]::Matches($release, 'var\(\s*(--[a-zA-Z0-9-]+)')) {
+foreach ($m in [regex]::Matches(($release + $findingsPage), 'var\(\s*(--[a-zA-Z0-9-]+)')) {
     $name = $m.Groups[1].Value
     if (-not $declared.Contains($name)) { [void]$dangling.Add($name) }
 }
 foreach ($name in $dangling) { $problems += "dangling custom property reference: var($name)" }
-$refCount = [regex]::Matches($release, 'var\(\s*--').Count
+$refCount = [regex]::Matches(($release + $findingsPage), 'var\(\s*--').Count
 Write-Output "tokens   $($declared.Count) declared, $refCount references, $($dangling.Count) dangling"
 
 if ($problems.Count -gt 0) {

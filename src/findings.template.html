@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Is bitcoin a tech stock? — Multimeter</title>
+<meta name="description" content="A running answer from daily closes: how tightly bitcoin's returns track the Nasdaq and the S&amp;P, when the coupling held, when it broke, and what that does and does not tell you.">
+<meta name="theme-color" content="#0b0d12">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Is bitcoin a tech stock?">
+<meta property="og:description" content="A running answer from daily closes: correlation regimes, beta, volatility and drawdowns for bitcoin against the Nasdaq and the S&amp;P 500.">
+<link rel="icon" href="icons/icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+[hidden] { display: none !important; }
+/* @inject styles.css */
+</style>
+</head>
+<body>
+
+<main class="stage">
+  <article class="drawer findings">
+    <header class="drawer-head">
+      <h2>Is bitcoin a tech stock?</h2>
+      <span class="drawer-tools">
+        <a class="pill share" href="index.html">&larr; Meter</a>
+      </span>
+    </header>
+
+    <div id="findingsNotice"></div>
+
+    <div class="strip">
+      <div><div class="stat-label">Regime now</div><div class="stat-value" data-f="regime">—</div></div>
+      <div><div class="stat-label">Corr 90d · Nasdaq</div><div class="stat-value" data-f="corr90-ixic">—</div></div>
+      <div><div class="stat-label">Beta 90d</div><div class="stat-value" data-f="beta90-ixic">—</div></div>
+      <div><div class="stat-label">R² 90d</div><div class="stat-value" data-f="r2-90-ixic">—</div></div>
+    </div>
+
+    <section class="prose">
+      <h2>The question</h2>
+      <p>Bitcoin is often described as a leveraged bet on technology stocks: when the Nasdaq sells off, bitcoin sells off harder, and when tech rallies, bitcoin rallies more. If that is true, bitcoin is not a separate asset at all but a high-beta version of one you may already own. If it is only sometimes true, the interesting question becomes <b>when</b>, and how to tell. This page keeps a running answer from daily closes, recomputed by a scheduled job after each US session, and the <a href="index.html">meter</a> shows the same statistics live.</p>
+
+      <h2>Why it matters</h2>
+      <p>A holding only diversifies a portfolio when its returns move independently of the rest. A tech-heavy investor who adds bitcoin during a coupled regime adds volatility without adding diversification. The same person during a decoupled regime gets something genuinely different. Neither state is permanent, so a single correlation figure is less useful than knowing how often each regime occurs, how long it lasts, and how abruptly it ends.</p>
+
+      <h2>Method</h2>
+      <p>The sample is <span data-f="sessions">—</span> trading sessions from <span data-f="from">—</span> to <span data-f="to">—</span>. Bitcoin trades every calendar day and the index does not, so the two series are first intersected on the dates each actually traded; otherwise bitcoin's Monday return spans one day while the index's spans three. Returns are daily log returns. Correlation, beta and R² are computed over the last 30, 90 and 252 sessions. Regimes are read off a rolling 90-session correlation: above 0.5 counts as <b>coupled</b>, below 0.2 as <b>decoupled</b>, and the band between as loosely coupled. A <b>break</b> is the fall in that rolling correlation over any 20-session span; the three largest are listed. Volatility is the sample standard deviation of 30 sessions of log returns, annualized by √252. Drawdowns run on each asset's own history, since a drawdown belongs to one price path.</p>
+    </section>
+
+    <section class="prose">
+      <h2>What the numbers show</h2>
+      <p>The rolling 90-session correlation, with the coupled band shaded green and the decoupled band red:</p>
+    </section>
+    <div class="chartbox" id="chartRoll"></div>
+    <p class="foot">Rolling 90-session correlation of daily log returns, BTC against the Nasdaq Composite.</p>
+
+    <section class="prose">
+      <p>The correlation was above 0.5 on <span data-f="coupledShare">—</span> of sessions and below 0.2 on <span data-f="decoupledShare">—</span>, with the remaining <span data-f="middleShare">—</span> in between. The longest coupled stretch was <span data-f="longestCoupled">—</span>; the longest decoupled stretch was <span data-f="longestDecoupled">—</span>. Over the full year the beta against the Nasdaq is <span data-f="beta252-ixic">—</span> with an R² of <span data-f="r2-252-ixic">—</span>, meaning the index explains about <span data-f="r2-252-pct">—</span> of the day-to-day variance in bitcoin's returns. Against the S&amp;P 500 the 90-session correlation is <span data-f="corr90-spx">—</span>.</p>
+    </section>
+    <div class="table-host" id="couplingTable"></div>
+
+    <section class="prose">
+      <h2>When the coupling broke</h2>
+      <p>The largest falls in the rolling correlation over any 20-session span. A large fall means the two stopped moving together quickly, whichever direction each then went.</p>
+    </section>
+    <div class="table-host" id="breaksTable"></div>
+
+    <section class="prose">
+      <h2>The shape of the relationship</h2>
+      <p>Each square is one of the last <span data-f="scatterN">—</span> sessions: the Nasdaq's return across, bitcoin's up. The line is the least-squares fit; its slope, <span data-f="scatterBeta">—</span>, is the 90-session beta. The axes are scaled separately because bitcoin's returns run several times the index's, so read the slope as a shape rather than an angle.</p>
+    </section>
+    <div class="chartbox" id="chartScatter"></div>
+    <p class="foot">Daily log returns, axes scaled independently.</p>
+
+    <section class="prose">
+      <h2>Volatility</h2>
+      <p>Bitcoin's 30-session realized volatility is <span data-f="volBtc">—</span> annualized against the Nasdaq's <span data-f="volIdx">—</span>, a ratio of <span data-f="volRatio">—</span>. Over the year the averages were <span data-f="volBtcYear">—</span> and <span data-f="volIdxYear">—</span>. This is the "leveraged" half of the leveraged-bet claim: even when the two move together, bitcoin moves several times as far.</p>
+    </section>
+    <div class="chartbox" id="chartVol"></div>
+    <p class="foot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
+
+    <section class="prose">
+      <h2>Drawdowns</h2>
+      <p>Bitcoin is <span data-f="ddBtcNow">—</span> from its peak in this window. Its deepest drawdown was <span data-f="ddBtcMax">—</span>; the Nasdaq's was <span data-f="ddIdxMax">—</span>. The two closed in the same direction on <span data-f="agreement252">—</span> of the last 252 sessions and <span data-f="agreementAll">—</span> of the whole sample.</p>
+    </section>
+    <div class="table-scroll" id="ddTable"></div>
+
+    <section class="prose">
+      <h2>In words</h2>
+      <div class="narrative" id="narrative"></div>
+      <p class="foot">These sentences are generated from the figures above by a fixed template. They add nothing the numbers do not say.</p>
+
+      <h2>Caveats</h2>
+      <p>The sample is about a year of daily closes, which is short: a single episode can dominate the regime shares. Correlation is not causation; nothing here says which side leads or why they move together. The 0.5 and 0.2 thresholds are conventions, chosen to be legible rather than derived. Bitcoin's daily close is a UTC-day bar while the index closes at 16:00 New York time, so the pairing is approximate by hours. Prices come from Financial Modeling Prep and CoinGecko and may be delayed, revised, or wrong.</p>
+
+      <h2>Standing</h2>
+      <p>Market data for reference only. Nothing on this page is investment advice, a recommendation, or a solicitation to trade. The regime labels describe the past; they say nothing about the next session.</p>
+    </section>
+
+    <footer class="findings-foot">
+      <span class="muted">As of <span data-f="asOf">—</span> · generated <span data-f="generatedAt">—</span></span>
+      <span class="findings-links">
+        <a href="index.html">The meter</a> · <a href="index.html#note">Today's reading</a> · <a href="https://github.com/jackmcmurry/multimeter">Source</a>
+      </span>
+    </footer>
+  </article>
+</main>
+
+<script>
+/* @inject lib */
+</script>
+</body>
+</html>

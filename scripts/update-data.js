@@ -16,7 +16,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(ROOT, 'docs', 'data');
-const MODULES = ['stats.js', 'format.js', 'sources.js', 'session.js', 'spotlight.js', 'pipeline.js'];
+const MODULES = ['stats.js', 'format.js', 'sources.js', 'session.js', 'spotlight.js', 'findings.js', 'pipeline.js'];
 
 MODULES.forEach((file) => require(path.join(ROOT, 'src', 'lib', file)));
 const { pipeline } = globalThis.MP;
@@ -76,7 +76,7 @@ async function main() {
     return 0;
   }
 
-  for (const name of ['spotlight', 'quotes', 'history']) {
+  for (const name of ['spotlight', 'quotes', 'history', 'findings']) {
     const next = result.out[name];
     if (!next) {
       console.log(name + ': not due');

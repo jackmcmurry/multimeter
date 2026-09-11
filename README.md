@@ -58,6 +58,20 @@ turns the dial. The old section hashes (`#home`, `#markets`, `#weekly`,
 The knob turns by dragging, by tapping a label, by tapping the knob itself
 (one stop clockwise), by rolling the wheel over it, or with the arrow keys once it has focus. While dragging it follows the pointer and clicks at each detent.
 
+## Findings: is bitcoin a tech stock?
+
+The statistics feed a write-up at `findings.html`. The data job computes a
+findings object from the daily history after each session
+(`src/lib/findings.js`, no API calls): correlation, beta and R² over 30, 90
+and 252 sessions against the Nasdaq and the S&P; a rolling 90-session
+correlation with regimes read off it (above 0.5 coupled, below 0.2
+decoupled), the longest run of each, and the three largest 20-session falls;
+volatility; drawdowns; and the share of sessions the two closed the same way.
+It lands in `docs/data/findings.json`. The page's prose is written by hand
+with every number as a slot filled from that file, so the text can never
+disagree with the data, and a fixed template turns the figures into a few
+sentences that add nothing the numbers do not say.
+
 ## Install and share
 
 The page is installable. On a phone, "Add to Home Screen" (or the install
@@ -105,6 +119,7 @@ files once a minute.
 | `quotes.json` | ^IXIC, ^GSPC and the spotlight name (FMP), QQQ (Alpha Vantage) | every 15 min while the market is open, then once after the close |
 | `history.json` | ^IXIC, ^GSPC and BTCUSD daily closes (FMP), QQQ daily closes (Alpha Vantage) | once per session, an hour after the close |
 | `spotlight.json` | the stock of the week with its daily closes and multi-horizon change; the crypto of the week (CoinGecko scan) | Monday scans; stock detail once per session |
+| `findings.json` | the write-up's statistics, computed from `history.json` | whenever history is rewritten |
 
 Each run of the job works out for itself what is due (`src/lib/pipeline.js`),
 so a late or skipped cron tick heals on the next one. On the free plans it
@@ -173,11 +188,14 @@ parameter, or if any `var(--token)` does not resolve against `styles.css`.
 scripts/update-data.js       data job entry point (Node 20, I/O only)
 src/
   index.template.html        page shell with two @inject markers
+  findings.template.html     the write-up, with data-f slots for the numbers
   styles.css                 the meter body, display, dial and drawer; single theme, Space Grotesk + JetBrains Mono via Google Fonts
   lib/
     stats.js                 statistics (pure)
     format.js                display formatting
     geom.js                  SVG chart kit
+    findings.js              the write-up's statistics and narrative (pure)
+    findings-page.js         fills findings.html from findings.json
     sources.js               endpoints + payload normalizers
     session.js               NYSE session clock
     store.js                 guarded localStorage (alerts, probe, statistics pair)
@@ -198,6 +216,7 @@ tools/serve.ps1              loopback server for local checks
 tools/icons.ps1              renders docs/icons/*.png from the icon art
 docs/                        what GitHub Pages serves
   index.html                 built page (commit after .\build.ps1)
+  findings.html              the built write-up
   sw.js                      service worker, stamped by the build
   manifest.webmanifest       web app manifest (copied from src/)
   icons/                     app icons

@@ -245,6 +245,9 @@
       <p>Beta is BTC regressed on the index — the slope of the line through the return scatter. R² is the share of BTC's variance the index explains; a high beta with a low R² is a loose relationship, not a tight one.</p>
       <p>Volatility is the sample standard deviation of the 30-session window, annualized by √252. Drawdown runs on each instrument's own history, since a drawdown belongs to one asset's own path.</p>
 
+      <h2>Findings</h2>
+      <p>The statistics feed a running write-up, <a href="findings.html">Is bitcoin a tech stock?</a>: how often bitcoin and the Nasdaq have moved together, how long each regime lasted, when the coupling broke, and what that does and does not tell you. Every number on it comes from the same daily history the meter uses.</p>
+
       <h2>Sources</h2>
       <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes and the weekly stock scan; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
 
