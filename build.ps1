@@ -22,16 +22,18 @@ param(
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Dependency order: stats -> format -> geom -> sources -> session -> router -> meter -> spotlight -> app.
-# meter.js reads MP.app / MP.spotlight only at call time, so it may load before them.
+# Dependency order: stats -> format -> store -> geom -> sources -> session -> router -> meter -> live -> spotlight -> app.
+# meter.js and live.js read MP.app / MP.spotlight only at call time, so they may load before them.
 $libOrder = @(
     'src/lib/stats.js',
     'src/lib/format.js',
+    'src/lib/store.js',
     'src/lib/geom.js',
     'src/lib/sources.js',
     'src/lib/session.js',
     'src/lib/router.js',
     'src/lib/meter.js',
+    'src/lib/live.js',
     'src/lib/spotlight.js',
     'src/lib/app.js'
 )

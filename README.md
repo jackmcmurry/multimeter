@@ -48,6 +48,14 @@ allows cross-origin requests, so the page polls it directly every 45 seconds
 for bitcoin, ether and the crypto of the week in one call, and fetches the
 BTC chart per range.
 
+**Ticks, from Coinbase.** Coinbase Exchange's public WebSocket feed streams
+BTC-USD, ETH-USD and, when Coinbase lists it, the week's crypto pick. While a
+tick is under a minute old the screen shows LIVE and paints Coinbase's last
+trade; when the feed is quiet or blocked the polled CoinGecko price takes
+over. The two sources differ by a few dollars, which is why the price can
+step when the lamp goes out. One subscription per product, so a coin Coinbase
+does not carry fails alone. The drawer's rows always follow the poll.
+
 **Everything else, from snapshot files.** Financial Modeling Prep and Alpha
 Vantage require API keys, and a key in a public page is a leaked key. So a
 scheduled GitHub Action (`.github/workflows/site.yml`) runs

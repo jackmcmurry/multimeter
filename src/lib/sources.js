@@ -129,10 +129,69 @@
           if (isFinite(v)) { prices.push(v); stamps.push(toNum(row[0])); }
         }
         if (prices.length < 2) return null;
-        return { prices: prices, startTs: stamps[0], endTs: stamps[stamps.length - 1] };
+        return { prices: prices, stamps: stamps, startTs: stamps[0], endTs: stamps[stamps.length - 1] };
       }
     };
   }
+
+  /* ---- Coinbase Exchange WebSocket (browser) ------------------------------ */
+
+  /* wss://ws-feed.exchange.coinbase.com, channels ticker + heartbeat.
+   * A ticker frame:
+   *   { type:'ticker', product_id:'BTC-USD', price:'76780.01', open_24h:'78290.5',
+   *     volume_24h, low_24h, high_24h, best_bid, best_ask, side, time, trade_id,
+   *     last_size }
+   * A rejected subscription:
+   *   { type:'error', message:'Failed to subscribe', reason:'XYZ-USD is not a valid product' }
+   * No key and no headers: the feed is public. */
+  var COINBASE_WS = 'wss://ws-feed.exchange.coinbase.com';
+
+  var coinbaseWs = {
+    url: COINBASE_WS,
+
+    /* 'sol' -> 'SOL-USD' */
+    productFor: function (symbol) {
+      var s = String(symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return s ? s + '-USD' : null;
+    },
+
+    subscribeMessage: function (products) {
+      return { type: 'subscribe', product_ids: (products || []).slice(), channels: ['ticker', 'heartbeat'] };
+    },
+
+    unsubscribeMessage: function (products) {
+      return { type: 'unsubscribe', product_ids: (products || []).slice(), channels: ['ticker', 'heartbeat'] };
+    },
+
+    /* -> { product, price, open24h, pct24h, time } or null for anything that
+     * is not a priced ticker (heartbeats, subscriptions, errors). */
+    normalizeTicker: function (msg) {
+      var p = parsePayload(msg);
+      if (!p || p.type !== 'ticker' || !p.product_id) return null;
+      var price = toNum(p.price);
+      if (!isFinite(price)) return null;
+      var open = toNum(p.open_24h);
+      return {
+        product: String(p.product_id),
+        price: price,
+        open24h: isFinite(open) ? open : NaN,
+        pct24h: isFinite(open) && open > 0 ? (price / open - 1) * 100 : NaN,   /* percentage points */
+        time: Date.parse(p.time) || null
+      };
+    },
+
+    errorReason: function (msg) {
+      var p = parsePayload(msg);
+      if (!p || p.type !== 'error') return null;
+      return p.reason || p.message || 'error';
+    },
+
+    /* The product a rejection names, if any: 'XYZ-USD is not a valid product' -> 'XYZ-USD'. */
+    productIn: function (text) {
+      var m = /\b([A-Z0-9]{2,10}-USD)\b/.exec(String(text || ''));
+      return m ? m[1] : null;
+    }
+  };
 
   /* ---- Financial Modeling Prep (data job) --------------------------------- */
 
@@ -303,7 +362,9 @@
 
   MP.sources = {
     COINGECKO: COINGECKO,
+    COINBASE_WS: COINBASE_WS,
     SNAPSHOT: SNAPSHOT,
+    coinbaseWs: coinbaseWs,
     btcSpot: btcSpot,
     coinsMarkets: coinsMarkets,
     btcChart: btcChart,

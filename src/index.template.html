@@ -35,7 +35,10 @@
         <div class="lcd" id="lcd" role="button" tabindex="0" aria-label="Meter">
           <div class="lcd-row">
             <span class="ann" id="lcdMode"></span>
-            <span class="ann ann-hold" id="lcdHold">HOLD</span>
+            <span class="ann-group">
+              <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
+              <span class="ann ann-hold" id="lcdHold">HOLD</span>
+            </span>
           </div>
           <div class="lcd-chart" id="lcdChart"></div>
           <div class="lcd-readout">

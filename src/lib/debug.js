@@ -132,7 +132,9 @@
 
     /* hero chart: 24h range, straight from the synthetic walk */
     st.hero.days = 1;
-    st.hero.cache["bitcoin:1"] = data.btc.slice(-48).map(function (p) { return p.price; });
+    var heroPrices = data.btc.slice(-48).map(function (p) { return p.price; });
+    var heroStamps = data.btc.slice(-48).map(function (p) { return Date.parse(p.date + 'T00:00:00Z'); });
+    st.hero.cache['bitcoin:1'] = { prices: heroPrices, stamps: heroStamps, startTs: heroStamps[0], endTs: heroStamps[heroStamps.length - 1] };
 
     st.analytics = app.computeAnalytics();
     app.renderHero();

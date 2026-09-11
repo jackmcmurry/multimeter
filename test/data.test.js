@@ -53,6 +53,17 @@
     market_caps: [], total_volumes: []
   };
 
+  /* Coinbase Exchange WebSocket frames, from the feed's documentation. */
+  var CB_TICKER = {
+    type: 'ticker', sequence: 37475248783, product_id: 'ETH-USD', price: '1285.22',
+    open_24h: '1310.79', volume_24h: '245532.79269678', low_24h: '1280.52', high_24h: '1313.8',
+    volume_30d: '9788783.60117027', best_bid: '1285.04', best_bid_size: '0.46688654',
+    best_ask: '1285.27', best_ask_size: '1.56637040', side: 'buy',
+    time: '2022-10-19T23:28:22.061769Z', trade_id: 370843401, last_size: '11.4396987'
+  };
+  var CB_HEARTBEAT = { type: 'heartbeat', sequence: 90, last_trade_id: 20, product_id: 'BTC-USD', time: '2014-11-07T08:19:28.464459Z' };
+  var CB_ERROR = { type: 'error', message: 'Failed to subscribe', reason: 'BNB-USD is not a valid product' };
+
   var FMP_IXIC = [{
     symbol: '^IXIC', name: 'NASDAQ Composite', price: 26081.7245, changePercentage: -0.65369,
     change: -171.6155, volume: 6065122513, dayLow: 25979.535, dayHigh: 26178.254,
@@ -132,6 +143,41 @@
     eq('chart start timestamp', parsedChart.startTs, 1789006500000);
     eq('chart end timestamp', parsedChart.endTs, 1789092720000);
     ok('chart with one point is unusable', chart.normalize({ prices: [[1, 2]] }) === null);
+    eq('chart keeps a stamp per point', parsedChart.stamps.length, 3);
+
+    /* Coinbase WebSocket */
+    var CB = SRC.coinbaseWs;
+    var tick = CB.normalizeTicker(CB_TICKER);
+    eq('ticker product', tick.product, 'ETH-USD');
+    close('ticker price', tick.price, 1285.22);
+    close('ticker 24h change from its open', tick.pct24h, (1285.22 / 1310.79 - 1) * 100, 1e-9);
+    ok('ticker time parsed', tick.time > 0);
+    ok('heartbeat normalizes to null', CB.normalizeTicker(CB_HEARTBEAT) === null);
+    close('string frames are accepted', CB.normalizeTicker(JSON.stringify(CB_TICKER)).price, 1285.22);
+    eq('error reason extracted', CB.errorReason(CB_ERROR), 'BNB-USD is not a valid product');
+    eq('rejected product named', CB.productIn(CB.errorReason(CB_ERROR)), 'BNB-USD');
+    ok('a ticker carries no error reason', CB.errorReason(CB_TICKER) === null);
+    var sub = CB.subscribeMessage(['BTC-USD']);
+    eq('subscribe type', sub.type, 'subscribe');
+    eq('subscribe product', sub.product_ids[0], 'BTC-USD');
+    ok('subscribe asks for ticker and heartbeat', sub.channels.indexOf('ticker') >= 0 && sub.channels.indexOf('heartbeat') >= 0);
+    eq('symbol to product', CB.productFor('sol'), 'SOL-USD');
+    ok('empty symbol has no product', CB.productFor('') === null);
+
+    var L = MP.live;
+    if (!L) {
+      ok('live module is loaded', false, 'MP.live missing');
+    } else {
+      var half = function () { return 0.5; };
+      eq('backoff starts at one second', L.backoffDelay(0, half), 1000);
+      eq('backoff doubles', L.backoffDelay(2, half), 4000);
+      eq('backoff caps at thirty seconds', L.backoffDelay(9, half), 30000);
+      ok('backoff jitter stays within 20 percent',
+        L.backoffDelay(0, function () { return 1; }) === 1200 && L.backoffDelay(0, function () { return 0; }) === 800);
+      var diff = L.diffProducts(['BTC-USD', 'ETH-USD'], ['ETH-USD', 'SOL-USD']);
+      eq('diff adds the new product', diff.add.join(','), 'SOL-USD');
+      eq('diff removes the dropped product', diff.remove.join(','), 'BTC-USD');
+    }
 
     /* FMP */
     var ixic = SRC.normalizeFmpQuote(FMP_IXIC);

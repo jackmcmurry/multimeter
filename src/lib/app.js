@@ -58,8 +58,13 @@
     analytics: null,
     /* range charts per coin and range, keyed 'coinId:days' */
     hero: { days: 1, notice: null, cache: {}, pending: {} },
+    /* last Coinbase tick per product, with the client-clock time it landed */
+    live: { ticks: {}, status: null, fresh: false },
     teardown: []
   };
+
+  var LIVE_FRESH_MS = 60000;   /* a tick older than this yields to the poll */
+  var LIVE_STOPS = ['btc', 'eth', 'crypto', 'probe'];
 
   function el(id) { return document.getElementById(id); }
   function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
@@ -187,10 +192,20 @@
    * data has not arrived reads a dash. */
   function noReading(unit, mode, label) {
     return {
-      text: F.DASH, unit: unit, mode: mode,
+      text: F.DASH, value: NaN, dp: 2, unit: unit, mode: mode,
       change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: label, dp: 2 },
       spark: null, empty: true, ranges: false, coin: null
     };
+  }
+
+  /* A raw number in a stop's own display units, formatted the way the screen
+   * shows it. Used by the alert editor, the MIN/MAX row and the alerts list. */
+  function formatValue(stop, v) {
+    if (!S.isNum(v)) return F.DASH;
+    var r = reading(stop);
+    if (r.unit === 'USD') return money(v);
+    if (r.unit === 'INDEX') return F.num(v, 2);
+    return F.num(v, r.dp) + (r.unit || '');
   }
 
   var SPARK_POINTS = 120;   /* how much history the screen shows when it is not a range */
@@ -208,7 +223,7 @@
     var series = seriesFor(key);
     return {
       text: unit === 'USD' ? money(price) : (S.isNum(price) ? F.num(price, 2) : F.DASH),
-      unit: unit, mode: mode,
+      value: price, dp: 2, unit: unit, mode: mode,
       change: {
         pct: pct,
         abs: S.isNum(pct) && S.isNum(price) ? price - price / (1 + pct / 100) : NaN,
@@ -245,7 +260,8 @@
     if (!r) return noReading('USD', fallbackMode, '1D');
     var pct = r.changePct;
     return {
-      text: money(r.price), unit: 'USD', mode: r.mode,
+      text: money(r.price), value: r.price, dp: S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2,
+      unit: 'USD', mode: r.mode,
       change: {
         pct: pct,
         abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
@@ -295,7 +311,7 @@
       : stop === 'dd' ? F.signedPct(value, dp)
       : F.pct(value, dp);
     return {
-      text: text, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
       change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: '30S', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
       empty: !S.isNum(value), ranges: false, coin: null
@@ -304,15 +320,90 @@
 
   function reading(stop) {
     switch (stop) {
-      case 'btc': return withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc);
-      case 'eth': return withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth);
+      case 'btc': return applyLive(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), stop);
+      case 'eth': return applyLive(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), stop);
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
       case 'stock': return stockReading();
-      case 'crypto': return cryptoReading();
+      case 'crypto': return applyLive(cryptoReading(), stop);
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
       default: return noReading('', '', '');
+    }
+  }
+
+  /* ---- live ticks (Coinbase) ---------------------------------------------- */
+
+  /* The Coinbase product a stop can stream, or null. */
+  function productForStop(stop) {
+    var cb = SRC.coinbaseWs;
+    if (stop === 'btc') return 'BTC-USD';
+    if (stop === 'eth') return 'ETH-USD';
+    if (stop === 'crypto') {
+      var pick = MP.spotlight && MP.spotlight.view ? MP.spotlight.view.crypto : null;
+      return pick && pick.symbol ? cb.productFor(pick.symbol) : null;
+    }
+    if (stop === 'probe') return state.probe && state.probe.symbol ? cb.productFor(state.probe.symbol) : null;
+    return null;
+  }
+
+  function liveProducts() {
+    var unsupported = (state.live.status && state.live.status.unsupported) || [];
+    var out = [];
+    LIVE_STOPS.forEach(function (stop) {
+      var p = productForStop(stop);
+      if (p && out.indexOf(p) < 0 && unsupported.indexOf(p) < 0) out.push(p);
+    });
+    return out;
+  }
+
+  function syncLive() {
+    if (MP.live && MP.live.setProducts) MP.live.setProducts(liveProducts());
+  }
+
+  function freshTick(product) {
+    var t = product ? state.live.ticks[product] : null;
+    return t && Date.now() - t.at < LIVE_FRESH_MS ? t : null;
+  }
+
+  /* A tick repaints the screen only; the drawer keeps following the poll. */
+  function applyTick(product, tick) {
+    state.live.ticks[product] = { price: tick.price, open24h: tick.open24h, pct24h: tick.pct24h, at: Date.now() };
+    if (product === 'BTC-USD') state.quotes.btc.stamp = Date.now();
+    repaint();
+  }
+
+  /* While a tick is fresh the screen shows Coinbase's last trade instead of
+   * the polled price: the price and value, the change (24-hour from the
+   * ticker's own open, otherwise against the start of the chosen range) and
+   * the chart's end point. The cached range series is never mutated. */
+  function applyLive(r, stop) {
+    var tick = freshTick(productForStop(stop));
+    if (!tick || !S.isNum(tick.price)) return r;
+    r.text = money(tick.price);
+    r.value = tick.price;
+    r.empty = false;
+    r.live = true;
+    var series = r.coin ? rangeSeries(r.coin) : null;
+    if (state.hero.days !== 1 && series && series.length > 1 && series[0] > 0) {
+      r.change.pct = (tick.price / series[0] - 1) * 100;
+      r.change.abs = tick.price - series[0];
+    } else if (S.isNum(tick.pct24h)) {
+      r.change.pct = tick.pct24h;
+      r.change.abs = tick.price - tick.open24h;
+    }
+    if (r.spark && r.spark.length) r.spark = r.spark.concat([tick.price]);
+    return r;
+  }
+
+  /* Once a second: when the newest tick crosses the freshness line, repaint
+   * so the LIVE lamp goes dark and the polled price takes over at once. */
+  function watchLive() {
+    var stop = currentStop();
+    var fresh = !!freshTick(productForStop(stop));
+    if (fresh !== state.live.fresh) {
+      state.live.fresh = fresh;
+      repaint();
     }
   }
 
@@ -332,8 +423,15 @@
 
   function rangeKey(coinId, days) { return coinId + ':' + days; }
 
+  /* The cache holds the whole normalized chart ({ prices, stamps, startTs,
+   * endTs }); the screen wants the prices, the statistics want the stamps. */
+  function rangeEntry(coinId, days) {
+    return (coinId && state.hero.cache[rangeKey(coinId, days === undefined ? state.hero.days : days)]) || null;
+  }
+
   function rangeSeries(coinId) {
-    return (coinId && state.hero.cache[rangeKey(coinId, state.hero.days)]) || null;
+    var entry = rangeEntry(coinId);
+    return entry ? entry.prices : null;
   }
 
   function seriesFor(key) {
@@ -388,7 +486,7 @@
     return fetchJson(spec.url).then(function (payload) {
       var parsed = spec.normalize(payload);
       if (!parsed) throw emptyError();
-      state.hero.cache[key] = parsed.prices;
+      state.hero.cache[key] = parsed;
       state.hero.notice = null;
     }).catch(function (err) {
       state.hero.notice = liveNotice('CoinGecko', err);
@@ -752,6 +850,7 @@
       var snap = SRC.normalizeSpotlightSnapshot(payload);
       if (!snap) throw emptyError();
       MP.spotlight.applySnapshot(snap);
+      syncLive();   /* the crypto pick may have changed */
     }).catch(function (err) {
       MP.spotlight.setNotice(snapshotNotice(err, 'This week’s pick'));
       throw err;
@@ -781,7 +880,7 @@
     renderMarkets();
     renderAnalytics();
     if (MP.spotlight) MP.spotlight.render();
-    every(renderStamp, 1000);
+    every(function () { renderStamp(); watchLive(); }, 1000);
     every(tickSession, SESSION_TICK_MS);
 
     if (typeof root.fetch !== 'function') {
@@ -794,6 +893,17 @@
     poll(loadHistory, DAILY_REFRESH_MS);
     poll(loadSpotlight, DAILY_REFRESH_MS);
     poll(function () { return loadRange(coinForStop(currentStop()), state.hero.days, true); }, HERO_REFRESH_MS);
+
+    /* Real-time ticks ride alongside the polls; without WebSocket support
+     * the polls alone carry the page, as before. */
+    if (MP.live && typeof root.WebSocket === 'function') {
+      MP.live.start({
+        onTick: applyTick,
+        onStatus: function (status) { state.live.status = status; }
+      });
+      syncLive();
+      state.teardown.push(MP.live.stop);
+    }
   }
 
   /* Stops every poll and timer. The debug bundle calls it before rendering
@@ -814,6 +924,10 @@
     renderMarkets: renderMarkets,
     renderSession: renderSession,
     reading: reading,
+    formatValue: formatValue,
+    applyTick: applyTick,
+    liveProducts: liveProducts,
+    productForStop: productForStop,
     setRange: setRange,
     ensureRange: ensureRange,
     RANGE_LABELS: RANGE_LABELS,

@@ -182,6 +182,16 @@ body {
 .ann-hold { opacity: 0.18; }
 .ann-hold.is-on { opacity: 1; color: var(--holster); }
 
+.ann-group { display: flex; align-items: center; gap: 14px; }
+.ann-live { display: inline-flex; align-items: center; gap: 6px; opacity: 0.18; }
+.ann-live .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ann-live.is-on { opacity: 1; color: var(--up); }
+.ann-live.is-on .dot { animation: live-pulse 1.2s ease-in-out infinite; }
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
 /* the chart has the top of the screen to itself; a fixed aspect keeps the
  * screen the same height whether or not a series has arrived */
 .lcd-chart { display: block; width: 100%; aspect-ratio: 600 / 250; margin: 10px 0 0; }
@@ -606,7 +616,10 @@ tr.row-rule th {
         <div class="lcd" id="lcd" role="button" tabindex="0" aria-label="Meter">
           <div class="lcd-row">
             <span class="ann" id="lcdMode"></span>
-            <span class="ann ann-hold" id="lcdHold">HOLD</span>
+            <span class="ann-group">
+              <span class="ann ann-live" id="lcdLive"><i class="dot" aria-hidden="true"></i>LIVE</span>
+              <span class="ann ann-hold" id="lcdHold">HOLD</span>
+            </span>
           </div>
           <div class="lcd-chart" id="lcdChart"></div>
           <div class="lcd-readout">
@@ -1149,6 +1162,52 @@ tr.row-rule th {
     days: days,
     escapeHtml: escapeHtml
   };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/store.js ==================================================== */
+/* ============================================================================
+ * store.js — the one place the page touches localStorage.
+ *
+ * Everything the viewer sets up for themselves (alerts, the probe coin, the
+ * statistics pair) lives in this browser only. Storage can be missing,
+ * full, or throw on access (Safari's private mode does), so every call is
+ * guarded and a failure simply reads as "nothing saved".
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var PREFIX = 'mm.';
+
+  function storage() {
+    try { return root.localStorage || null; } catch (e) { return null; }
+  }
+
+  function get(key, fallback) {
+    var s = storage();
+    if (!s) return fallback;
+    try {
+      var raw = s.getItem(PREFIX + key);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function set(key, value) {
+    var s = storage();
+    if (!s) return false;
+    try { s.setItem(PREFIX + key, JSON.stringify(value)); return true; } catch (e) { return false; }
+  }
+
+  function remove(key) {
+    var s = storage();
+    if (!s) return;
+    try { s.removeItem(PREFIX + key); } catch (e) { /* nothing to remove */ }
+  }
+
+  MP.store = { PREFIX: PREFIX, get: get, set: set, remove: remove };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -1722,10 +1781,69 @@ tr.row-rule th {
           if (isFinite(v)) { prices.push(v); stamps.push(toNum(row[0])); }
         }
         if (prices.length < 2) return null;
-        return { prices: prices, startTs: stamps[0], endTs: stamps[stamps.length - 1] };
+        return { prices: prices, stamps: stamps, startTs: stamps[0], endTs: stamps[stamps.length - 1] };
       }
     };
   }
+
+  /* ---- Coinbase Exchange WebSocket (browser) ------------------------------ */
+
+  /* wss://ws-feed.exchange.coinbase.com, channels ticker + heartbeat.
+   * A ticker frame:
+   *   { type:'ticker', product_id:'BTC-USD', price:'76780.01', open_24h:'78290.5',
+   *     volume_24h, low_24h, high_24h, best_bid, best_ask, side, time, trade_id,
+   *     last_size }
+   * A rejected subscription:
+   *   { type:'error', message:'Failed to subscribe', reason:'XYZ-USD is not a valid product' }
+   * No key and no headers: the feed is public. */
+  var COINBASE_WS = 'wss://ws-feed.exchange.coinbase.com';
+
+  var coinbaseWs = {
+    url: COINBASE_WS,
+
+    /* 'sol' -> 'SOL-USD' */
+    productFor: function (symbol) {
+      var s = String(symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return s ? s + '-USD' : null;
+    },
+
+    subscribeMessage: function (products) {
+      return { type: 'subscribe', product_ids: (products || []).slice(), channels: ['ticker', 'heartbeat'] };
+    },
+
+    unsubscribeMessage: function (products) {
+      return { type: 'unsubscribe', product_ids: (products || []).slice(), channels: ['ticker', 'heartbeat'] };
+    },
+
+    /* -> { product, price, open24h, pct24h, time } or null for anything that
+     * is not a priced ticker (heartbeats, subscriptions, errors). */
+    normalizeTicker: function (msg) {
+      var p = parsePayload(msg);
+      if (!p || p.type !== 'ticker' || !p.product_id) return null;
+      var price = toNum(p.price);
+      if (!isFinite(price)) return null;
+      var open = toNum(p.open_24h);
+      return {
+        product: String(p.product_id),
+        price: price,
+        open24h: isFinite(open) ? open : NaN,
+        pct24h: isFinite(open) && open > 0 ? (price / open - 1) * 100 : NaN,   /* percentage points */
+        time: Date.parse(p.time) || null
+      };
+    },
+
+    errorReason: function (msg) {
+      var p = parsePayload(msg);
+      if (!p || p.type !== 'error') return null;
+      return p.reason || p.message || 'error';
+    },
+
+    /* The product a rejection names, if any: 'XYZ-USD is not a valid product' -> 'XYZ-USD'. */
+    productIn: function (text) {
+      var m = /\b([A-Z0-9]{2,10}-USD)\b/.exec(String(text || ''));
+      return m ? m[1] : null;
+    }
+  };
 
   /* ---- Financial Modeling Prep (data job) --------------------------------- */
 
@@ -1896,7 +2014,9 @@ tr.row-rule th {
 
   MP.sources = {
     COINGECKO: COINGECKO,
+    COINBASE_WS: COINBASE_WS,
     SNAPSHOT: SNAPSHOT,
+    coinbaseWs: coinbaseWs,
     btcSpot: btcSpot,
     coinsMarkets: coinsMarkets,
     btcChart: btcChart,
@@ -2564,6 +2684,8 @@ tr.row-rule th {
 
     lcd.classList.toggle('is-off', off);
     setText('lcdMode', off ? '' : r.mode || '');
+    var live = el('lcdLive');
+    if (live) live.classList.toggle('is-on', !off && !!r.live);
 
     var chart = el('lcdChart');
     if (chart) {
@@ -2649,6 +2771,283 @@ tr.row-rule th {
     isHeld: function () { return held; },
     openDrawer: openDrawer,
     current: function () { return currentId; }
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/live.js ===================================================== */
+/* ============================================================================
+ * live.js — real-time prices over Coinbase Exchange's public WebSocket.
+ *
+ * The page keeps polling CoinGecko as before; this feed only makes the coins
+ * on the screen tick between polls. It subscribes one product at a time so a
+ * symbol Coinbase does not list (the week's crypto pick often is not) can
+ * fail on its own without taking BTC and ETH down with it, coalesces ticks
+ * so the screen repaints at most four times a second, closes while the tab
+ * is hidden, and reconnects with capped exponential backoff. A watchdog
+ * treats twenty seconds of silence as a dead socket: heartbeats arrive
+ * every second, so silence never means "quiet market".
+ *
+ * Pure helpers (backoffDelay, diffProducts) are exported for the tests.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var TICK_MIN_MS = 250;          /* coalesce ticks: at most one flush per product per interval */
+  var STALE_MS = 20000;           /* no message at all for this long = reconnect */
+  var WATCHDOG_MS = 5000;
+  var BACKOFF_BASE_MS = 1000;
+  var BACKOFF_CAP_MS = 30000;
+
+  /* 1s, 2s, 4s ... capped at 30s, with ±20% jitter so many tabs do not
+   * reconnect in lockstep. `rand` is injectable for the tests. */
+  function backoffDelay(attempt, rand) {
+    var r = typeof rand === 'function' ? rand() : Math.random();
+    var base = Math.min(BACKOFF_BASE_MS * Math.pow(2, Math.max(0, attempt | 0)), BACKOFF_CAP_MS);
+    return Math.round(base * (0.8 + 0.4 * r));
+  }
+
+  function diffProducts(prev, next) {
+    prev = prev || []; next = next || [];
+    return {
+      add: next.filter(function (p) { return prev.indexOf(p) < 0; }),
+      remove: prev.filter(function (p) { return next.indexOf(p) < 0; })
+    };
+  }
+
+  function unique(list) {
+    var out = [];
+    (list || []).forEach(function (p) { if (p && out.indexOf(p) < 0) out.push(p); });
+    return out;
+  }
+
+  /* ---- connection state --------------------------------------------------- */
+  var st = {
+    running: false,
+    handlers: {},
+    socket: null,
+    connected: false,
+    wanted: [],          /* what the page asked for */
+    subscribed: [],      /* what is actually subscribed on the open socket */
+    unsupported: [],     /* products Coinbase rejected this session */
+    attempt: 0,
+    reconnectTimer: null,
+    watchdog: null,
+    lastMessageAt: 0,
+    pending: {},
+    flushTimer: null
+  };
+
+  function SRC() { return MP.sources; }
+  function hidden() { return !!(root.document && root.document.hidden); }
+  function offline() { return !!(root.navigator && root.navigator.onLine === false); }
+
+  function active() {
+    return st.wanted.filter(function (p) { return st.unsupported.indexOf(p) < 0; });
+  }
+
+  function status() {
+    return {
+      connected: st.connected,
+      products: st.subscribed.slice(),
+      wanted: st.wanted.slice(),
+      unsupported: st.unsupported.slice(),
+      attempt: st.attempt
+    };
+  }
+
+  function emitStatus() {
+    if (typeof st.handlers.onStatus === 'function') {
+      try { st.handlers.onStatus(status()); } catch (e) { /* a listener must not break the feed */ }
+    }
+  }
+
+  function send(message) {
+    if (!st.socket || st.socket.readyState !== 1) return false;
+    try { st.socket.send(JSON.stringify(message)); return true; } catch (e) { return false; }
+  }
+
+  /* One subscribe per product: a rejected product fails alone. */
+  function subscribe(products) {
+    products.forEach(function (p) { send(SRC().coinbaseWs.subscribeMessage([p])); });
+  }
+
+  function unsubscribe(products) {
+    products.forEach(function (p) { send(SRC().coinbaseWs.unsubscribeMessage([p])); });
+  }
+
+  /* ---- messages ----------------------------------------------------------- */
+  function flush() {
+    st.flushTimer = null;
+    var batch = st.pending;
+    st.pending = {};
+    if (typeof st.handlers.onTick !== 'function') return;
+    Object.keys(batch).forEach(function (product) {
+      try { st.handlers.onTick(product, batch[product]); } catch (e) { /* keep ticking */ }
+    });
+  }
+
+  function handle(raw) {
+    var cb = SRC().coinbaseWs;
+    var msg;
+    try { msg = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return; }
+    if (!msg || typeof msg !== 'object') return;
+
+    if (msg.type === 'error') {
+      var bad = cb.productIn(cb.errorReason(msg));
+      if (bad && st.unsupported.indexOf(bad) < 0) {
+        st.unsupported.push(bad);
+        st.subscribed = active();
+        emitStatus();
+      }
+      return;
+    }
+
+    var tick = cb.normalizeTicker(msg);
+    if (!tick) return;
+    st.pending[tick.product] = tick;
+    if (!st.flushTimer) st.flushTimer = setTimeout(flush, TICK_MIN_MS);
+  }
+
+  /* ---- lifecycle ---------------------------------------------------------- */
+  function clearWatchdog() {
+    if (st.watchdog) clearInterval(st.watchdog);
+    st.watchdog = null;
+  }
+
+  function armWatchdog() {
+    clearWatchdog();
+    st.watchdog = setInterval(function () {
+      if (st.socket && Date.now() - st.lastMessageAt > STALE_MS) {
+        try { st.socket.close(); } catch (e) { /* already gone */ }
+      }
+    }, WATCHDOG_MS);
+  }
+
+  function scheduleReconnect() {
+    if (st.reconnectTimer || !st.running) return;
+    var delay = backoffDelay(st.attempt);
+    st.attempt += 1;
+    st.reconnectTimer = setTimeout(function () {
+      st.reconnectTimer = null;
+      connect();
+    }, delay);
+  }
+
+  function connect() {
+    if (!st.running || st.socket || hidden() || offline()) return;
+    if (!active().length || typeof root.WebSocket !== 'function') return;
+
+    var ws;
+    try { ws = new root.WebSocket(SRC().COINBASE_WS); } catch (e) { scheduleReconnect(); return; }
+    st.socket = ws;
+
+    ws.onopen = function () {
+      if (st.socket !== ws) return;
+      st.connected = true;
+      st.attempt = 0;
+      st.lastMessageAt = Date.now();
+      /* Coinbase drops a socket that has not subscribed within five seconds. */
+      subscribe(active());
+      st.subscribed = active();
+      armWatchdog();
+      emitStatus();
+    };
+    ws.onmessage = function (ev) {
+      if (st.socket !== ws) return;
+      st.lastMessageAt = Date.now();
+      handle(ev.data);
+    };
+    ws.onerror = function () { /* the close that follows does the work */ };
+    ws.onclose = function () {
+      if (st.socket !== ws) return;
+      st.socket = null;
+      st.connected = false;
+      st.subscribed = [];
+      clearWatchdog();
+      emitStatus();
+      if (st.running && !hidden() && !offline()) scheduleReconnect();
+    };
+  }
+
+  function disconnect() {
+    if (st.reconnectTimer) clearTimeout(st.reconnectTimer);
+    st.reconnectTimer = null;
+    clearWatchdog();
+    if (st.socket) {
+      var s = st.socket;
+      st.socket = null;
+      s.onopen = s.onmessage = s.onerror = s.onclose = null;
+      try { s.close(); } catch (e) { /* already gone */ }
+    }
+    st.connected = false;
+    st.subscribed = [];
+  }
+
+  function onVisibility() {
+    if (hidden()) { disconnect(); emitStatus(); }
+    else if (st.running) { st.attempt = 0; connect(); }
+  }
+  function onOnline() { if (st.running) { st.attempt = 0; connect(); } }
+  function onOffline() { disconnect(); emitStatus(); }
+
+  /* The page's current wish list. Idempotent; diffs against the open socket. */
+  function setProducts(list) {
+    var next = unique(list);
+    var diff = diffProducts(st.wanted, next);
+    st.wanted = next;
+    if (st.socket && st.connected) {
+      unsubscribe(diff.remove);
+      subscribe(diff.add.filter(function (p) { return st.unsupported.indexOf(p) < 0; }));
+      st.subscribed = active();
+    } else if (st.running && !st.socket) {
+      connect();
+    }
+    if (st.socket && !active().length) disconnect();
+    emitStatus();
+  }
+
+  function start(handlers) {
+    st.handlers = handlers || {};
+    if (st.running) return;
+    st.running = true;
+    if (root.document && root.document.addEventListener) {
+      root.document.addEventListener('visibilitychange', onVisibility);
+    }
+    if (root.addEventListener) {
+      root.addEventListener('online', onOnline);
+      root.addEventListener('offline', onOffline);
+    }
+    connect();
+  }
+
+  function stop() {
+    st.running = false;
+    if (root.document && root.document.removeEventListener) {
+      root.document.removeEventListener('visibilitychange', onVisibility);
+    }
+    if (root.removeEventListener) {
+      root.removeEventListener('online', onOnline);
+      root.removeEventListener('offline', onOffline);
+    }
+    if (st.flushTimer) clearTimeout(st.flushTimer);
+    st.flushTimer = null;
+    st.pending = {};
+    disconnect();
+    emitStatus();
+  }
+
+  MP.live = {
+    TICK_MIN_MS: TICK_MIN_MS,
+    STALE_MS: STALE_MS,
+    backoffDelay: backoffDelay,
+    diffProducts: diffProducts,
+    start: start,
+    stop: stop,
+    setProducts: setProducts,
+    status: status,
+    handle: handle          /* exposed for the tests: feed a canned frame */
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -3104,8 +3503,13 @@ tr.row-rule th {
     analytics: null,
     /* range charts per coin and range, keyed 'coinId:days' */
     hero: { days: 1, notice: null, cache: {}, pending: {} },
+    /* last Coinbase tick per product, with the client-clock time it landed */
+    live: { ticks: {}, status: null, fresh: false },
     teardown: []
   };
+
+  var LIVE_FRESH_MS = 60000;   /* a tick older than this yields to the poll */
+  var LIVE_STOPS = ['btc', 'eth', 'crypto', 'probe'];
 
   function el(id) { return document.getElementById(id); }
   function setText(id, text) { var n = el(id); if (n) n.textContent = text; }
@@ -3233,10 +3637,20 @@ tr.row-rule th {
    * data has not arrived reads a dash. */
   function noReading(unit, mode, label) {
     return {
-      text: F.DASH, unit: unit, mode: mode,
+      text: F.DASH, value: NaN, dp: 2, unit: unit, mode: mode,
       change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: label, dp: 2 },
       spark: null, empty: true, ranges: false, coin: null
     };
+  }
+
+  /* A raw number in a stop's own display units, formatted the way the screen
+   * shows it. Used by the alert editor, the MIN/MAX row and the alerts list. */
+  function formatValue(stop, v) {
+    if (!S.isNum(v)) return F.DASH;
+    var r = reading(stop);
+    if (r.unit === 'USD') return money(v);
+    if (r.unit === 'INDEX') return F.num(v, 2);
+    return F.num(v, r.dp) + (r.unit || '');
   }
 
   var SPARK_POINTS = 120;   /* how much history the screen shows when it is not a range */
@@ -3254,7 +3668,7 @@ tr.row-rule th {
     var series = seriesFor(key);
     return {
       text: unit === 'USD' ? money(price) : (S.isNum(price) ? F.num(price, 2) : F.DASH),
-      unit: unit, mode: mode,
+      value: price, dp: 2, unit: unit, mode: mode,
       change: {
         pct: pct,
         abs: S.isNum(pct) && S.isNum(price) ? price - price / (1 + pct / 100) : NaN,
@@ -3291,7 +3705,8 @@ tr.row-rule th {
     if (!r) return noReading('USD', fallbackMode, '1D');
     var pct = r.changePct;
     return {
-      text: money(r.price), unit: 'USD', mode: r.mode,
+      text: money(r.price), value: r.price, dp: S.isNum(r.price) && Math.abs(r.price) < 10 ? 4 : 2,
+      unit: 'USD', mode: r.mode,
       change: {
         pct: pct,
         abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
@@ -3341,7 +3756,7 @@ tr.row-rule th {
       : stop === 'dd' ? F.signedPct(value, dp)
       : F.pct(value, dp);
     return {
-      text: text, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
       change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: '30S', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
       empty: !S.isNum(value), ranges: false, coin: null
@@ -3350,15 +3765,90 @@ tr.row-rule th {
 
   function reading(stop) {
     switch (stop) {
-      case 'btc': return withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc);
-      case 'eth': return withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth);
+      case 'btc': return applyLive(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), stop);
+      case 'eth': return applyLive(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), stop);
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
       case 'stock': return stockReading();
-      case 'crypto': return cryptoReading();
+      case 'crypto': return applyLive(cryptoReading(), stop);
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
       default: return noReading('', '', '');
+    }
+  }
+
+  /* ---- live ticks (Coinbase) ---------------------------------------------- */
+
+  /* The Coinbase product a stop can stream, or null. */
+  function productForStop(stop) {
+    var cb = SRC.coinbaseWs;
+    if (stop === 'btc') return 'BTC-USD';
+    if (stop === 'eth') return 'ETH-USD';
+    if (stop === 'crypto') {
+      var pick = MP.spotlight && MP.spotlight.view ? MP.spotlight.view.crypto : null;
+      return pick && pick.symbol ? cb.productFor(pick.symbol) : null;
+    }
+    if (stop === 'probe') return state.probe && state.probe.symbol ? cb.productFor(state.probe.symbol) : null;
+    return null;
+  }
+
+  function liveProducts() {
+    var unsupported = (state.live.status && state.live.status.unsupported) || [];
+    var out = [];
+    LIVE_STOPS.forEach(function (stop) {
+      var p = productForStop(stop);
+      if (p && out.indexOf(p) < 0 && unsupported.indexOf(p) < 0) out.push(p);
+    });
+    return out;
+  }
+
+  function syncLive() {
+    if (MP.live && MP.live.setProducts) MP.live.setProducts(liveProducts());
+  }
+
+  function freshTick(product) {
+    var t = product ? state.live.ticks[product] : null;
+    return t && Date.now() - t.at < LIVE_FRESH_MS ? t : null;
+  }
+
+  /* A tick repaints the screen only; the drawer keeps following the poll. */
+  function applyTick(product, tick) {
+    state.live.ticks[product] = { price: tick.price, open24h: tick.open24h, pct24h: tick.pct24h, at: Date.now() };
+    if (product === 'BTC-USD') state.quotes.btc.stamp = Date.now();
+    repaint();
+  }
+
+  /* While a tick is fresh the screen shows Coinbase's last trade instead of
+   * the polled price: the price and value, the change (24-hour from the
+   * ticker's own open, otherwise against the start of the chosen range) and
+   * the chart's end point. The cached range series is never mutated. */
+  function applyLive(r, stop) {
+    var tick = freshTick(productForStop(stop));
+    if (!tick || !S.isNum(tick.price)) return r;
+    r.text = money(tick.price);
+    r.value = tick.price;
+    r.empty = false;
+    r.live = true;
+    var series = r.coin ? rangeSeries(r.coin) : null;
+    if (state.hero.days !== 1 && series && series.length > 1 && series[0] > 0) {
+      r.change.pct = (tick.price / series[0] - 1) * 100;
+      r.change.abs = tick.price - series[0];
+    } else if (S.isNum(tick.pct24h)) {
+      r.change.pct = tick.pct24h;
+      r.change.abs = tick.price - tick.open24h;
+    }
+    if (r.spark && r.spark.length) r.spark = r.spark.concat([tick.price]);
+    return r;
+  }
+
+  /* Once a second: when the newest tick crosses the freshness line, repaint
+   * so the LIVE lamp goes dark and the polled price takes over at once. */
+  function watchLive() {
+    var stop = currentStop();
+    var fresh = !!freshTick(productForStop(stop));
+    if (fresh !== state.live.fresh) {
+      state.live.fresh = fresh;
+      repaint();
     }
   }
 
@@ -3378,8 +3868,15 @@ tr.row-rule th {
 
   function rangeKey(coinId, days) { return coinId + ':' + days; }
 
+  /* The cache holds the whole normalized chart ({ prices, stamps, startTs,
+   * endTs }); the screen wants the prices, the statistics want the stamps. */
+  function rangeEntry(coinId, days) {
+    return (coinId && state.hero.cache[rangeKey(coinId, days === undefined ? state.hero.days : days)]) || null;
+  }
+
   function rangeSeries(coinId) {
-    return (coinId && state.hero.cache[rangeKey(coinId, state.hero.days)]) || null;
+    var entry = rangeEntry(coinId);
+    return entry ? entry.prices : null;
   }
 
   function seriesFor(key) {
@@ -3434,7 +3931,7 @@ tr.row-rule th {
     return fetchJson(spec.url).then(function (payload) {
       var parsed = spec.normalize(payload);
       if (!parsed) throw emptyError();
-      state.hero.cache[key] = parsed.prices;
+      state.hero.cache[key] = parsed;
       state.hero.notice = null;
     }).catch(function (err) {
       state.hero.notice = liveNotice('CoinGecko', err);
@@ -3798,6 +4295,7 @@ tr.row-rule th {
       var snap = SRC.normalizeSpotlightSnapshot(payload);
       if (!snap) throw emptyError();
       MP.spotlight.applySnapshot(snap);
+      syncLive();   /* the crypto pick may have changed */
     }).catch(function (err) {
       MP.spotlight.setNotice(snapshotNotice(err, 'This week’s pick'));
       throw err;
@@ -3827,7 +4325,7 @@ tr.row-rule th {
     renderMarkets();
     renderAnalytics();
     if (MP.spotlight) MP.spotlight.render();
-    every(renderStamp, 1000);
+    every(function () { renderStamp(); watchLive(); }, 1000);
     every(tickSession, SESSION_TICK_MS);
 
     if (typeof root.fetch !== 'function') {
@@ -3840,6 +4338,17 @@ tr.row-rule th {
     poll(loadHistory, DAILY_REFRESH_MS);
     poll(loadSpotlight, DAILY_REFRESH_MS);
     poll(function () { return loadRange(coinForStop(currentStop()), state.hero.days, true); }, HERO_REFRESH_MS);
+
+    /* Real-time ticks ride alongside the polls; without WebSocket support
+     * the polls alone carry the page, as before. */
+    if (MP.live && typeof root.WebSocket === 'function') {
+      MP.live.start({
+        onTick: applyTick,
+        onStatus: function (status) { state.live.status = status; }
+      });
+      syncLive();
+      state.teardown.push(MP.live.stop);
+    }
   }
 
   /* Stops every poll and timer. The debug bundle calls it before rendering
@@ -3860,6 +4369,10 @@ tr.row-rule th {
     renderMarkets: renderMarkets,
     renderSession: renderSession,
     reading: reading,
+    formatValue: formatValue,
+    applyTick: applyTick,
+    liveProducts: liveProducts,
+    productForStop: productForStop,
     setRange: setRange,
     ensureRange: ensureRange,
     RANGE_LABELS: RANGE_LABELS,

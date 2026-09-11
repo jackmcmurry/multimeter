@@ -394,6 +394,8 @@
 
     lcd.classList.toggle('is-off', off);
     setText('lcdMode', off ? '' : r.mode || '');
+    var live = el('lcdLive');
+    if (live) live.classList.toggle('is-on', !off && !!r.live);
 
     var chart = el('lcdChart');
     if (chart) {
