@@ -1,7 +1,7 @@
 /* ============================================================================
  * meter.js — the instrument itself: the rotary dial, the knob, and the screen.
  *
- * The dial has ten stops over 320 degrees, clockwise from OFF at the top,
+ * The dial has twelve stops over 320 degrees, clockwise from OFF at the top,
  * with a dead zone at eleven o'clock like a real range switch. Each stop is
  * a router view; turning the knob navigates, and navigation turns the knob,
  * so the back button and a typed hash both move the dial.
@@ -34,7 +34,8 @@
     { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
     { id: 'corr', label: 'CORR' },
     { id: 'vol', label: 'VOL' },
-    { id: 'dd', label: 'DD' }
+    { id: 'dd', label: 'DD' },
+    { id: 'note', label: 'NOTE' }         /* the daily reading */
   ];
   var SWEEP_DEG = 320;                              /* OFF at the top to the last stop */
   var STEP_DEG = SWEEP_DEG / (STOPS.length - 1);    /* the dead zone takes the rest */
@@ -527,6 +528,9 @@
   function describe(r, off) {
     if (off) return 'Meter off. Press to open the details.';
     var title = MP.router && MP.router.TITLES ? MP.router.TITLES[currentId] : currentId;
+    if (typeof r.note === 'string') {
+      return title + ', session of ' + r.text + '. ' + r.note + ' ' + (r.caption || '') + '. Press to open the details.';
+    }
     var value = r.empty ? 'no reading yet' : r.text + (r.unit ? ' ' + r.unit : '');
     var c = r.change;
     var moved = c && (isNum(c.pct) || isNum(c.delta));
@@ -548,9 +552,12 @@
 
     var chart = el('lcdChart');
     if (chart) {
-      chart.innerHTML = !off && series.length > 1
-        ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
-        : '';
+      /* the NOTE stop shows words where the other stops draw a line */
+      chart.innerHTML = !off && typeof r.note === 'string'
+        ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
+        : !off && series.length > 1
+          ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+          : '';
     }
 
     setText('lcdPrice', off ? '' : r.text || '');
@@ -558,8 +565,9 @@
 
     var chg = el('lcdChange');
     if (chg) {
-      chg.textContent = off ? '' : (r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
-      chg.className = 'lcd-chg' + (dir && !off && !(r.empty && r.hint) ? ' is-' + dir : '');
+      var plain = r.caption || (r.empty && r.hint);
+      chg.textContent = off ? '' : (r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
+      chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
 
@@ -649,6 +657,50 @@
     wireKeys(knob);
     wireButtons();
     if (MP.router) MP.router.onChange(onStop);
+
+    fitToWindow();
+    var fitQueued = false;
+    root.addEventListener('resize', function () {
+      if (fitQueued) return;
+      fitQueued = true;
+      (root.requestAnimationFrame || setTimeout)(function () { fitQueued = false; fitToWindow(); });
+    });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
+  }
+
+  /* ---- fitting the window ------------------------------------------------- */
+  var FIT_MIN_W = 300;   /* narrower than this and the dial is too small to turn; scroll instead */
+
+  /* Sizes the meter so the whole instrument, screen and dial, fits the
+   * window's height with no scrolling. The meter's height is (almost exactly)
+   * a fixed part plus a multiple of its width, so two measurements give the
+   * line and one more corrects for the layout's piecewise corners. The CSS
+   * decides the layout (stacked, or side by side on wide windows); this only
+   * picks the width. */
+  function fitToWindow() {
+    var meter = document.querySelector('.meter');
+    var h = root.innerHeight;
+    if (!meter || !h) return;
+    meter.style.width = '';
+    var stage = meter.parentNode;
+    var pad = stage ? parseFloat(root.getComputedStyle(stage).paddingTop) || 0 : 0;
+    var avail = h - pad - 12;
+    var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
+    if (h1 > avail && w1 > FIT_MIN_W) {
+      var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
+      meter.style.width = w2 + 'px';
+      var h2 = meter.offsetHeight;
+      var slope = w1 > w2 ? (h1 - h2) / (w1 - w2) : 0;
+      w = slope > 0 ? Math.floor(w2 + (avail - h2) / slope) : w1;
+      w = Math.max(FIT_MIN_W, Math.min(w1, w));
+      meter.style.width = w + 'px';
+      var over = meter.offsetHeight - avail;
+      if (over > 0 && slope > 0 && w > FIT_MIN_W) {
+        w = Math.max(FIT_MIN_W, Math.floor(w - over / slope) - 2);
+        meter.style.width = w + 'px';
+      }
+    }
+    document.documentElement.style.setProperty('--meter-w', w + 'px');
   }
 
   MP.meter = {
@@ -660,6 +712,7 @@
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
+    fitToWindow: fitToWindow,
     init: init,
     refresh: refresh,
     changeText: changeText,

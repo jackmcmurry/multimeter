@@ -235,7 +235,8 @@
       eq('just under a detent snaps down', M.stopAt(M.STEP_DEG * 1.5 - 1), 1);
       eq('just over a detent snaps up', M.stopAt(M.STEP_DEG * 1.5 + 1), 2);
       eq('ampersand label is escaped in the plate', M.plateSvg().indexOf('S&amp;P') > 0, true);
-      eq('eleven stops share 320 degrees', Math.round(M.STEP_DEG), 32);
+      eq('twelve stops share 320 degrees', Math.round(M.STEP_DEG), 29);
+      eq('the reading hash routes', R ? R.parseHash('#reading') : '', 'note');
       eq('the probe hash routes', R ? R.parseHash('#probe') : '', 'probe');
     }
 
@@ -295,6 +296,58 @@
       ok('every narrative sentence ends with a period', words.every(function (s) { return /\.$/.test(s); }));
       ok('every narrative sentence carries a number', words.every(function (s) { return /\d/.test(s); }));
       eq('narrative of nothing is empty', FD.narrative(null).length, 0);
+    }
+
+    /* ---- the daily reading ------------------------------------------------- */
+    var NT = MP.note;
+    if (!NT) {
+      ok('note module is loaded', false, 'MP.note missing');
+    } else {
+      var good = 'On 11 Sep 26 the Nasdaq Composite closed at 26,081.72, down 0.65% on the day. ' +
+        'Bitcoin was at $76,908.00, down 1.44% over 24 hours. This is a description of the figures, not advice.';
+      ok('a plain three-sentence reading passes', NT.validate(good).ok, NT.validate(good).reason);
+      ok('a tip is rejected by word', /banned word/.test(NT.validate('You should buy bitcoin at 76,908. This is not advice.').reason || ''));
+      eq('the checker names the word it caught', NT.validate('Holders should note 76,908. This is not advice.').reason, 'banned word "should"');
+      ok('a forecast is rejected', !NT.validate('Bitcoin will reach 80,000 soon. The index fell 1%. This is not advice.').ok);
+      ok('one sentence is not a reading', !NT.validate('Bitcoin rose 2% today, not advice.').ok);
+      ok('a reading without a figure is rejected', /figure/.test(NT.validate('Bitcoin rose today. The Nasdaq fell. This is not advice.').reason || ''));
+      ok('a reading without the not-advice line is rejected', !NT.validate('Bitcoin rose 2%. The Nasdaq fell 1%. Both moved.').ok);
+      var longText = new Array(46).join('word ') + '1. ' + new Array(46).join('word ') + 'end. This is not advice.';
+      ok('more than 90 words is rejected', /words/.test(NT.validate(longText).reason || ''));
+      ok('markup is rejected', !NT.validate('**Bitcoin** rose 2%. The index fell. This is not advice.').ok);
+
+      var parsedReply = NT.parse({ model: 'claude-opus-5', stop_reason: 'end_turn',
+        content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '  Bitcoin rose   2%.\nNot advice.  ' }] });
+      eq('parse joins and tidies the text', parsedReply.text, 'Bitcoin rose 2%. Not advice.');
+      eq('parse keeps the model', parsedReply.model, 'claude-opus-5');
+      ok('a refusal parses to nothing', NT.parse({ stop_reason: 'refusal', content: [] }) === null);
+      ok('junk parses to nothing', NT.parse('junk') === null);
+
+      var inp = NT.inputs({
+        session: '2026-09-11',
+        quotes: { ixic: { price: 26081.7245, changePct: -0.65369 }, spx: { price: 6512.34, changePct: -0.41 } },
+        coins: { bitcoin: { price: 76908, changePct: -1.43882 } },
+        findings: typeof fnd !== 'undefined' ? fnd : null,
+        spotlight: { current: { symbol: 'ADBE', changePct5d: -9.34 }, crypto: { symbol: 'SOL', changePct7d: 18.4 } }
+      });
+      var ask = NT.buildRequest(inp);
+      ok('the request cites the index as given', ask.user.indexOf('26,081.72') >= 0);
+      ok('the request labels horizons', ask.user.indexOf('over 24 hours') >= 0 && ask.user.indexOf('on the day') >= 0);
+      ok('the request names the weekly picks', ask.user.indexOf('ADBE') >= 0 && ask.user.indexOf('SOL') >= 0);
+      ok('the system prompt forbids advice', ask.system.indexOf('not advice') >= 0);
+      ok('missing figures are left out, not invented', ask.user.indexOf('Ether') < 0);
+
+      ok('a first note is due', NT.due(null, 0, '2026-09-11', ''));
+      ok('the same session is not due twice', !NT.due({ forSession: '2026-09-11' }, 0, '2026-09-11', ''));
+      ok('force brings it back', NT.due({ forSession: '2026-09-11' }, 0, '2026-09-11', 'note'));
+      var rejected = { forSession: '2026-09-11', invalidReason: 'x', attempts: 1, generatedAt: '2026-09-11T21:00:00Z' };
+      ok('a rejected reply waits before a retry', !NT.due(rejected, Date.parse('2026-09-11T22:00:00Z'), '2026-09-11', ''));
+      ok('a rejected reply is retried after two hours', NT.due(rejected, Date.parse('2026-09-11T23:01:00Z'), '2026-09-11', ''));
+      ok('and only once', !NT.due(Object.assign({}, rejected, { attempts: 2 }), Date.parse('2026-09-12T09:00:00Z'), '2026-09-11', ''));
+
+      if (typeof fnd !== 'undefined' && fnd) ok('the fallback from findings passes its own checker', NT.validate(NT.fallback(fnd, inp)).ok, NT.fallback(fnd, inp));
+      ok('the fallback from figures alone passes', NT.validate(NT.fallback(null, inp)).ok, NT.fallback(null, inp));
+      ok('the fallback with nothing at all passes', NT.validate(NT.fallback(null, { session: '2026-09-14' })).ok, NT.fallback(null, { session: '2026-09-14' }));
     }
 
     /* ---- statistics for any pair ------------------------------------------ */

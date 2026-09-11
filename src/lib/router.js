@@ -15,7 +15,7 @@
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd'];
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd', 'note'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -30,7 +30,9 @@
     beta: 'corr',
     volatility: 'vol',
     drawdown: 'dd',
-    about: 'off'
+    about: 'off',
+    reading: 'note',
+    daily: 'note'
   };
 
   /* Which drawer panel (.view[data-panel]) each stop opens. */
@@ -45,7 +47,8 @@
     probe: 'probe',
     corr: 'coupling',
     vol: 'volatility',
-    dd: 'drawdown'
+    dd: 'drawdown',
+    note: 'note'
   };
 
   var TITLES = {
@@ -59,7 +62,8 @@
     probe: 'Probe',
     corr: 'Correlation',
     vol: 'Volatility',
-    dd: 'Drawdown'
+    dd: 'Drawdown',
+    note: 'Daily reading'
   };
 
   /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */

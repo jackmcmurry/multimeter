@@ -420,6 +420,23 @@
     return p;
   }
 
+  /* note.json: the daily reading. Only text is required; everything else is
+   * shown when present. */
+  function normalizeNoteSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p) || typeof p.text !== 'string' || !p.text.trim()) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      forSession: typeof p.forSession === 'string' ? p.forSession : null,
+      text: p.text.trim(),
+      source: p.source === 'claude' ? 'claude' : 'fallback',
+      model: typeof p.model === 'string' ? p.model : null,
+      promptVersion: toNum(p.promptVersion),
+      inputs: p.inputs && typeof p.inputs === 'object' && !Array.isArray(p.inputs) ? p.inputs : null,
+      invalidReason: typeof p.invalidReason === 'string' ? p.invalidReason : null
+    };
+  }
+
   MP.sources = {
     COINGECKO: COINGECKO,
     COINBASE_WS: COINBASE_WS,
@@ -440,6 +457,7 @@
     normalizeHistorySnapshot: normalizeHistorySnapshot,
     normalizeSpotlightSnapshot: normalizeSpotlightSnapshot,
     normalizeFindingsSnapshot: normalizeFindingsSnapshot,
+    normalizeNoteSnapshot: normalizeNoteSnapshot,
     isoDay: isoDay,
     parsePayload: parsePayload,
     toNum: toNum

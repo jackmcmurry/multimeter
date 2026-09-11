@@ -18,6 +18,7 @@
   var SNAPSHOT_REFRESH_MS = 60000;
   var DAILY_REFRESH_MS = 30 * 60000;
   var HERO_REFRESH_MS = 5 * 60000;
+  var NOTE_REFRESH_MS = 30 * 60000;
   var SESSION_TICK_MS = 30000;
   var FETCH_TIMEOUT_MS = 12000;
   var MAX_BACKOFF_MS = 10 * 60000;
@@ -77,6 +78,8 @@
     probe: readProbe(MP.store ? MP.store.get('probe', null) : null),
     stats: readStats(MP.store ? MP.store.get('stats', null) : null),
     search: { query: '', results: null, pending: false, notice: null },
+    /* the daily reading, from data/note.json */
+    note: { data: null, notice: null },
     snapshot: { generatedAt: null, notice: null },
     session: { data: null },
     history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
@@ -424,6 +427,7 @@
       case 'stock': return stockReading();
       case 'crypto': return applyLive(cryptoReading(), stop);
       case 'probe': return probeReading();
+      case 'note': return noteReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
       default: return noReading('', '', '');
     }
@@ -1212,6 +1216,86 @@
     });
   }
 
+  /* ---- the daily reading -------------------------------------------------- */
+
+  /* The NOTE stop: the words take the chart's place, the session date the
+   * price's, and the change line says who wrote it. No value, so REL,
+   * MIN/MAX and ALERT pass it by. */
+  function noteReading() {
+    var d = state.note.data;
+    return {
+      text: d ? F.shortDate(d.forSession) : F.DASH, value: NaN, dp: 0,
+      unit: d ? 'SESSION' : '', mode: 'DAILY READING',
+      change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: '', dp: 0 },
+      caption: d ? (d.source === 'claude' ? 'Written by Claude · description, not advice' : 'From the numbers · description, not advice') : '',
+      note: d ? d.text : null,
+      hint: d ? '' : 'Appears after the first close the job sees',
+      spark: null, empty: !d, ranges: false, coin: null
+    };
+  }
+
+  /* 'claude-opus-5' -> 'Claude Opus 5' */
+  function modelName(id) {
+    if (!id) return 'Claude';
+    return String(id).replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-/g, ' ')
+      .replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function renderNote() {
+    var d = state.note.data;
+    setText('noteText', d ? d.text : '');
+    var meta = '';
+    if (d) {
+      meta = (d.source === 'claude'
+        ? 'Written by ' + modelName(d.model)
+        : 'Written from the numbers by a fixed template' + (d.invalidReason ? ' (the model’s reply was not used: ' + d.invalidReason + ')' : '')) +
+        ' · session of ' + F.shortDate(d.forSession) + (S.isNum(d.generatedAt) ? ' · generated ' + F.ago(d.generatedAt) : '');
+    }
+    setText('noteMeta', meta);
+
+    var inp = d && d.inputs, rows = [];
+    function row(label, value) {
+      rows.push('<tr><th scope="row">' + F.escapeHtml(label) + '</th><td>' + F.escapeHtml(value) + '</td></tr>');
+    }
+    function quote(label, x, horizon, usd) {
+      if (!x || !S.isNum(x.price)) return;
+      row(label, (usd ? F.usd(x.price, 2) : F.num(x.price, 2)) + (S.isNum(x.changePct) ? '  ' + F.signedPctPoints(x.changePct) + ' ' + horizon : ''));
+    }
+    if (inp) {
+      quote('Nasdaq Composite', inp.ixic, 'on the day', false);
+      quote('S&P 500', inp.spx, 'on the day', false);
+      quote('Bitcoin', inp.btc, '24h', true);
+      quote('Ether', inp.eth, '24h', true);
+      if (inp.coupling && S.isNum(inp.coupling.corr90)) row('BTC vs Nasdaq, 90 sessions', 'corr ' + F.ratio(inp.coupling.corr90, 2) + (S.isNum(inp.coupling.beta90) ? ' · beta ' + F.ratio(inp.coupling.beta90, 2) : ''));
+      if (inp.vol && S.isNum(inp.vol.btc)) row('30-session volatility', 'BTC ' + F.pct(inp.vol.btc, 0) + (S.isNum(inp.vol.index) ? ' · Nasdaq ' + F.pct(inp.vol.index, 0) : ''));
+      if (inp.drawdown && S.isNum(inp.drawdown.btc)) row('Below running peak', 'BTC ' + F.signedPct(inp.drawdown.btc, 1) + (S.isNum(inp.drawdown.index) ? ' · Nasdaq ' + F.signedPct(inp.drawdown.index, 1) : ''));
+      if (inp.stock && S.isNum(inp.stock.changePct5d)) row('Stock of the week', inp.stock.symbol + ' ' + F.signedPctPoints(inp.stock.changePct5d, 1) + ' over 5 sessions');
+      if (inp.crypto && S.isNum(inp.crypto.changePct7d)) row('Crypto of the week', inp.crypto.symbol + ' ' + F.signedPctPoints(inp.crypto.changePct7d, 1) + ' over 7 days');
+    }
+    setHtml('noteInputs', rows.length ? '<table class="data note-inputs"><tbody>' + rows.join('') + '</tbody></table>' : '');
+    setHtml('noteNotice', noticeHtml(state.note.notice));
+    repaint();
+  }
+
+  function loadNote() {
+    return fetchJson(snapshotUrl(SRC.SNAPSHOT.note)).then(function (payload) {
+      var n = SRC.normalizeNoteSnapshot(payload);
+      if (!n) throw emptyError();
+      state.note.data = n;
+      state.note.notice = null;
+    }).catch(function (err) {
+      if (!state.note.data) {
+        state.note.notice = err && err.status === 404
+          ? { level: 'quiet', text: 'The daily reading appears after the first market close the data job sees.' }
+          : snapshotNotice(err, 'Daily reading');
+      }
+      throw err;
+    }).then(renderNote, function (err) {
+      renderNote();
+      throw err;
+    });
+  }
+
   /* ---- offline ------------------------------------------------------------ */
   function renderOffline(reason) {
     state.history.pending = false;
@@ -1236,6 +1320,7 @@
     wireProbe();
     if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
     renderProbe();
+    renderNote();
     renderHero();
     renderMarkets();
     renderAnalytics();
@@ -1251,6 +1336,7 @@
     poll(loadCoins, BTC_REFRESH_MS);
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
+    poll(loadNote, NOTE_REFRESH_MS);
     ensureCoinHistory();
     poll(loadSpotlight, DAILY_REFRESH_MS);
     poll(function () {
@@ -1295,6 +1381,7 @@
     analyticsFor: analyticsFor,
     renderAnalytics: renderAnalytics,
     setProbe: setProbe,
+    renderNote: renderNote,
     setStats: setStats,
     searchCoins: searchCoins,
     renderHero: renderHero,

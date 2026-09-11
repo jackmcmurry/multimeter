@@ -42,6 +42,11 @@ jobs:
         with:
           node-version: 20
 
+      # One dependency, the Anthropic SDK, used only for the daily reading.
+      - name: Install the data job's dependencies
+        continue-on-error: true
+        run: npm install --omit=dev --no-audit --no-fund --no-package-lock
+
       - name: Update market data
         # A data failure is reported in the run summary but never blocks
         # publishing the site.
@@ -49,6 +54,7 @@ jobs:
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           FORCE: ${{ github.event.inputs.force }}
         run: node scripts/update-data.js
 

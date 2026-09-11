@@ -64,6 +64,25 @@
   var CB_HEARTBEAT = { type: 'heartbeat', sequence: 90, last_trade_id: 20, product_id: 'BTC-USD', time: '2014-11-07T08:19:28.464459Z' };
   var CB_ERROR = { type: 'error', message: 'Failed to subscribe', reason: 'BNB-USD is not a valid product' };
 
+  /* The daily reading: a Messages API reply that follows the rules, one that
+   * does not, and the two-coin quote the job fetches for it. */
+  var CLAUDE_TEXT = 'On 11 Sep 26 the Nasdaq Composite closed at 26,081.72, down 0.65% on the day. ' +
+    'Bitcoin was at $76,908.00, down 1.44% over 24 hours. This is a description of the figures, not advice.';
+  var CLAUDE_REPLY = {
+    id: 'msg_test', type: 'message', role: 'assistant', model: 'claude-opus-5',
+    content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: CLAUDE_TEXT }],
+    stop_reason: 'end_turn', usage: { input_tokens: 612, output_tokens: 140 }
+  };
+  var CLAUDE_BAD = {
+    id: 'msg_bad', type: 'message', role: 'assistant', model: 'claude-opus-5',
+    content: [{ type: 'text', text: 'You should buy bitcoin now at 76,908, it will go up. Sell the Nasdaq. Not advice.' }],
+    stop_reason: 'end_turn', usage: { input_tokens: 612, output_tokens: 40 }
+  };
+  var CG_NOTE_COINS = [
+    { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 76908, price_change_percentage_24h: -1.43882, market_cap: 1.5e12 },
+    { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 2459.76, price_change_percentage_24h: -2.04, market_cap: 3e11 }
+  ];
+
   var FMP_IXIC = [{
     symbol: '^IXIC', name: 'NASDAQ Composite', price: 26081.7245, changePercentage: -0.65369,
     change: -171.6155, volume: 6065122513, dayLow: 25979.535, dayHigh: 26178.254,
@@ -144,6 +163,14 @@
     eq('chart end timestamp', parsedChart.endTs, 1789092720000);
     ok('chart with one point is unusable', chart.normalize({ prices: [[1, 2]] }) === null);
     eq('chart keeps a stamp per point', parsedChart.stamps.length, 3);
+
+    /* note snapshot */
+    ok('note snapshot without text is null', SRC.normalizeNoteSnapshot({ forSession: '2026-09-11' }) === null);
+    var nsnap = SRC.normalizeNoteSnapshot({ forSession: '2026-09-11', text: ' Words 1. Not advice. ', source: 'claude', model: 'claude-opus-5', generatedAt: '2026-09-11T21:05:00Z' });
+    eq('note snapshot trims the text', nsnap.text, 'Words 1. Not advice.');
+    eq('note snapshot keeps the source', nsnap.source, 'claude');
+    eq('an unknown source reads as the fallback', SRC.normalizeNoteSnapshot({ text: 'x', source: 'other' }).source, 'fallback');
+    ok('note snapshot stamps the time', nsnap.generatedAt > 0);
 
     /* findings snapshot */
     ok('findings snapshot without pairs is null', SRC.normalizeFindingsSnapshot({ version: 1 }) === null);
@@ -327,6 +354,8 @@
         if (/\/historical-price-eod\/light$/.test(u.pathname)) return Promise.resolve(eodRows(sym, 290, '2026-09-11'));
       }
       if (u.hostname === 'api.coingecko.com') {
+        /* exact ids: the scan's universe includes bitcoin-cash */
+        if ((u.searchParams.get('ids') || '').split(',').indexOf('bitcoin') >= 0) return Promise.resolve(CG_NOTE_COINS);
         /* the weekly crypto scan: SOL wins on absolute move, DOGE is runner-up,
          * aptos is missing from the response and so counts as skipped */
         var cgMoves = {
@@ -348,7 +377,15 @@
       }
       return Promise.reject(new Error('unexpected URL ' + url));
     }
-    return { fetchJson: fetchJson, log: log };
+    /* stands in for scripts/update-data.js askClaude: records each request
+     * and answers from the options */
+    var asked = [];
+    function askClaude(req) {
+      asked.push(req);
+      if (opts.claudeDown) return Promise.reject(new Error('API error 529: Overloaded'));
+      return Promise.resolve(JSON.parse(JSON.stringify(opts.claudeReply || CLAUDE_REPLY)));
+    }
+    return { fetchJson: fetchJson, askClaude: askClaude, log: log, asked: asked };
   }
 
   /* In-memory stand-in for docs/data. */
@@ -361,7 +398,7 @@
     };
   }
 
-  var KEYS = { FMP_API_KEY: 'test-fmp-key', ALPHAVANTAGE_API_KEY: 'test-av-key' };
+  var KEYS = { FMP_API_KEY: 'test-fmp-key', ALPHAVANTAGE_API_KEY: 'test-av-key', ANTHROPIC_API_KEY: 'sk-ant-test-claude-key' };
 
   async function runPipeline() {
     var t = harness();
@@ -369,7 +406,7 @@
     if (!P) { t.ok('pipeline module is loaded', false, 'MP.pipeline missing'); return t.summary(); }
 
     async function step(db, api, iso, env) {
-      var r = await P.run({ now: Date.parse(iso), env: env || KEYS, fetchJson: api.fetchJson, read: db.read });
+      var r = await P.run({ now: Date.parse(iso), env: env || KEYS, fetchJson: api.fetchJson, askClaude: api.askClaude, read: db.read });
       db.apply(r.out);
       return r;
     }
@@ -412,7 +449,23 @@
     t.ok('findings include the S&P pair', !!r1.out.findings.pairs.spx);
     t.eq('FMP calls: 15 scan + 1 series + 3 quotes + 3 history', r1.calls.fmp, 22);
     t.eq('Alpha Vantage calls: quote + daily', r1.calls.av, 2);
-    t.eq('CoinGecko calls: one scan', r1.calls.cg, 1);
+    t.eq('CoinGecko calls: one scan + one quote for the reading', r1.calls.cg, 2);
+
+    var n1 = r1.out.note;
+    t.ok('the daily reading is written after the close', !!n1);
+    t.eq('the reading is keyed to the completed session', n1 && n1.forSession, '2026-09-11');
+    t.eq('Claude wrote it', n1 && n1.source, 'claude');
+    t.eq('the reading is the model text, unchanged', n1 && n1.text, CLAUDE_TEXT);
+    t.eq('the reading names its model', n1 && n1.model, 'claude-opus-5');
+    t.close('the reading keeps the index figure it was given', n1.inputs.ixic.price, 26081.7245);
+    t.close('the reading keeps the bitcoin figure it was given', n1.inputs.btc.price, 76908);
+    t.eq('one Claude call', r1.calls.claude, 1);
+    t.ok('the request carries the rules', api.asked[0] && api.asked[0].system.indexOf('not advice') >= 0);
+    t.ok('the request cites the figures as given', api.asked[0] && api.asked[0].user.indexOf('26,081.72') >= 0);
+    t.eq('the request names the model', api.asked[0] && api.asked[0].model, 'claude-opus-5');
+    t.ok('the key never reaches the reading', JSON.stringify(n1).indexOf('sk-ant') < 0);
+    t.ok('the key never reaches the request', JSON.stringify(api.asked[0]).indexOf('sk-ant') < 0);
+    t.ok('an Anthropic key is redacted in logs', P.redact('failed: sk-ant-test-claude-key').indexOf('test-claude-key') < 0);
     t.ok('keys redacted from every logged URL', api.log.every(function (u) {
       var red = P.redact(u);
       return red.indexOf('test-fmp-key') < 0 && red.indexOf('test-av-key') < 0;
@@ -424,6 +477,7 @@
     t.eq('quiet run makes no FMP calls', r2.calls.fmp, 0);
     t.eq('quiet run makes no Alpha Vantage calls', r2.calls.av, 0);
     t.eq('quiet run makes no CoinGecko calls', r2.calls.cg, 0);
+    t.eq('quiet run makes no Claude calls', r2.calls.claude, 0);
 
     /* 3. market open, 45 minutes after the last QQQ read */
     var r3 = await step(db, api, '2026-09-14T13:50:00Z');
@@ -442,10 +496,12 @@
     var r5 = await step(db, api, '2026-09-14T20:25:00Z');
     t.eq('final read marks the session', r5.out.quotes && r5.out.quotes.finalFor, '2026-09-14');
     t.ok('history waits an hour after the close', !r5.out.history);
+    t.ok('the reading waits for the history grace too', !r5.out.note);
 
     var r6 = await step(db, api, '2026-09-14T21:05:00Z');
     t.ok('history refreshes after the grace', !!r6.out.history);
     t.ok('findings recomputed with the history', !!r6.out.findings && r6.out.findings.forSession === '2026-09-14');
+    t.eq('a new reading for the new session', r6.out.note && r6.out.note.forSession, '2026-09-14');
     t.ok('no further quote reads once final', !r6.out.quotes);
     t.ok('pick detail refreshes with history', !!r6.out.spotlight);
 
@@ -465,6 +521,7 @@
     t.ok('every FMP call failed', r9.calls.fmp > 0 && r9.failed.fmp === r9.calls.fmp);
     t.ok('failed scan keeps no pick', r9.out.spotlight && r9.out.spotlight.current === null);
     t.ok('no findings without history', !r9.out.findings);
+    t.ok('no reading without a final quote read', !r9.out.note);
     t.eq('failed read is not marked final', r9.out.quotes.finalFor, null);
     var r10 = await step(down, downApi, '2026-09-14T13:20:00Z');
     t.eq('failed scan is not retried within three hours', r10.calls.fmp, 2);
@@ -482,6 +539,33 @@
     t.ok('QQQ quote omitted without a key', r12.out.quotes.qqq === null);
     t.ok('QQQ history omitted without a key', r12.out.history.qqq === null);
     t.eq('no Alpha Vantage calls without a key', r12.calls.av, 0);
+    t.eq('without an Anthropic key the reading comes from the numbers', r12.out.note && r12.out.note.source, 'fallback');
+    t.ok('the fallback reading passes its own checker', r12.out.note && MP.note.validate(r12.out.note.text).ok);
+    t.ok('a missing key is not a rejection', r12.out.note && !r12.out.note.invalidReason);
+    t.eq('no Claude calls without a key', r12.calls.claude, 0);
+
+    /* 10. a reply that breaks the rules is not published */
+    var bad = store(), badApi = mockApi({ claudeReply: CLAUDE_BAD });
+    var r13 = await step(bad, badApi, '2026-09-14T13:05:00Z');
+    t.eq('a rule-breaking reply falls back', r13.out.note && r13.out.note.source, 'fallback');
+    t.ok('the reason names the broken rule', /^banned word/.test((r13.out.note && r13.out.note.invalidReason) || ''));
+    t.ok('the rejection is a warning', r13.warnings.some(function (w) { return w.indexOf('daily note:') === 0; }));
+    t.ok('the model text never ships', r13.out.note && r13.out.note.text.indexOf('buy') < 0);
+    t.eq('the rejected reply cost one call', r13.calls.claude, 1);
+    var r14 = await step(bad, badApi, '2026-09-14T13:20:00Z');
+    t.eq('no retry within two hours', r14.calls.claude, 0);
+    var r15 = await step(bad, badApi, '2026-09-14T15:10:00Z');
+    t.eq('one retry after two hours', r15.calls.claude, 1);
+    t.eq('the retry is counted', r15.out.note && r15.out.note.attempts, 2);
+    var r16 = await step(bad, badApi, '2026-09-14T19:15:00Z');
+    t.eq('no third attempt', r16.calls.claude, 0);
+
+    /* 11. the API is down */
+    var down2 = store();
+    var r17 = await step(down2, mockApi({ claudeDown: true }), '2026-09-14T13:05:00Z');
+    t.eq('an unreachable API falls back', r17.out.note && r17.out.note.source, 'fallback');
+    t.eq('the failure is counted', r17.failed.claude, 1);
+    t.ok('the failure is recorded on the reading', /request failed/.test((r17.out.note && r17.out.note.invalidReason) || ''));
 
     return t.summary();
   }

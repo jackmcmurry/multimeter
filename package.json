@@ -1,0 +1,11 @@
+{
+  "name": "multimeter-data-job",
+  "private": true,
+  "description": "Dependencies of scripts/update-data.js only. The published page has none.",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.125.0"
+  }
+}

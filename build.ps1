@@ -52,6 +52,7 @@ $findingsOrder = @(
 # The data job's logic ships only in the debug bundle, where the tests drive it.
 $debugOrder = @(
     'src/lib/findings.js',
+    'src/lib/note.js',
     'src/lib/pipeline.js',
     'test/stats.test.js',
     'test/data.test.js',

@@ -23,6 +23,10 @@
  *   findings   whenever history is rewritten (or missing for the session):
  *              the write-up's statistics, computed here from that history
  *              with MP.findings — no calls at all.
+ *   note       once per session after its final quote read: a three-sentence
+ *              reading of the figures, written by Claude when a key is set
+ *              and checked by MP.note.validate, else the fixed template.
+ *              One Messages API call a trading day, plus one retry at most.
  *
  * Budget on the free plans, per weekday: about 90 FMP calls of 250 and 10
  * Alpha Vantage calls of 25.
@@ -61,7 +65,9 @@
 
   /* Keys must never reach a log line or an Actions annotation. */
   function redact(text) {
-    return String(text).replace(/(apikey=)[^&\s"']+/gi, '$1***');
+    return String(text)
+      .replace(/(apikey=)[^&\s"']+/gi, '$1***')
+      .replace(/sk-ant-[A-Za-z0-9_-]+/g, 'sk-ant-***');
   }
 
   /* FMP reports plan denials and bad keys as {"Error Message": ...}; Alpha
@@ -87,11 +93,12 @@
     var force = String(env.FORCE || '').toLowerCase();
     var fmpKey = env.FMP_API_KEY || '';
     var avKey = env.ALPHAVANTAGE_API_KEY || '';
+    var claudeKey = env.ANTHROPIC_API_KEY || '';   /* optional: the daily reading */
     var nowIso = new Date(now).toISOString();
     var today = SRC.isoDay(new Date(now));
 
-    var calls = { fmp: 0, av: 0, cg: 0 };
-    var failed = { fmp: 0, av: 0, cg: 0 };
+    var calls = { fmp: 0, av: 0, cg: 0, claude: 0 };
+    var failed = { fmp: 0, av: 0, cg: 0, claude: 0 };
     var warnings = [];
     var out = {};
     var result = { out: out, calls: calls, failed: failed, warnings: warnings, skipped: null };
@@ -162,7 +169,8 @@
       spotlight: opts.read('spotlight') || {},
       quotes: opts.read('quotes') || {},
       history: opts.read('history') || {},
-      findings: opts.read('findings') || null
+      findings: opts.read('findings') || null,
+      note: opts.read('note') || null
     };
     var session = SES.status(now);
     var closeSession = SES.lastCompletedSession(now, CLOSE_GRACE_MIN);
@@ -355,6 +363,72 @@
       } else if (out.history || !prev.findings) {
         warnings.push('findings: not enough daily history yet');
       }
+    }
+
+    /* ---- the daily reading ------------------------------------------------ */
+    /* Once per completed session, and only once that session's final quote
+     * read has landed, so it never describes stale index figures. Claude
+     * writes it when ANTHROPIC_API_KEY is set and opts.askClaude is supplied
+     * (the Node entry point does; the tests pass a stand-in). A reply that
+     * fails MP.note.validate is not published: the fixed template is. */
+    var quotesNow = out.quotes || prev.quotes || {};
+    var findingsNow = out.findings || prev.findings || null;
+    var noteDue = !!MP.note && MP.note.due(prev.note, now, eodSession, force) &&
+      (force === 'all' || force === 'note' || quotesNow.finalFor === eodSession);
+
+    if (noteDue) {
+      var coinSpec = SRC.coinsMarkets(['bitcoin', 'ethereum'], { sparkline: false });
+      var coins = await attempt('reading coin quotes', async function () {
+        return coinSpec.normalize(await get('cg', coinSpec.url));
+      });
+      var noteInputs = MP.note.inputs({
+        session: eodSession, quotes: quotesNow, coins: coins, findings: findingsNow,
+        spotlight: out.spotlight || prev.spotlight
+      });
+      var sameSession = prev.note && prev.note.forSession === eodSession;
+      var note = {
+        generatedAt: nowIso,
+        forSession: eodSession,
+        promptVersion: MP.note.PROMPT_VERSION,
+        source: 'fallback',
+        model: null,
+        text: null,
+        inputs: noteInputs,
+        attempts: sameSession ? (prev.note.attempts || 1) + 1 : 1
+      };
+
+      if (claudeKey && typeof opts.askClaude === 'function') {
+        var ask = MP.note.buildRequest(noteInputs);
+        var reply = null, reason = null;
+        calls.claude += 1;
+        try {
+          reply = await opts.askClaude({ system: ask.system, user: ask.user, model: MP.note.MODEL, maxTokens: MP.note.MAX_TOKENS });
+        } catch (err) {
+          failed.claude += 1;
+          reason = 'request failed (' + redact(err && err.message ? err.message : err) + ')';
+        }
+        if (reply) {
+          var parsed = MP.note.parse(reply);
+          if (!parsed) {
+            reason = 'no usable text in the reply';
+          } else {
+            var check = MP.note.validate(parsed.text);
+            if (check.ok) {
+              note.text = parsed.text;
+              note.source = 'claude';
+              note.model = parsed.model || MP.note.MODEL;
+            } else {
+              reason = check.reason;
+            }
+          }
+        }
+        if (reason) {
+          note.invalidReason = reason;
+          warnings.push('daily note: ' + reason + '; using the fallback');
+        }
+      }
+      if (!note.text) note.text = MP.note.fallback(findingsNow, noteInputs);
+      out.note = note;
     }
 
     return result;

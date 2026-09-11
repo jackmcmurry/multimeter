@@ -124,7 +124,11 @@ body {
 }
 
 /* ---- the meter body ------------------------------------------------------ */
-.meter { width: min(100%, 900px); }
+/* The width the fit settles on (meter.js fitToWindow) is echoed here so the
+ * drawer can match it. */
+:root { --meter-w: 900px; }
+.meter { --meter-max: 900px; width: min(100%, var(--meter-max)); }
+.face { min-width: 0; }
 
 .holster {
   background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
@@ -156,6 +160,7 @@ body {
 .lcd {
   display: block;
   width: 100%;
+  container-type: inline-size;   /* the readout sizes with the screen, not the window */
   background: radial-gradient(120% 90% at 50% 0%, #10201f 0%, var(--lcd) 60%);
   color: var(--lcd-ink);
   border: 3px solid var(--lcd-dk);
@@ -224,7 +229,7 @@ body {
 .lcd-price-row { display: flex; align-items: baseline; gap: 12px; }
 .lcd-price {
   font-family: var(--f-ui);
-  font-size: clamp(40px, 7.5vw, 68px);
+  font-size: clamp(28px, 10.5cqw, 68px);
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1;
@@ -458,7 +463,7 @@ body {
 
 /* ---- drawer -------------------------------------------------------------- */
 .drawer {
-  width: min(100%, 900px);
+  width: min(100%, 960px, max(640px, var(--meter-w)));
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--rule);
@@ -505,6 +510,42 @@ body {
 .findings-links a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
 .findings-links a:hover { color: var(--holster); }
 .pill.share[href] { text-decoration: none; display: inline-block; }
+
+/* ---- the daily reading ---------------------------------------------------- */
+.lcd-note {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  font-family: var(--f-ui);
+  font-size: clamp(12px, 3.3cqw, 20px);
+  line-height: 1.42;
+  color: var(--lcd-ink);
+  overflow: hidden;
+}
+.lcd-chg.is-caption { color: var(--lcd-dim); font-size: 14px; letter-spacing: 0.02em; }
+.note-text { margin: 0 0 12px; font-size: 17px; line-height: 1.55; color: var(--text); }
+.note-inputs th { font-weight: 500; color: var(--dim); }
+.foot a { color: var(--text); text-decoration-color: var(--holster); text-underline-offset: 3px; }
+.foot a:hover { color: var(--holster); }
+
+/* ---- wide windows: a bench meter, screen left, dial right ------------------ */
+/* Stacked, the meter needs about 1.4px of height per pixel of width, so on a
+ * laptop screen it could only fit by shrinking to a sliver. Side by side it
+ * fits the height at a generous width. */
+@media (min-width: 860px) and (min-aspect-ratio: 6/5) {
+  .meter { --meter-max: 1240px; }
+  .shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: 30px;
+    align-items: center;
+    padding: 18px 24px 18px;
+  }
+  .face-dial .dial { width: 100%; margin: 0 auto; }
+  .face-dial .jacks { padding-top: 0; }
+  .stage { padding-top: 16px; }
+}
 
 /* installed to a home screen: keep clear of the status bar */
 @media (display-mode: standalone) {
@@ -695,7 +736,6 @@ tr.row-rule th {
   .holster { border-radius: 28px; padding: 10px; }
   .shell { border-radius: 20px; padding: 12px 12px 14px; }
   .lcd { padding: 12px 14px 12px; }
-  .lcd-price { font-size: 40px; }
   .lcd-chg { font-size: 16px; }
   .rng { padding: 8px 12px; font-size: 12px; }
   .keys { gap: 6px; }
@@ -722,6 +762,7 @@ tr.row-rule th {
   <div class="meter">
     <div class="holster">
       <div class="shell">
+        <div class="face face-screen">
 
         <div class="head">
           <span class="brand">MULTIMETER</span>
@@ -777,8 +818,11 @@ tr.row-rule th {
           <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
         </div>
 
+        </div>
+        <div class="face face-dial">
+
         <div class="dial" id="dial">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="10" aria-valuenow="1"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="11" aria-valuenow="1"></div>
         </div>
 
         <div class="jacks">
@@ -786,6 +830,8 @@ tr.row-rule th {
           <span class="jack jack-com" id="sessionDot" aria-hidden="true"></span>
           <span class="jack jack-v" aria-hidden="true"></span>
           <span class="jack-text" id="sessionText">Market —</span>
+        </div>
+
         </div>
 
       </div>
@@ -907,6 +953,15 @@ tr.row-rule th {
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
+    <!-- NOTE -->
+    <section class="view" data-panel="note" hidden>
+      <p class="note-text" id="noteText"></p>
+      <p class="foot" id="noteMeta"></p>
+      <div class="table-host" id="noteInputs"></div>
+      <p class="foot">Once per session, after the US close, the data job hands Claude the figures above and asks for three plain sentences that describe them: no predictions, no advice, nothing added. A checker rejects any reply that breaks those rules, and a fixed template built from the same numbers is published instead. The prompt and the checker are in <a href="https://github.com/jackmcmurry/multimeter/blob/main/src/lib/note.js">src/lib/note.js</a>; the longer view is in <a href="findings.html">the findings</a>.</p>
+      <div id="noteNotice"></div>
+    </section>
+
     <!-- ALERTS (reached from the bell on the screen) -->
     <section class="view" data-panel="alerts" hidden>
       <ul class="rows alerts" id="alertRows"></ul>
@@ -925,6 +980,7 @@ tr.row-rule th {
       <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
       <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
       <p><b>PROBE</b> — a coin of your own. Open DATA on that stop, search any coin CoinGecko tracks, and it takes the stop, wearing its symbol on the dial. The choice stays in this browser.</p>
+      <p><b>NOTE</b> — the daily reading: three plain sentences describing the last session's figures, written by Claude after each US close under rules that forbid predictions and advice, checked mechanically, and replaced by a fixed template when a reply breaks them. The drawer shows exactly which figures it was given.</p>
       <p><b>CORR</b> — the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — that coin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far it sits below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels; any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
@@ -2240,6 +2296,23 @@ tr.row-rule th {
     return p;
   }
 
+  /* note.json: the daily reading. Only text is required; everything else is
+   * shown when present. */
+  function normalizeNoteSnapshot(payload) {
+    var p = parsePayload(payload);
+    if (!p || typeof p !== 'object' || Array.isArray(p) || typeof p.text !== 'string' || !p.text.trim()) return null;
+    return {
+      generatedAt: stampOf(p.generatedAt),
+      forSession: typeof p.forSession === 'string' ? p.forSession : null,
+      text: p.text.trim(),
+      source: p.source === 'claude' ? 'claude' : 'fallback',
+      model: typeof p.model === 'string' ? p.model : null,
+      promptVersion: toNum(p.promptVersion),
+      inputs: p.inputs && typeof p.inputs === 'object' && !Array.isArray(p.inputs) ? p.inputs : null,
+      invalidReason: typeof p.invalidReason === 'string' ? p.invalidReason : null
+    };
+  }
+
   MP.sources = {
     COINGECKO: COINGECKO,
     COINBASE_WS: COINBASE_WS,
@@ -2260,6 +2333,7 @@ tr.row-rule th {
     normalizeHistorySnapshot: normalizeHistorySnapshot,
     normalizeSpotlightSnapshot: normalizeSpotlightSnapshot,
     normalizeFindingsSnapshot: normalizeFindingsSnapshot,
+    normalizeNoteSnapshot: normalizeNoteSnapshot,
     isoDay: isoDay,
     parsePayload: parsePayload,
     toNum: toNum
@@ -2401,7 +2475,7 @@ tr.row-rule th {
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd'];
+  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'stock', 'crypto', 'probe', 'corr', 'vol', 'dd', 'note'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -2416,7 +2490,9 @@ tr.row-rule th {
     beta: 'corr',
     volatility: 'vol',
     drawdown: 'dd',
-    about: 'off'
+    about: 'off',
+    reading: 'note',
+    daily: 'note'
   };
 
   /* Which drawer panel (.view[data-panel]) each stop opens. */
@@ -2431,7 +2507,8 @@ tr.row-rule th {
     probe: 'probe',
     corr: 'coupling',
     vol: 'volatility',
-    dd: 'drawdown'
+    dd: 'drawdown',
+    note: 'note'
   };
 
   var TITLES = {
@@ -2445,7 +2522,8 @@ tr.row-rule th {
     probe: 'Probe',
     corr: 'Correlation',
     vol: 'Volatility',
-    dd: 'Drawdown'
+    dd: 'Drawdown',
+    note: 'Daily reading'
   };
 
   /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
@@ -2738,7 +2816,7 @@ tr.row-rule th {
 /* ============================================================================
  * meter.js — the instrument itself: the rotary dial, the knob, and the screen.
  *
- * The dial has ten stops over 320 degrees, clockwise from OFF at the top,
+ * The dial has twelve stops over 320 degrees, clockwise from OFF at the top,
  * with a dead zone at eleven o'clock like a real range switch. Each stop is
  * a router view; turning the knob navigates, and navigation turns the knob,
  * so the back button and a typed hash both move the dial.
@@ -2771,7 +2849,8 @@ tr.row-rule th {
     { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
     { id: 'corr', label: 'CORR' },
     { id: 'vol', label: 'VOL' },
-    { id: 'dd', label: 'DD' }
+    { id: 'dd', label: 'DD' },
+    { id: 'note', label: 'NOTE' }         /* the daily reading */
   ];
   var SWEEP_DEG = 320;                              /* OFF at the top to the last stop */
   var STEP_DEG = SWEEP_DEG / (STOPS.length - 1);    /* the dead zone takes the rest */
@@ -3264,6 +3343,9 @@ tr.row-rule th {
   function describe(r, off) {
     if (off) return 'Meter off. Press to open the details.';
     var title = MP.router && MP.router.TITLES ? MP.router.TITLES[currentId] : currentId;
+    if (typeof r.note === 'string') {
+      return title + ', session of ' + r.text + '. ' + r.note + ' ' + (r.caption || '') + '. Press to open the details.';
+    }
     var value = r.empty ? 'no reading yet' : r.text + (r.unit ? ' ' + r.unit : '');
     var c = r.change;
     var moved = c && (isNum(c.pct) || isNum(c.delta));
@@ -3285,9 +3367,12 @@ tr.row-rule th {
 
     var chart = el('lcdChart');
     if (chart) {
-      chart.innerHTML = !off && series.length > 1
-        ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
-        : '';
+      /* the NOTE stop shows words where the other stops draw a line */
+      chart.innerHTML = !off && typeof r.note === 'string'
+        ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
+        : !off && series.length > 1
+          ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+          : '';
     }
 
     setText('lcdPrice', off ? '' : r.text || '');
@@ -3295,8 +3380,9 @@ tr.row-rule th {
 
     var chg = el('lcdChange');
     if (chg) {
-      chg.textContent = off ? '' : (r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
-      chg.className = 'lcd-chg' + (dir && !off && !(r.empty && r.hint) ? ' is-' + dir : '');
+      var plain = r.caption || (r.empty && r.hint);
+      chg.textContent = off ? '' : (r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit));
+      chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
 
@@ -3386,6 +3472,50 @@ tr.row-rule th {
     wireKeys(knob);
     wireButtons();
     if (MP.router) MP.router.onChange(onStop);
+
+    fitToWindow();
+    var fitQueued = false;
+    root.addEventListener('resize', function () {
+      if (fitQueued) return;
+      fitQueued = true;
+      (root.requestAnimationFrame || setTimeout)(function () { fitQueued = false; fitToWindow(); });
+    });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
+  }
+
+  /* ---- fitting the window ------------------------------------------------- */
+  var FIT_MIN_W = 300;   /* narrower than this and the dial is too small to turn; scroll instead */
+
+  /* Sizes the meter so the whole instrument, screen and dial, fits the
+   * window's height with no scrolling. The meter's height is (almost exactly)
+   * a fixed part plus a multiple of its width, so two measurements give the
+   * line and one more corrects for the layout's piecewise corners. The CSS
+   * decides the layout (stacked, or side by side on wide windows); this only
+   * picks the width. */
+  function fitToWindow() {
+    var meter = document.querySelector('.meter');
+    var h = root.innerHeight;
+    if (!meter || !h) return;
+    meter.style.width = '';
+    var stage = meter.parentNode;
+    var pad = stage ? parseFloat(root.getComputedStyle(stage).paddingTop) || 0 : 0;
+    var avail = h - pad - 12;
+    var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
+    if (h1 > avail && w1 > FIT_MIN_W) {
+      var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
+      meter.style.width = w2 + 'px';
+      var h2 = meter.offsetHeight;
+      var slope = w1 > w2 ? (h1 - h2) / (w1 - w2) : 0;
+      w = slope > 0 ? Math.floor(w2 + (avail - h2) / slope) : w1;
+      w = Math.max(FIT_MIN_W, Math.min(w1, w));
+      meter.style.width = w + 'px';
+      var over = meter.offsetHeight - avail;
+      if (over > 0 && slope > 0 && w > FIT_MIN_W) {
+        w = Math.max(FIT_MIN_W, Math.floor(w - over / slope) - 2);
+        meter.style.width = w + 'px';
+      }
+    }
+    document.documentElement.style.setProperty('--meter-w', w + 'px');
   }
 
   MP.meter = {
@@ -3397,6 +3527,7 @@ tr.row-rule th {
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
+    fitToWindow: fitToWindow,
     init: init,
     refresh: refresh,
     changeText: changeText,
@@ -4316,6 +4447,7 @@ tr.row-rule th {
   var SNAPSHOT_REFRESH_MS = 60000;
   var DAILY_REFRESH_MS = 30 * 60000;
   var HERO_REFRESH_MS = 5 * 60000;
+  var NOTE_REFRESH_MS = 30 * 60000;
   var SESSION_TICK_MS = 30000;
   var FETCH_TIMEOUT_MS = 12000;
   var MAX_BACKOFF_MS = 10 * 60000;
@@ -4375,6 +4507,8 @@ tr.row-rule th {
     probe: readProbe(MP.store ? MP.store.get('probe', null) : null),
     stats: readStats(MP.store ? MP.store.get('stats', null) : null),
     search: { query: '', results: null, pending: false, notice: null },
+    /* the daily reading, from data/note.json */
+    note: { data: null, notice: null },
     snapshot: { generatedAt: null, notice: null },
     session: { data: null },
     history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
@@ -4722,6 +4856,7 @@ tr.row-rule th {
       case 'stock': return stockReading();
       case 'crypto': return applyLive(cryptoReading(), stop);
       case 'probe': return probeReading();
+      case 'note': return noteReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
       default: return noReading('', '', '');
     }
@@ -5510,6 +5645,86 @@ tr.row-rule th {
     });
   }
 
+  /* ---- the daily reading -------------------------------------------------- */
+
+  /* The NOTE stop: the words take the chart's place, the session date the
+   * price's, and the change line says who wrote it. No value, so REL,
+   * MIN/MAX and ALERT pass it by. */
+  function noteReading() {
+    var d = state.note.data;
+    return {
+      text: d ? F.shortDate(d.forSession) : F.DASH, value: NaN, dp: 0,
+      unit: d ? 'SESSION' : '', mode: 'DAILY READING',
+      change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: '', dp: 0 },
+      caption: d ? (d.source === 'claude' ? 'Written by Claude · description, not advice' : 'From the numbers · description, not advice') : '',
+      note: d ? d.text : null,
+      hint: d ? '' : 'Appears after the first close the job sees',
+      spark: null, empty: !d, ranges: false, coin: null
+    };
+  }
+
+  /* 'claude-opus-5' -> 'Claude Opus 5' */
+  function modelName(id) {
+    if (!id) return 'Claude';
+    return String(id).replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-/g, ' ')
+      .replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function renderNote() {
+    var d = state.note.data;
+    setText('noteText', d ? d.text : '');
+    var meta = '';
+    if (d) {
+      meta = (d.source === 'claude'
+        ? 'Written by ' + modelName(d.model)
+        : 'Written from the numbers by a fixed template' + (d.invalidReason ? ' (the model’s reply was not used: ' + d.invalidReason + ')' : '')) +
+        ' · session of ' + F.shortDate(d.forSession) + (S.isNum(d.generatedAt) ? ' · generated ' + F.ago(d.generatedAt) : '');
+    }
+    setText('noteMeta', meta);
+
+    var inp = d && d.inputs, rows = [];
+    function row(label, value) {
+      rows.push('<tr><th scope="row">' + F.escapeHtml(label) + '</th><td>' + F.escapeHtml(value) + '</td></tr>');
+    }
+    function quote(label, x, horizon, usd) {
+      if (!x || !S.isNum(x.price)) return;
+      row(label, (usd ? F.usd(x.price, 2) : F.num(x.price, 2)) + (S.isNum(x.changePct) ? '  ' + F.signedPctPoints(x.changePct) + ' ' + horizon : ''));
+    }
+    if (inp) {
+      quote('Nasdaq Composite', inp.ixic, 'on the day', false);
+      quote('S&P 500', inp.spx, 'on the day', false);
+      quote('Bitcoin', inp.btc, '24h', true);
+      quote('Ether', inp.eth, '24h', true);
+      if (inp.coupling && S.isNum(inp.coupling.corr90)) row('BTC vs Nasdaq, 90 sessions', 'corr ' + F.ratio(inp.coupling.corr90, 2) + (S.isNum(inp.coupling.beta90) ? ' · beta ' + F.ratio(inp.coupling.beta90, 2) : ''));
+      if (inp.vol && S.isNum(inp.vol.btc)) row('30-session volatility', 'BTC ' + F.pct(inp.vol.btc, 0) + (S.isNum(inp.vol.index) ? ' · Nasdaq ' + F.pct(inp.vol.index, 0) : ''));
+      if (inp.drawdown && S.isNum(inp.drawdown.btc)) row('Below running peak', 'BTC ' + F.signedPct(inp.drawdown.btc, 1) + (S.isNum(inp.drawdown.index) ? ' · Nasdaq ' + F.signedPct(inp.drawdown.index, 1) : ''));
+      if (inp.stock && S.isNum(inp.stock.changePct5d)) row('Stock of the week', inp.stock.symbol + ' ' + F.signedPctPoints(inp.stock.changePct5d, 1) + ' over 5 sessions');
+      if (inp.crypto && S.isNum(inp.crypto.changePct7d)) row('Crypto of the week', inp.crypto.symbol + ' ' + F.signedPctPoints(inp.crypto.changePct7d, 1) + ' over 7 days');
+    }
+    setHtml('noteInputs', rows.length ? '<table class="data note-inputs"><tbody>' + rows.join('') + '</tbody></table>' : '');
+    setHtml('noteNotice', noticeHtml(state.note.notice));
+    repaint();
+  }
+
+  function loadNote() {
+    return fetchJson(snapshotUrl(SRC.SNAPSHOT.note)).then(function (payload) {
+      var n = SRC.normalizeNoteSnapshot(payload);
+      if (!n) throw emptyError();
+      state.note.data = n;
+      state.note.notice = null;
+    }).catch(function (err) {
+      if (!state.note.data) {
+        state.note.notice = err && err.status === 404
+          ? { level: 'quiet', text: 'The daily reading appears after the first market close the data job sees.' }
+          : snapshotNotice(err, 'Daily reading');
+      }
+      throw err;
+    }).then(renderNote, function (err) {
+      renderNote();
+      throw err;
+    });
+  }
+
   /* ---- offline ------------------------------------------------------------ */
   function renderOffline(reason) {
     state.history.pending = false;
@@ -5534,6 +5749,7 @@ tr.row-rule th {
     wireProbe();
     if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
     renderProbe();
+    renderNote();
     renderHero();
     renderMarkets();
     renderAnalytics();
@@ -5549,6 +5765,7 @@ tr.row-rule th {
     poll(loadCoins, BTC_REFRESH_MS);
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
+    poll(loadNote, NOTE_REFRESH_MS);
     ensureCoinHistory();
     poll(loadSpotlight, DAILY_REFRESH_MS);
     poll(function () {
@@ -5593,6 +5810,7 @@ tr.row-rule th {
     analyticsFor: analyticsFor,
     renderAnalytics: renderAnalytics,
     setProbe: setProbe,
+    renderNote: renderNote,
     setStats: setStats,
     searchCoins: searchCoins,
     renderHero: renderHero,

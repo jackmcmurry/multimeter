@@ -31,6 +31,7 @@ US market is open.
 | CORR | coin–index 90-session correlation, 30-session change | pair selector, return scatter, rolling correlation, coupling table with beta and R² |
 | VOL | the coin's 30-session realized vol, annualized | pair selector, current vols and the rolling column chart |
 | DD | the coin's distance below its running peak | pair selector, underwater curves and the episode table |
+| NOTE | the daily reading: three sentences in place of the chart, the session date as the value | the full reading, who wrote it, and the exact figures it was given |
 
 The statistics measure one coin against one index. The pair defaults to
 bitcoin and the Nasdaq Composite; the selector at the top of those panels
@@ -71,6 +72,29 @@ It lands in `docs/data/findings.json`. The page's prose is written by hand
 with every number as a slot filled from that file, so the text can never
 disagree with the data, and a fixed template turns the figures into a few
 sentences that add nothing the numbers do not say.
+
+## The daily reading
+
+Once per session, after the US close and the final quote read, the data job
+writes three plain sentences describing the session's figures and publishes
+them as `docs/data/note.json`; the meter shows them on the NOTE stop.
+
+When the `ANTHROPIC_API_KEY` secret is set, Claude writes them: one
+Messages API call (Claude Opus 5, low effort, with server-side refusal
+fallbacks) through the official SDK in `scripts/update-data.js`. The rules
+are in the system prompt in `src/lib/note.js`: three sentences, at most 90
+words, describe only the given figures, no predictions, recommendations or
+advice, nothing added, and a closing not-advice line. The same file holds a
+checker, `MP.note.validate`, that enforces those rules mechanically (banned
+words, sentence and word counts, a cited figure, the closing line). A reply
+that fails it is never published: a fixed template built from the numbers is,
+the reason is recorded in `note.json`, and the job tries once more two hours
+later. Without the key, the template is used every day, so a fork works with
+no secret at all. Every note records the exact figures it was given, and the
+drawer shows them.
+
+Cost: one call per trading day plus at most one retry, a few hundred input
+tokens each, which is a few dollars a year at Opus 5 rates.
 
 ## Install and share
 
@@ -120,6 +144,7 @@ files once a minute.
 | `history.json` | ^IXIC, ^GSPC and BTCUSD daily closes (FMP), QQQ daily closes (Alpha Vantage) | once per session, an hour after the close |
 | `spotlight.json` | the stock of the week with its daily closes and multi-horizon change; the crypto of the week (CoinGecko scan) | Monday scans; stock detail once per session |
 | `findings.json` | the write-up's statistics, computed from `history.json` | whenever history is rewritten |
+| `note.json` | the daily reading, its source (Claude or the template) and the figures it was given | once per session, after the close |
 
 Each run of the job works out for itself what is due (`src/lib/pipeline.js`),
 so a late or skipped cron tick heals on the next one. On the free plans it
@@ -140,13 +165,15 @@ table (`src/lib/session.js`), with no API call.
 
 ## Setup
 
-1. **Secrets.** In the repository: Settings â†’ Secrets and variables â†’ Actions â†’
+1. **Secrets.** In the repository: Settings → Secrets and variables → Actions →
    New repository secret.
    - `FMP_API_KEY`: required. Free at financialmodelingprep.com.
    - `ALPHAVANTAGE_API_KEY`: optional, for QQQ. Free at alphavantage.co.
-2. **Pages.** Settings â†’ Pages â†’ Build and deployment â†’ Source: **GitHub
+   - `ANTHROPIC_API_KEY`: optional, lets Claude write the daily reading
+     (console.anthropic.com). Without it the reading comes from a template.
+2. **Pages.** Settings → Pages → Build and deployment → Source: **GitHub
    Actions**.
-3. **First run.** Actions â†’ Site â†’ Run workflow (force: `all`). That fills
+3. **First run.** Actions → Site → Run workflow (force: `all`). That fills
    every snapshot and deploys. After that the schedule takes over.
 
 A run whose data step fails still deploys the site; the failure shows as a
@@ -186,6 +213,7 @@ parameter, or if any `var(--token)` does not resolve against `styles.css`.
 ```
 .github/workflows/site.yml   schedule + deploy
 scripts/update-data.js       data job entry point (Node 20, I/O only)
+package.json                 the data job's one dependency (Anthropic SDK)
 src/
   index.template.html        page shell with two @inject markers
   findings.template.html     the write-up, with data-f slots for the numbers
@@ -196,6 +224,7 @@ src/
     geom.js                  SVG chart kit
     findings.js              the write-up's statistics and narrative (pure)
     findings-page.js         fills findings.html from findings.json
+    note.js                  the daily reading's prompt, checker and fallback (data job)
     sources.js               endpoints + payload normalizers
     session.js               NYSE session clock
     store.js                 guarded localStorage (alerts, probe, statistics pair)
@@ -233,10 +262,10 @@ docs/                        what GitHub Pages serves
 - **Beta.** `cov(btc, ixic) / var(ixic)`, BTC regressed on the index. It is
   the slope drawn through the return scatter, so chart and table agree.
 - **Volatility.** Sample standard deviation of the 30-session window,
-  annualized by âˆš252.
+  annualized by √252.
 - **Drawdown.** Computed on each instrument's own history. An episode opens
   when price falls below the running peak and closes when it regains it.
-- **RÂ² alongside beta.** A high beta with a low RÂ² is a loose relationship.
+- **R² alongside beta.** A high beta with a low R² is a loose relationship.
 
 ## Maintenance
 

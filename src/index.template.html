@@ -32,6 +32,7 @@
   <div class="meter">
     <div class="holster">
       <div class="shell">
+        <div class="face face-screen">
 
         <div class="head">
           <span class="brand">MULTIMETER</span>
@@ -87,8 +88,11 @@
           <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
         </div>
 
+        </div>
+        <div class="face face-dial">
+
         <div class="dial" id="dial">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="10" aria-valuenow="1"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="11" aria-valuenow="1"></div>
         </div>
 
         <div class="jacks">
@@ -96,6 +100,8 @@
           <span class="jack jack-com" id="sessionDot" aria-hidden="true"></span>
           <span class="jack jack-v" aria-hidden="true"></span>
           <span class="jack-text" id="sessionText">Market —</span>
+        </div>
+
         </div>
 
       </div>
@@ -217,6 +223,15 @@
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
+    <!-- NOTE -->
+    <section class="view" data-panel="note" hidden>
+      <p class="note-text" id="noteText"></p>
+      <p class="foot" id="noteMeta"></p>
+      <div class="table-host" id="noteInputs"></div>
+      <p class="foot">Once per session, after the US close, the data job hands Claude the figures above and asks for three plain sentences that describe them: no predictions, no advice, nothing added. A checker rejects any reply that breaks those rules, and a fixed template built from the same numbers is published instead. The prompt and the checker are in <a href="https://github.com/jackmcmurry/multimeter/blob/main/src/lib/note.js">src/lib/note.js</a>; the longer view is in <a href="findings.html">the findings</a>.</p>
+      <div id="noteNotice"></div>
+    </section>
+
     <!-- ALERTS (reached from the bell on the screen) -->
     <section class="view" data-panel="alerts" hidden>
       <ul class="rows alerts" id="alertRows"></ul>
@@ -235,6 +250,7 @@
       <p><b>CRYPTO</b> — the crypto of the week, chosen the same way: the largest absolute seven-day move across a fixed 15-name large-cap universe, bitcoin and ether excluded because they have stops of their own.</p>
       <p>Absolute rather than largest gain, deliberately: ranking by best performer would read as a tip. These report what moved, in either direction — they are not recommendations.</p>
       <p><b>PROBE</b> — a coin of your own. Open DATA on that stop, search any coin CoinGecko tracks, and it takes the stop, wearing its symbol on the dial. The choice stays in this browser.</p>
+      <p><b>NOTE</b> — the daily reading: three plain sentences describing the last session's figures, written by Claude after each US close under rules that forbid predictions and advice, checked mechanically, and replaced by a fixed template when a reply breaks them. The drawer shows exactly which figures it was given.</p>
       <p><b>CORR</b> — the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b> — that coin's realized volatility over 30 sessions, annualized. <b>DD</b> — how far it sits below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels; any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>

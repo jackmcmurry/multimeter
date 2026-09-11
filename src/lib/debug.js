@@ -142,6 +142,22 @@
     app.renderSession();
     app.renderAnalytics();
 
+    /* the daily reading: the template the job falls back to, from these numbers */
+    if (MP.note && app.renderNote) {
+      var session = data.ixic[data.ixic.length - 1].date;
+      var noteInputs = {
+        session: session,
+        ixic: { price: lastIxic, changePct: (lastIxic / prevIxic - 1) * 100 },
+        btc: { price: lastBtc, changePct: (lastBtc / prevBtc - 1) * 100 }
+      };
+      var synthFindings = MP.findings ? MP.findings.compute({ btc: data.btc, ixic: data.ixic, spx: st.history.spx }, Date.now()) : null;
+      st.note.data = {
+        forSession: session, text: MP.note.fallback(synthFindings, noteInputs), source: 'fallback',
+        model: null, generatedAt: Date.now(), inputs: noteInputs, invalidReason: null
+      };
+      app.renderNote();
+    }
+
     /* pinned panel: same render path, synthetic pick */
     if (MP.spotlight) {
       var sv = MP.spotlight.view;
