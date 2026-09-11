@@ -132,7 +132,7 @@
 
     /* hero chart: 24h range, straight from the synthetic walk */
     st.hero.days = 1;
-    st.hero.series = data.btc.slice(-48).map(function (p) { return p.price; });
+    st.hero.cache["bitcoin:1"] = data.btc.slice(-48).map(function (p) { return p.price; });
 
     st.analytics = app.computeAnalytics();
     app.renderHero();
@@ -218,23 +218,5 @@
     return function () { clearInterval(id); };
   }
 
-  /* Paints a set of representative readings into the LCD digits, one every
-   * `ms`, so cell alignment, the sign and the decimal point can be eyeballed.
-   * Hold the meter first (MP.meter.setHold(true)) or the next repaint wins. */
-  function lcdSamples(ms) {
-    var SEG = MP.sevenseg;
-    var host = document.getElementById('lcdDigits');
-    if (!SEG || !host) return function () {};
-    var samples = [
-      SEG.fit(116432, { dp: 0 }), SEG.fit(26081.724, { dp: 2 }), SEG.fit(0.42, { dp: 2 }),
-      SEG.fit(-12.34, { dp: 1 }), SEG.fit(NaN), SEG.fit(12345678, { dp: 0 })
-    ];
-    var i = 0;
-    function show() { var s = samples[i % samples.length]; host.innerHTML = SEG.svg(s.text, s.neg); i += 1; }
-    show();
-    var id = setInterval(show, ms || 1500);
-    return function () { clearInterval(id); };
-  }
-
-  MP.debug = { renderSynthetic: renderSynthetic, synthesize: synthesize, cycle: cycle, lcdSamples: lcdSamples };
+  MP.debug = { renderSynthetic: renderSynthetic, synthesize: synthesize, cycle: cycle };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

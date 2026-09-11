@@ -12,8 +12,8 @@ Built by Jack McMurry with Claude Code.
 ## What's on it
 
 The page is one handheld multimeter. The rotary dial picks a function, the
-LCD shows that one reading — seven-segment digits, a unit, a mode
-annunciator, the change and a small sparkline — and the DATA key (or a press
+screen shows that one reading — a tall chart, the price beneath it, the
+change and, for the coins, range tabs — and the DATA key (or a press
 on the screen) opens a drawer beneath the meter with the charts and tables
 behind the number. HOLD freezes the display. The COM jack lights while the
 US market is open.
@@ -21,12 +21,12 @@ US market is open.
 | Dial | Screen reads | Drawer holds |
 |---|---|---|
 | OFF | blank | Method, sources, and the not-advice line |
-| BTC | spot price in USD, change over the chart's range | BTC chart with 24H/1W/1M/1Y pills |
-| ETH | spot price in USD, 24h change | BTC, ETH, ^IXIC, ^GSPC (and QQQ with a key) as rows |
+| BTC | spot price in USD, change over the chosen range | the range chart in the printed style |
+| ETH | spot price in USD, change over the chosen range | BTC, ETH, ^IXIC, ^GSPC (and QQQ with a key) as rows |
 | NASDAQ | ^IXIC level, day change | the same rows |
 | S&P | ^GSPC level, day change | the same rows |
 | STOCK | the stock of the week, day change | the pick in full: price, closes, 5d / 1m / market cap, runner-up |
-| CRYPTO | the crypto of the week, 24h change | the pick in full: price, 7-day sparkline, 7d / 24h / market cap |
+| CRYPTO | the crypto of the week, change over the chosen range | the pick in full: price, 7-day sparkline, 7d / 24h / market cap |
 | CORR | BTC–Nasdaq 90-session correlation, 30-session change | return scatter, rolling correlation, coupling table with beta and R² |
 | VOL | BTC 30-session realized vol, annualized | current vols and the rolling column chart |
 | DD | BTC distance below its running peak | underwater curves and the episode table |
@@ -37,7 +37,7 @@ turns the dial. The old section hashes (`#home`, `#markets`, `#weekly`,
 `#ixic`, `#gspc`, `#qqq` still resolve.
 
 The knob turns by dragging, by tapping a label, by tapping the knob itself
-(one stop clockwise), or with the arrow keys once it has focus.
+(one stop clockwise), by rolling the wheel over it, or with the arrow keys once it has focus. While dragging it follows the pointer and clicks at each detent.
 
 ## How it gets data
 
@@ -111,7 +111,6 @@ MP.dataTest.run()                    // session clock and every payload normaliz
 await MP.dataTest.runPipeline()      // the data job against canned payloads
 MP.app.stop(); MP.debug.renderSynthetic(7, 365)  // seeded walk through the real render path
 var stop = MP.debug.cycle(1200); stop()          // tour every dial stop, then halt the tour
-MP.meter.setHold(true); MP.debug.lcdSamples()    // representative readings through the LCD digits
 ```
 
 The pipeline suite replays a full Monday: pre-market first run, quiet runs,
@@ -129,12 +128,11 @@ parameter, or if any `var(--token)` does not resolve against `styles.css`.
 scripts/update-data.js       data job entry point (Node 20, I/O only)
 src/
   index.template.html        page shell with two @inject markers
-  styles.css                 the meter body, display, dial and drawer; single theme, IBM Plex via Google Fonts
+  styles.css                 the meter body, display, dial and drawer; single theme, Space Grotesk + JetBrains Mono via Google Fonts
   lib/
     stats.js                 statistics (pure)
     format.js                display formatting
     geom.js                  SVG chart kit
-    sevenseg.js              seven-segment LCD digits as SVG (pure)
     sources.js               endpoints + payload normalizers
     session.js               NYSE session clock
     router.js                hash routing between dial stops

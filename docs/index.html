@@ -12,7 +12,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 [hidden] { display: none !important; }
 /* ============================================================================
@@ -25,8 +25,8 @@
  * card so the charts and tables read as the instrument's manual, not more
  * instrument.
  *
- * Type: IBM Plex Sans for the body and labels, IBM Plex Mono for the display
- * annunciators. The big digits are seven-segment SVG, not a font.
+ * Type: Space Grotesk for the body, the labels and the big price, JetBrains
+ * Mono for the display's small annunciators.
  *
  * SINGLE THEME BY CHOICE — a physical object has one colour, so every colour
  * is painted explicitly rather than swapped with the viewer's theme.
@@ -49,7 +49,6 @@
   --lcd-dk: #040709;
   --lcd-ink: #e6fff5;
   --lcd-dim: #6d8c86;
-  --lcd-ghost: #142026;
   --up: #2ee59d;
   --down: #ff6b6b;
 
@@ -85,8 +84,10 @@
   --pos: #2ee59d;
   --neg: #ff6b6b;
 
-  --f-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --f-lcd: "IBM Plex Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
+  --lcd-tab: #17303a;
+
+  --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-lcd: "JetBrains Mono", ui-monospace, Consolas, "SF Mono", Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -116,7 +117,7 @@ body {
 }
 
 /* ---- the meter body ------------------------------------------------------ */
-.meter { width: min(100%, 660px); }
+.meter { width: min(100%, 900px); }
 
 .holster {
   background: linear-gradient(180deg, var(--holster-lt), var(--holster) 10%, var(--holster) 90%, var(--holster-dk));
@@ -181,38 +182,73 @@ body {
 .ann-hold { opacity: 0.18; }
 .ann-hold.is-on { opacity: 1; color: var(--holster); }
 
-.lcd-chart { display: block; width: 100%; min-height: 60px; margin: 8px 0 2px; }
+/* the chart has the top of the screen to itself; a fixed aspect keeps the
+ * screen the same height whether or not a series has arrived */
+.lcd-chart { display: block; width: 100%; aspect-ratio: 600 / 250; margin: 10px 0 0; }
 .lcd-chart .chart { display: block; width: 100%; height: auto; color: inherit; }
 
-.lcd-main { display: flex; align-items: flex-end; gap: 12px; margin: 6px 0 6px; }
-.lcd-digits { flex: 1; min-width: 0; }
-.lcd-seg { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 5px rgba(46, 229, 157, 0.22)); }
-.seg { fill: var(--lcd-ghost); }
-.seg.on { fill: var(--lcd-ink); }
+/* the readout is its own band beneath a hairline, never over the chart */
+.lcd-readout {
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.lcd-price-row { display: flex; align-items: baseline; gap: 12px; }
+.lcd-price {
+  font-family: var(--f-ui);
+  font-size: clamp(40px, 7.5vw, 68px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--lcd-ink);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 18px rgba(46, 229, 157, 0.12);
+}
 .lcd-unit {
-  flex: none;
-  width: 48px;
-  padding-bottom: 8px;
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.1em;
   color: var(--lcd-dim);
 }
 
-.lcd-foot { margin-top: 2px; }
+.lcd-foot { margin-top: 10px; }
 .lcd-chg {
-  min-width: 84px;
-  font-size: 18px;
+  font-family: var(--f-ui);
+  font-size: 19px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: var(--lcd-dim);
 }
+.lcd-chg.is-up { color: var(--up); }
+.lcd-chg.is-down { color: var(--down); }
 
-.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart { opacity: 0.1; }
-.lcd.is-off .lcd-chart { min-height: 120px; }
-.lcd.is-off .lcd-seg { filter: none; }
+/* range tabs, shown for the coins */
+.lcd-ranges { display: flex; gap: 6px; margin-top: 18px; transition: opacity 200ms ease; }
+.lcd-ranges.is-idle { opacity: 0; pointer-events: none; }
+.lcd-chg:empty::before { content: "—"; }
+.rng {
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lcd-dim);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.rng:hover { color: var(--lcd-ink); }
+.rng.is-on { background: var(--lcd-tab); color: var(--lcd-ink); }
+.rng:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+
+.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart, .lcd.is-off .lcd-price { opacity: 0.1; }
+.lcd-price:empty::before { content: "—"; }
 
 /* a change of stop refreshes the readout with a short fade */
-.lcd.is-swap .lcd-chart, .lcd.is-swap .lcd-digits, .lcd.is-swap .lcd-foot, .lcd.is-swap #lcdMode {
+.lcd.is-swap .lcd-chart, .lcd.is-swap .lcd-readout, .lcd.is-swap #lcdMode {
   animation: lcd-swap 260ms ease-out;
 }
 @keyframes lcd-swap {
@@ -253,7 +289,7 @@ body {
 /* ---- dial ---------------------------------------------------------------- */
 .dial {
   position: relative;
-  width: 86%;
+  width: 80%;
   aspect-ratio: 1 / 1;
   margin: 4px auto 6px;
   touch-action: none;
@@ -287,10 +323,13 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     inset 0 -4px 0 rgba(0, 0, 0, 0.5);
   /* a spring: overshoots the detent a touch, then settles */
-  transition: transform 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 520ms cubic-bezier(0.22, 1.6, 0.36, 1), scale 120ms ease;
   cursor: grab;
 }
 .knob:active { cursor: grabbing; }
+/* under a finger the knob follows exactly and sits a hair lower */
+.knob.is-dragging { transition: scale 120ms ease; scale: 0.985; cursor: grabbing; }
+.knob.is-dragging::before { box-shadow: 0 0 14px rgba(246, 183, 31, 0.8); }
 .knob::before {
   content: "";
   position: absolute;
@@ -303,12 +342,15 @@ body {
   background: var(--knob-mark);
   box-shadow: 0 0 8px rgba(246, 183, 31, 0.5);
 }
+/* a grip: fine ridges round the rim, the part a thumb catches */
 .knob::after {
   content: "";
   position: absolute;
-  inset: 12%;
+  inset: 3%;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.06);
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.07) 0deg 3deg, transparent 3deg 7.5deg);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 67%);
+  mask: radial-gradient(circle, transparent 66%, #000 67%);
 }
 .knob.is-detent { animation: detent 240ms ease-out; }
 @keyframes detent {
@@ -349,7 +391,7 @@ body {
 
 /* ---- drawer -------------------------------------------------------------- */
 .drawer {
-  width: min(100%, 660px);
+  width: min(100%, 900px);
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--rule);
@@ -530,7 +572,10 @@ tr.row-rule th {
   .stage { padding: 10px 6px 32px; gap: 12px; }
   .holster { border-radius: 28px; padding: 10px; }
   .shell { border-radius: 20px; padding: 12px 12px 14px; }
-  .lcd { padding: 12px 14px 10px; }
+  .lcd { padding: 12px 14px 12px; }
+  .lcd-price { font-size: 40px; }
+  .lcd-chg { font-size: 16px; }
+  .rng { padding: 8px 12px; font-size: 12px; }
   .drawer { border-radius: 14px; padding: 14px 12px 18px; }
   .dial { width: 100%; }
   .dial-lab { font-size: 13.5px; }
@@ -564,13 +609,21 @@ tr.row-rule th {
             <span class="ann ann-hold" id="lcdHold">HOLD</span>
           </div>
           <div class="lcd-chart" id="lcdChart"></div>
-          <div class="lcd-main">
-            <div class="lcd-digits" id="lcdDigits"></div>
-            <span class="lcd-unit" id="lcdUnit"></span>
+          <div class="lcd-readout">
+            <div class="lcd-price-row">
+              <span class="lcd-price" id="lcdPrice"></span>
+              <span class="lcd-unit" id="lcdUnit"></span>
+            </div>
+            <div class="lcd-row lcd-foot">
+              <span class="lcd-chg" id="lcdChange"></span>
+              <span class="ann" id="lcdChangeLabel"></span>
+            </div>
           </div>
-          <div class="lcd-row lcd-foot">
-            <span class="lcd-chg" id="lcdChange"></span>
-            <span class="ann" id="lcdChangeLabel"></span>
+          <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range">
+            <button type="button" class="rng is-on" data-days="1" aria-pressed="true">24H</button>
+            <button type="button" class="rng" data-days="7" aria-pressed="false">1W</button>
+            <button type="button" class="rng" data-days="30" aria-pressed="false">1M</button>
+            <button type="button" class="rng" data-days="365" aria-pressed="false">1Y</button>
           </div>
         </div>
 
@@ -611,13 +664,7 @@ tr.row-rule th {
       </div>
 
       <div class="chartbox" id="heroChart"></div>
-
-      <div class="pills" id="heroPills" role="group" aria-label="Chart range">
-        <button type="button" class="pill is-on" data-days="1">24H</button>
-        <button type="button" class="pill" data-days="7">1W</button>
-        <button type="button" class="pill" data-days="30">1M</button>
-        <button type="button" class="pill" data-days="365">1Y</button>
-      </div>
+      <p class="foot">The range follows the tabs on the screen.</p>
 
       <div id="heroNotice"></div>
     </section>
@@ -702,7 +749,7 @@ tr.row-rule th {
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading (drag it, roll the wheel over it, or use the arrow keys); the tabs on the screen set the chart's range for the coins; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
       <h2>Dial</h2>
       <p><b>BTC</b>, <b>ETH</b> — spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. They trade every calendar day.</p>
@@ -1543,125 +1590,6 @@ tr.row-rule th {
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
-/* ==== src/lib/sevenseg.js ================================================= */
-/* ============================================================================
- * sevenseg.js — the LCD's seven-segment readout, as inline SVG.
- *
- * Pure: strings in, an SVG string out, no DOM. Every segment of every cell is
- * always drawn; lit ones carry the `on` class, so unlit segments ghost faintly
- * behind the reading the way a real liquid-crystal display does. Colour comes
- * from the stylesheet (.seg / .seg.on), never from this file.
- *
- * The readout is one half-width sign cell followed by seven digit cells,
- * right-aligned. A '.' in the text lights the decimal point of the cell before
- * it. fit() turns a number into text that fits those seven cells, dropping
- * decimals first and reporting 'OL' (overload) when the integer part alone
- * will not fit — which is what a meter does too.
- * ========================================================================== */
-(function (root) {
-  'use strict';
-  var MP = (root.MP = root.MP || {});
-
-  var DIGITS = 7;
-  var CELL_W = 20, CELL_H = 36, PITCH = 30, SIGN_W = 14, GAP = 6;
-  var VIEW_W = 232, VIEW_H = 40;
-
-  function isNum(x) { return typeof x === 'number' && isFinite(x); }
-
-  /* Chamfered segment polygons for a 20 x 36 cell, thickness 3.5. */
-  var SEGMENTS = {
-    a: '2,0 18,0 15,3.5 5,3.5',
-    b: '20,2 20,17 16.5,15 16.5,5',
-    c: '20,19 20,34 16.5,31 16.5,21',
-    d: '2,36 18,36 15,32.5 5,32.5',
-    e: '0,19 0,34 3.5,31 3.5,21',
-    f: '0,2 0,17 3.5,15 3.5,5',
-    g: '3,18 5,16.25 15,16.25 17,18 15,19.75 5,19.75'
-  };
-  var ORDER = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-  var SIGN_SEGMENT = '0,18 2,16.25 12,16.25 14,18 12,19.75 2,19.75';
-
-  var GLYPHS = {
-    '0': 'abcdef', '1': 'bc', '2': 'abdeg', '3': 'abcdg', '4': 'bcfg',
-    '5': 'acdfg', '6': 'acdefg', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg',
-    '-': 'g', ' ': '',
-    'O': 'abcdef', 'L': 'def', 'H': 'bcefg', 'd': 'bcdeg', 'E': 'adefg',
-    'r': 'eg', 'n': 'ceg', 'o': 'cdeg', 'P': 'abefg'
-  };
-
-  /* 'text' -> [{ glyph, dp }] right-aligned into DIGITS cells. Unknown
-   * characters render blank rather than throwing. */
-  function cells(text) {
-    var out = [];
-    var s = String(text === undefined || text === null ? '' : text);
-    for (var i = 0; i < s.length; i++) {
-      var ch = s.charAt(i);
-      if (ch === '.') {
-        if (!out.length) out.push({ glyph: ' ', dp: false });
-        out[out.length - 1].dp = true;
-        continue;
-      }
-      out.push({ glyph: GLYPHS.hasOwnProperty(ch) ? ch : ' ', dp: false });
-    }
-    if (out.length > DIGITS) out = out.slice(out.length - DIGITS);
-    while (out.length < DIGITS) out.unshift({ glyph: ' ', dp: false });
-    return out;
-  }
-
-  /* value -> { text, neg }. dp is the preferred number of decimals; it is
-   * reduced until the digits fit, then the reading overloads. */
-  function fit(value, opts) {
-    var dp = opts && isNum(opts.dp) ? Math.max(0, Math.floor(opts.dp)) : 2;
-    if (!isNum(value)) return { text: '----', neg: false };
-    var abs = Math.abs(value);
-    var s;
-    for (;;) {
-      s = abs.toFixed(dp);
-      if (s.replace('.', '').length <= DIGITS) break;
-      if (dp === 0) return { text: 'OL', neg: false };
-      dp -= 1;
-    }
-    return { text: s, neg: value < 0 && Number(s) !== 0 };
-  }
-
-  function segClass(on) { return on ? 'seg on' : 'seg'; }
-
-  function cellSvg(x, cell) {
-    var lit = GLYPHS[cell.glyph] || '';
-    var s = '<g transform="translate(' + x + ',0)">';
-    for (var i = 0; i < ORDER.length; i++) {
-      var k = ORDER[i];
-      s += '<polygon class="' + segClass(lit.indexOf(k) >= 0) + '" points="' + SEGMENTS[k] + '"/>';
-    }
-    s += '<rect class="' + segClass(cell.dp) + ' seg-dp" x="' + (CELL_W + 2) + '" y="' + (CELL_H - 4) +
-      '" width="4" height="4"/>';
-    return s + '</g>';
-  }
-
-  /* text: what fit() produced; neg lights the sign cell. */
-  function svg(text, neg, opts) {
-    var cls = opts && opts.className ? ' ' + opts.className : '';
-    var s = '<svg viewBox="0 0 ' + VIEW_W + ' ' + VIEW_H + '" class="lcd-seg' + cls +
-      '" aria-hidden="true" preserveAspectRatio="xMidYMid meet">';
-    s += '<g transform="translate(4,2) skewX(-6)">';
-    s += '<polygon class="' + segClass(!!neg) + '" points="' + SIGN_SEGMENT + '"/>';
-    var list = cells(text);
-    for (var i = 0; i < list.length; i++) {
-      s += cellSvg(SIGN_W + GAP + i * PITCH, list[i]);
-    }
-    return s + '</g></svg>';
-  }
-
-  MP.sevenseg = {
-    DIGITS: DIGITS,
-    GLYPHS: GLYPHS,
-    cells: cells,
-    fit: fit,
-    svg: svg
-  };
-})(typeof globalThis !== 'undefined' ? globalThis : this);
-
-
 /* ==== src/lib/sources.js ================================================== */
 /* ============================================================================
  * sources.js — where every number comes from, and the normalizers that turn
@@ -2241,24 +2169,29 @@ tr.row-rule th {
 
 /* ==== src/lib/meter.js ==================================================== */
 /* ============================================================================
- * meter.js — the instrument itself: the rotary dial, the knob, and the LCD.
+ * meter.js — the instrument itself: the rotary dial, the knob, and the screen.
  *
  * The dial has ten stops over 320 degrees, clockwise from OFF at the top,
- * with a dead zone at eleven o'clock like a real range switch. Each
- * stop is a router view; turning the knob navigates, and navigation turns the
- * knob, so the back button and a typed hash both move the dial.
+ * with a dead zone at eleven o'clock like a real range switch. Each stop is
+ * a router view; turning the knob navigates, and navigation turns the knob,
+ * so the back button and a typed hash both move the dial.
  *
- * The LCD paints from MP.app.reading(stop). HOLD freezes the display only:
- * data keeps arriving, the drawer keeps updating, and releasing HOLD shows
- * the current reading at once. Changing the stop releases it too, since a
- * held number under a different mode label would mislead.
+ * The knob is meant to be fiddled with. While a finger or pointer holds it,
+ * it follows exactly; every detent it passes clicks (a dip, a soft tick, a
+ * haptic pulse where the device has one) and the screen changes under it.
+ * Let go and it springs onto the nearest stop. The wheel steps it, so do the
+ * arrow keys, and a tap on the knob advances it one stop.
+ *
+ * The screen paints from MP.app.reading(stop). HOLD freezes the display
+ * only: data keeps arriving, the drawer keeps updating, and releasing HOLD
+ * shows the current reading at once. Changing the stop releases it too.
  *
  * Colour never appears in this file; the SVG it builds is styled by class.
  * ========================================================================== */
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
-  var G = MP.geom, SEG = MP.sevenseg;
+  var G = MP.geom;
 
   var STOPS = [
     { id: 'off', label: 'OFF' },
@@ -2274,7 +2207,8 @@ tr.row-rule th {
   ];
   var SWEEP_DEG = 320;                              /* OFF at the top to the last stop */
   var STEP_DEG = SWEEP_DEG / (STOPS.length - 1);    /* the dead zone takes the rest */
-  var DETENT_MS = 240;                              /* how long the click feedback lasts */
+  var DETENT_MS = 220;                              /* how long the click feedback lasts */
+  var WHEEL_MS = 110;                               /* one step per wheel notch, no faster */
 
   /* plate geometry, in viewBox units; MARGIN leaves room for the longest label
    * at three o'clock, which would otherwise clip at the plate's edge */
@@ -2282,6 +2216,8 @@ tr.row-rule th {
   var R_FACE = 92, R_ARC = 105, R_TICK_IN = 100, R_TICK_OUT = 112, R_LABEL = 144, R_HIT = 18;
 
   var TAP_PX = 4;   /* pointer travel below which a press is a tap, not a drag */
+
+  var UP = '↗', DOWN = '↘';
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
   function el(id) { return document.getElementById(id); }
@@ -2296,6 +2232,15 @@ tr.row-rule th {
   function stopAt(deg) {
     var d = ((deg % 360) + 360) % 360;
     return Math.round(d / STEP_DEG) % STOPS.length;
+  }
+
+  /* A bearing the knob may actually point at: inside the sweep it is itself;
+   * in the dead zone it clamps to whichever end is nearer, so the pointer
+   * never rests in the gap. */
+  function clampToSweep(deg) {
+    var d = ((deg % 360) + 360) % 360;
+    if (d <= SWEEP_DEG) return d;
+    return d - SWEEP_DEG < 360 - d ? SWEEP_DEG : 0;
   }
 
   function indexOf(id) {
@@ -2334,17 +2279,28 @@ tr.row-rule th {
   /* ---- state -------------------------------------------------------------- */
   var currentId = null;
   var shownAngle = 0;      /* continuous, so the knob always takes the short way */
+  var dragging = false;
   var held = false;
 
   /* ---- knob --------------------------------------------------------------- */
-  function rotateTo(index) {
+
+  /* Turns the knob to a bearing by the shortest way. immediate = no spring,
+   * for following a pointer. */
+  function turnKnob(targetDeg, immediate) {
     var knob = el('knob');
-    var target = angleOf(index);
     var cur = ((shownAngle % 360) + 360) % 360;
-    var delta = ((target - cur + 540) % 360) - 180;
+    var delta = ((targetDeg - cur + 540) % 360) - 180;
     shownAngle += delta;
     if (knob) {
+      knob.classList.toggle('is-dragging', !!immediate);
       knob.style.transform = 'rotate(' + shownAngle + 'deg)';
+    }
+  }
+
+  function settleOn(index) {
+    turnKnob(angleOf(index), false);
+    var knob = el('knob');
+    if (knob) {
       knob.setAttribute('aria-valuenow', String(index));
       var title = MP.router && MP.router.TITLES ? MP.router.TITLES[STOPS[index].id] : STOPS[index].label;
       knob.setAttribute('aria-valuetext', title);
@@ -2368,6 +2324,63 @@ tr.row-rule th {
     go(STOPS[(i + by + STOPS.length) % STOPS.length].id);
   }
 
+  /* ---- detent feedback ---------------------------------------------------- */
+  var detentTimer = null;
+  var audio = null;
+
+  /* The audio context has to be born inside a user gesture, so the pointer
+   * and key handlers prime it; the detent then only has to play. */
+  function primeAudio() {
+    if (audio) {
+      if (audio.state === 'suspended' && audio.resume) audio.resume().catch(function () { /* later */ });
+      return;
+    }
+    var AC = root.AudioContext || root.webkitAudioContext;
+    if (!AC) return;
+    try { audio = new AC(); } catch (e) { audio = null; }
+  }
+
+  /* A short, quiet mechanical tick: a fast square chirp with a 40 ms decay. */
+  function tickSound() {
+    if (!audio || audio.state !== 'running') return;
+    try {
+      var t = audio.currentTime;
+      var osc = audio.createOscillator(), gain = audio.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(2400, t);
+      osc.frequency.exponentialRampToValueAtTime(520, t + 0.03);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.045, t + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start(t);
+      osc.stop(t + 0.045);
+    } catch (e) { /* no sound is fine */ }
+  }
+
+  /* The knob dips, the readout refreshes with a short fade, the phone gives
+   * a tiny pulse: a change of stop is felt as well as seen. */
+  function detent() {
+    var knob = el('knob'), lcd = el('lcd');
+    if (knob) knob.classList.remove('is-detent');
+    if (lcd) lcd.classList.remove('is-swap');
+    /* restart the animation even when two stops arrive back to back */
+    void (knob && knob.offsetWidth);
+    if (knob) knob.classList.add('is-detent');
+    if (lcd) lcd.classList.add('is-swap');
+    clearTimeout(detentTimer);
+    detentTimer = setTimeout(function () {
+      if (knob) knob.classList.remove('is-detent');
+      if (lcd) lcd.classList.remove('is-swap');
+    }, DETENT_MS);
+    tickSound();
+    if (root.navigator && typeof root.navigator.vibrate === 'function') {
+      try { root.navigator.vibrate(8); } catch (e) { /* not permitted */ }
+    }
+  }
+
+  /* ---- pointer, wheel, keys ----------------------------------------------- */
   function wireDial(dial, knob) {
     var drag = null;
 
@@ -2380,11 +2393,13 @@ tr.row-rule th {
 
     dial.addEventListener('pointerdown', function (ev) {
       if (ev.button !== undefined && ev.button !== 0) return;
+      primeAudio();
       var stopEl = ev.target.closest ? ev.target.closest('.dial-stop[data-stop]') : null;
       drag = {
         id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, moved: false,
         onKnob: knob.contains(ev.target),
-        tapStop: stopEl ? stopEl.getAttribute('data-stop') : null
+        tapStop: stopEl ? stopEl.getAttribute('data-stop') : null,
+        lastIdx: indexOf(currentId)
       };
       if (dial.setPointerCapture) { try { dial.setPointerCapture(ev.pointerId); } catch (e) { /* not capturable */ } }
       /* preventDefault below also suppresses the focus a press would give,
@@ -2399,26 +2414,50 @@ tr.row-rule th {
         var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
         if (Math.sqrt(dx * dx + dy * dy) < TAP_PX) return;
         drag.moved = true;
+        dragging = true;
       }
-      var idx = stopAt(bearing(ev));
-      if (STOPS[idx].id !== currentId) go(STOPS[idx].id);
+      var b = bearing(ev);
+      turnKnob(clampToSweep(b), true);          /* the knob follows the finger */
+      var idx = stopAt(b);
+      if (idx !== drag.lastIdx) {                /* crossed a detent */
+        drag.lastIdx = idx;
+        detent();
+        go(STOPS[idx].id);
+      }
     });
 
     function release(ev) {
       if (!drag || ev.pointerId !== drag.id) return;
       var d = drag;
       drag = null;
-      if (ev.type === 'pointercancel' || d.moved) return;
+      dragging = false;
+      if (d.moved) {
+        var idx = indexOf(currentId);
+        settleOn(idx < 0 ? 0 : idx);             /* spring onto the stop */
+        return;
+      }
+      if (ev.type === 'pointercancel') return;
       if (d.tapStop) go(d.tapStop);
       else if (d.onKnob) step(1);
     }
     dial.addEventListener('pointerup', release);
     dial.addEventListener('pointercancel', release);
+
+    var wheelAt = 0;
+    dial.addEventListener('wheel', function (ev) {
+      ev.preventDefault();
+      var now = Date.now();
+      if (now - wheelAt < WHEEL_MS) return;
+      wheelAt = now;
+      primeAudio();
+      step(ev.deltaY > 0 || ev.deltaX > 0 ? 1 : -1);
+    }, { passive: false });
   }
 
   function wireKeys(knob) {
     knob.addEventListener('keydown', function (ev) {
       var k = ev.key;
+      primeAudio();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
       else if (k === 'ArrowLeft' || k === 'ArrowDown') step(-1);
       else if (k === 'Home') go(STOPS[0].id);
@@ -2429,7 +2468,7 @@ tr.row-rule th {
     });
   }
 
-  /* ---- hold and drawer ---------------------------------------------------- */
+  /* ---- hold, drawer, range tabs ------------------------------------------- */
   function setHold(on) {
     held = !!on;
     var btn = el('holdBtn');
@@ -2454,32 +2493,65 @@ tr.row-rule th {
   }
 
   function wireButtons() {
-    var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd');
+    var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd'), ranges = el('lcdRanges');
     if (hold) hold.addEventListener('click', function () { setHold(!held); });
     if (detail) detail.addEventListener('click', function () { openDrawer(); });
     if (lcd) {
-      lcd.addEventListener('click', function () { openDrawer(); });
+      lcd.addEventListener('click', function (ev) {
+        if (ranges && ranges.contains(ev.target)) return;   /* the tabs are their own control */
+        openDrawer();
+      });
       lcd.addEventListener('keydown', function (ev) {
+        if (ev.target !== lcd) return;
         if (ev.key === 'Enter' || ev.key === ' ') { openDrawer(); ev.preventDefault(); }
+      });
+    }
+    if (ranges) {
+      ranges.addEventListener('click', function (ev) {
+        var btn = ev.target.closest ? ev.target.closest('.rng[data-days]') : null;
+        if (!btn) return;
+        ev.stopPropagation();
+        var days = parseInt(btn.getAttribute('data-days'), 10);
+        if (days && MP.app && MP.app.setRange) MP.app.setRange(days);
       });
     }
   }
 
   /* ---- the screen --------------------------------------------------------- */
-  function changeText(c) {
-    if (!c || !isNum(c.value)) return '----';
-    var arrow = c.value >= 0 ? '▲' : '▼';
-    return arrow + Math.abs(c.value).toFixed(isNum(c.dp) ? c.dp : 2) + (c.suffix || '');
+  function absText(abs, unit) {
+    if (!isNum(abs)) return '';
+    var a = Math.abs(abs);
+    if (unit === 'USD') return MP.fmt.usd(a, a < 10 ? 4 : 2);
+    return MP.fmt.num(a, 2);
+  }
+
+  /* "↘ $1,480.12 (1.94%)" for a price; "↗ 0.16" for a statistic. */
+  function changeText(c, unit) {
+    if (!c) return MP.fmt.DASH;
+    if (isNum(c.pct)) {
+      var abs = absText(c.abs, unit);
+      return (c.pct >= 0 ? UP : DOWN) + ' ' + (abs ? abs + ' ' : '') + '(' + Math.abs(c.pct).toFixed(2) + '%)';
+    }
+    if (isNum(c.delta)) {
+      return (c.delta >= 0 ? UP : DOWN) + ' ' + Math.abs(c.delta).toFixed(isNum(c.dp) ? c.dp : 2) + (c.suffix || '');
+    }
+    return MP.fmt.DASH;
+  }
+
+  function direction(c, series) {
+    if (c && isNum(c.pct)) return c.pct < 0 ? 'down' : 'up';
+    if (c && isNum(c.delta)) return c.delta < 0 ? 'down' : 'up';
+    if (series && series.length > 1) return series[series.length - 1] < series[0] ? 'down' : 'up';
+    return null;
   }
 
   function describe(r, off) {
     if (off) return 'Meter off. Press to open the details.';
     var title = MP.router && MP.router.TITLES ? MP.router.TITLES[currentId] : currentId;
-    var value = r.empty ? 'no reading yet' : (r.neg ? '-' : '') + r.digits + (r.unit ? ' ' + r.unit : '');
+    var value = r.empty ? 'no reading yet' : r.text + (r.unit ? ' ' + r.unit : '');
     var c = r.change;
-    var change = c && isNum(c.value)
-      ? ', ' + (c.value >= 0 ? 'up ' : 'down ') + Math.abs(c.value).toFixed(isNum(c.dp) ? c.dp : 2) + (c.suffix || '') + ' over ' + c.label
-      : '';
+    var moved = c && (isNum(c.pct) || isNum(c.delta));
+    var change = moved ? ', ' + changeText(c, r.unit).replace(UP, 'up').replace(DOWN, 'down') + ' over ' + c.label : '';
     return title + ': ' + value + change + '. Press to open the details.';
   }
 
@@ -2487,25 +2559,47 @@ tr.row-rule th {
     var lcd = el('lcd');
     if (!lcd) return;
     var off = currentId === 'off';
+    var series = r.spark || [];
+    var dir = direction(r.change, series);
+
     lcd.classList.toggle('is-off', off);
     setText('lcdMode', off ? '' : r.mode || '');
-    setText('lcdUnit', off ? '' : r.unit || '');
-    var digits = el('lcdDigits');
-    if (digits) digits.innerHTML = SEG.svg(off ? '' : r.digits, !off && r.neg);
-    setText('lcdChange', off ? '' : changeText(r.change));
-    setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
+
     var chart = el('lcdChart');
     if (chart) {
-      var series = r.spark || [];
-      var c = r.change;
-      /* the line takes the colour of the move: the change if known, else the
-       * series' own direction */
-      var down = c && isNum(c.value) ? c.value < 0
-        : series.length > 1 && series[series.length - 1] < series[0];
       chart.innerHTML = !off && series.length > 1
-        ? G.smoothLine({ values: series, w: 600, h: 200, color: down ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+        ? G.smoothLine({ values: series, w: 600, h: 250, color: dir === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
         : '';
     }
+
+    setText('lcdPrice', off ? '' : r.text || '');
+    setText('lcdUnit', off ? '' : r.unit || '');
+
+    var chg = el('lcdChange');
+    if (chg) {
+      chg.textContent = off ? '' : changeText(r.change, r.unit);
+      chg.className = 'lcd-chg' + (dir && !off ? ' is-' + dir : '');
+    }
+    setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
+
+    var ranges = el('lcdRanges');
+    if (ranges) {
+      /* kept in the layout even when idle: the screen must not change height
+       * between stops, or the dial would move under a dragging finger */
+      var idle = off || !r.ranges;
+      ranges.classList.toggle('is-idle', idle);
+      ranges.setAttribute('aria-hidden', idle ? 'true' : 'false');
+      var btns = ranges.querySelectorAll('.rng');
+      for (var b = 0; b < btns.length; b++) btns[b].tabIndex = idle ? -1 : 0;
+      var days = MP.app && MP.app.state ? MP.app.state.hero.days : 1;
+      var tabs = ranges.querySelectorAll('.rng[data-days]');
+      for (var i = 0; i < tabs.length; i++) {
+        var on = parseInt(tabs[i].getAttribute('data-days'), 10) === days;
+        tabs[i].classList.toggle('is-on', on);
+        tabs[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+    }
+
     lcd.setAttribute('aria-label', describe(r, off));
   }
 
@@ -2516,39 +2610,15 @@ tr.row-rule th {
     paint(app.reading(currentId));
   }
 
-  /* ---- detent feedback ---------------------------------------------------- */
-  var detentTimer = null;
-
-  /* The knob dips for a moment and the screen's readout refreshes with a
-   * short fade, so a change of stop is felt as well as seen. A phone that
-   * supports it also gets a tiny haptic tick. */
-  function detent() {
-    var knob = el('knob'), lcd = el('lcd');
-    if (knob) knob.classList.remove('is-detent');
-    if (lcd) lcd.classList.remove('is-swap');
-    /* restart the animation even when two stops arrive back to back */
-    void (knob && knob.offsetWidth);
-    if (knob) knob.classList.add('is-detent');
-    if (lcd) lcd.classList.add('is-swap');
-    clearTimeout(detentTimer);
-    detentTimer = setTimeout(function () {
-      if (knob) knob.classList.remove('is-detent');
-      if (lcd) lcd.classList.remove('is-swap');
-    }, DETENT_MS);
-    if (root.navigator && typeof root.navigator.vibrate === 'function') {
-      try { root.navigator.vibrate(8); } catch (e) { /* not permitted */ }
-    }
-  }
-
   /* ---- routing ------------------------------------------------------------ */
   function onStop(id) {
     var idx = indexOf(id);
     if (idx < 0) return;
     var changed = currentId !== null && currentId !== id;
     currentId = id;
-    rotateTo(idx);
+    if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
-    if (changed) detent();
+    if (changed && !dragging) detent(); /* a drag already clicked at the crossing */
     if (changed && held) setHold(false);   /* setHold(false) repaints */
     else refresh();
   }
@@ -2571,6 +2641,7 @@ tr.row-rule th {
     SWEEP_DEG: SWEEP_DEG,
     angleOf: angleOf,
     stopAt: stopAt,
+    clampToSweep: clampToSweep,
     plateSvg: plateSvg,
     init: init,
     refresh: refresh,
@@ -2986,7 +3057,7 @@ tr.row-rule th {
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
-  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session, SEG = MP.sevenseg;
+  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
 
   /* ---- configuration ------------------------------------------------------ */
   var BTC_REFRESH_MS = 45000;
@@ -3031,7 +3102,8 @@ tr.row-rule th {
     session: { data: null },
     history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
     analytics: null,
-    hero: { days: 1, series: null, notice: null, loading: false, cache: {} },
+    /* range charts per coin and range, keyed 'coinId:days' */
+    hero: { days: 1, notice: null, cache: {}, pending: {} },
     teardown: []
   };
 
@@ -3152,44 +3224,63 @@ tr.row-rule th {
   /* ---- the meter's reading ------------------------------------------------ */
 
   /* One dial stop -> one reading:
-   *   { digits, neg, unit, mode, change: { value, label, suffix, dp }, spark, empty }
-   * digits is already fitted to the seven-segment cells; change is either a
-   * percent (suffix '%') or a plain delta in the reading's own units. Never
-   * throws: a stop whose data has not arrived reads '----'. */
+   *   { text, unit, mode, change: { pct, abs, delta, suffix, label, dp },
+   *     spark, empty, ranges, coin }
+   * text is the value already formatted for the screen. change carries a
+   * percent and an absolute move for prices, or a plain delta in the
+   * reading's own units for the statistics. ranges is true for the coins,
+   * whose chart follows the screen's range tabs. Never throws: a stop whose
+   * data has not arrived reads a dash. */
   function noReading(unit, mode, label) {
     return {
-      digits: '----', neg: false, unit: unit, mode: mode,
-      change: { value: NaN, label: label, suffix: '', dp: 2 },
-      spark: null, empty: true
+      text: F.DASH, unit: unit, mode: mode,
+      change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: label, dp: 2 },
+      spark: null, empty: true, ranges: false, coin: null
     };
   }
 
-  var SPARK_POINTS = 120;   /* how much history the LCD chart shows */
+  var SPARK_POINTS = 120;   /* how much history the screen shows when it is not a range */
+
+  /* Prices under ten dollars need the extra decimals; everything else reads
+   * like a brokerage: two, with thousands separators. */
+  function money(v) {
+    return S.isNum(v) ? F.usd(v, Math.abs(v) < 10 ? 4 : 2) : F.DASH;
+  }
 
   function quoteReading(key, unit, mode, changeLabel) {
-    var meta = INSTRUMENTS[key], d = state.quotes[key].data;
+    var d = state.quotes[key].data;
     var price = d && S.isNum(d.price) ? d.price : NaN;
-    var f = SEG.fit(price, { dp: meta.dp });
+    var pct = d && S.isNum(d.changePct) ? d.changePct : NaN;
     var series = seriesFor(key);
     return {
-      digits: f.text, neg: f.neg, unit: unit, mode: mode,
-      change: { value: d && S.isNum(d.changePct) ? d.changePct : NaN, label: changeLabel, suffix: '%', dp: 2 },
+      text: unit === 'USD' ? money(price) : (S.isNum(price) ? F.num(price, 2) : F.DASH),
+      unit: unit, mode: mode,
+      change: {
+        pct: pct,
+        abs: S.isNum(pct) && S.isNum(price) ? price - price / (1 + pct / 100) : NaN,
+        delta: NaN, suffix: '', label: changeLabel, dp: 2
+      },
       spark: series ? S.tail(series, SPARK_POINTS) : null,
-      empty: !S.isNum(price)
+      empty: !S.isNum(price), ranges: false, coin: null
     };
   }
 
-  /* BTC follows the drawer's range pills: the chart and the change are for
-   * the selected range, the price is live spot — the same rule renderHero
-   * applies. */
-  function btcReading() {
-    var r = quoteReading('btc', 'USD', 'BTC/USD', RANGE_LABELS[state.hero.days] || '24H');
-    var series = state.hero.series;
+  /* Coins carry the screen's range tabs: the chart and the change follow the
+   * chosen range, the price stays live spot. Until the range has loaded, the
+   * 24-hour change from the quote stands in. */
+  function withRange(r, coinId) {
+    if (!coinId) return r;
+    r.ranges = true;
+    r.coin = coinId;
+    r.change.label = RANGE_LABELS[state.hero.days] || '24H';
+    var series = rangeSeries(coinId);
     if (series && series.length > 1 && series[0] > 0) {
       r.spark = series;
-      r.change.value = (series[series.length - 1] / series[0] - 1) * 100;
+      r.change.pct = (series[series.length - 1] / series[0] - 1) * 100;
+      r.change.abs = series[series.length - 1] - series[0];
     } else if (state.hero.days !== 1) {
-      r.change.value = NaN;
+      r.change.pct = NaN;
+      r.change.abs = NaN;
     }
     return r;
   }
@@ -3198,12 +3289,16 @@ tr.row-rule th {
    * mode, series } from spotlight.js, or null before the scan has run. */
   function pickReading(r, fallbackMode) {
     if (!r) return noReading('USD', fallbackMode, '1D');
-    var f = SEG.fit(r.price, { dp: S.isNum(r.price) && r.price < 10 ? 4 : 2 });
+    var pct = r.changePct;
     return {
-      digits: f.text, neg: f.neg, unit: 'USD', mode: r.mode,
-      change: { value: r.changePct, label: r.changeLabel, suffix: '%', dp: 2 },
+      text: money(r.price), unit: 'USD', mode: r.mode,
+      change: {
+        pct: pct,
+        abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
+        delta: NaN, suffix: '', label: r.changeLabel, dp: 2
+      },
       spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
-      empty: !S.isNum(r.price)
+      empty: !S.isNum(r.price), ranges: false, coin: null
     };
   }
 
@@ -3212,7 +3307,8 @@ tr.row-rule th {
   }
 
   function cryptoReading() {
-    return pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
+    var r = pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
+    return withRange(r, coinForStop('crypto'));
   }
 
   function entryValues(entries) {
@@ -3239,50 +3335,68 @@ tr.row-rule th {
     else if (stop === 'beta') { value = c90.beta; series = entryValues(a.rollBeta); dp = 2; }
     else if (stop === 'vol') { value = a.currentBtcVol; series = entryValues(a.btcVol); dp = 1; scale = 100; suffix = '%'; }
     else { value = a.btcDd.now; series = a.btcDd.series; dp = 1; scale = 100; suffix = '%'; }
-    var f = SEG.fit(S.isNum(value) ? value * scale : NaN, { dp: dp });
+    var shown = S.isNum(value) ? value * scale : NaN;
+    var text = !S.isNum(shown) ? F.DASH
+      : stop === 'corr' || stop === 'beta' ? F.ratio(shown, dp)
+      : stop === 'dd' ? F.signedPct(value, dp)
+      : F.pct(value, dp);
     return {
-      digits: f.text, neg: f.neg, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
-      change: { value: deltaBack(series, CORR_WINDOW) * scale, label: '30S', suffix: suffix, dp: dp },
+      text: text, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: '30S', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
-      empty: !S.isNum(value)
+      empty: !S.isNum(value), ranges: false, coin: null
     };
   }
 
   function reading(stop) {
     switch (stop) {
-      case 'btc': return btcReading();
-      case 'eth': return quoteReading('eth', 'USD', 'ETH/USD', '24H');
-      case 'nasdaq': return quoteReading('ixic', 'PTS', 'NASDAQ ^IXIC', '1D');
-      case 'spx': return quoteReading('spx', 'PTS', 'S&P 500 ^GSPC', '1D');
+      case 'btc': return withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc);
+      case 'eth': return withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth);
+      case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
+      case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
       case 'stock': return stockReading();
       case 'crypto': return cryptoReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
-      default:
-        return { digits: '', neg: false, unit: '', mode: '', change: { value: NaN, label: '', suffix: '', dp: 2 }, spark: null, empty: true };
+      default: return noReading('', '', '');
     }
   }
 
-  /* ---- hero (home) -------------------------------------------------------- */
+  /* ---- ranges: the screen's tabs ------------------------------------------ */
+
+  /* The coin a stop measures, when it has range tabs; null otherwise. */
+  function coinForStop(stop) {
+    if (stop === 'btc') return COINS.btc;
+    if (stop === 'eth') return COINS.eth;
+    if (stop === 'crypto') return MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    return null;
+  }
+
+  function currentStop() {
+    return MP.router && MP.router.currentView ? MP.router.currentView() : null;
+  }
+
+  function rangeKey(coinId, days) { return coinId + ':' + days; }
+
+  function rangeSeries(coinId) {
+    return (coinId && state.hero.cache[rangeKey(coinId, state.hero.days)]) || null;
+  }
+
   function seriesFor(key) {
-    if (key === 'btc' && state.hero.series) return state.hero.series;
+    if (COINS[key]) {
+      var ranged = rangeSeries(COINS[key]);
+      if (ranged) return ranged;
+    }
     var spot = state.quotes[key] && state.quotes[key].data;
     if (spot && spot.sparkline && spot.sparkline.length > 2) return spot.sparkline;
     var hist = state.history[key];
     return hist && hist.length > 2 ? S.tail(hist, 60).map(function (p) { return p.price; }) : null;
   }
 
+  /* The drawer's BTC panel: the range chart in the printed style. */
   function renderHero() {
     var spot = state.quotes.btc.data;
-    var price = el('heroPrice');
-    if (price) {
-      price.textContent = spot && S.isNum(spot.price) ? F.usd(spot.price, 0) : F.DASH;
-      price.classList.toggle('is-empty', !(spot && S.isNum(spot.price)));
-    }
-
-    /* Change is measured over the selected range, from the range's own series;
-     * the price above it is the live spot. */
-    var series = state.hero.series;
+    var series = rangeSeries(COINS.btc);
     var pct = NaN;
     if (series && series.length > 1 && series[0] > 0) {
       pct = (series[series.length - 1] / series[0] - 1) * 100;
@@ -3298,56 +3412,55 @@ tr.row-rule th {
 
     var host = el('heroChart');
     if (host) {
-      host.innerHTML = series && series.length > 1
-        ? G.sparkStep({ values: series, w: 900, h: 230, color: 'var(--c-btc)', area: true, strokeWidth: 1.8 })
+      var shown = series || seriesFor('btc');
+      host.innerHTML = shown && shown.length > 1
+        ? G.sparkStep({ values: shown, w: 900, h: 230, color: 'var(--c-btc)', area: true, strokeWidth: 1.8 })
         : '';
     }
     setHtml('heroNotice', noticeHtml(state.hero.notice || state.quotes.btc.notice));
     repaint();
   }
 
-  function loadHeroRange(days, refresh) {
-    state.hero.days = days;
-    var cached = state.hero.cache[days];
-    if (cached && !refresh) {
-      state.hero.series = cached;
-      state.hero.notice = null;
-      renderHero();
-      return;
-    }
-    if (!cached) state.hero.series = null;
-    state.hero.loading = true;
-    renderHero();
+  /* Fetches one coin's chart for one range and caches it, so switching tabs
+   * or stops back and forth is instant after the first load. */
+  function loadRange(coinId, days, refresh) {
+    if (!coinId) return Promise.resolve();
+    var key = rangeKey(coinId, days);
+    if (state.hero.cache[key] && !refresh) { renderHero(); return Promise.resolve(); }
+    if (state.hero.pending[key]) return Promise.resolve();
+    state.hero.pending[key] = true;
 
-    var spec = SRC.btcChart(days);
-    fetchJson(spec.url).then(function (payload) {
+    var spec = SRC.coinChart(coinId, days);
+    return fetchJson(spec.url).then(function (payload) {
       var parsed = spec.normalize(payload);
       if (!parsed) throw emptyError();
-      state.hero.cache[days] = parsed.prices;
-      if (state.hero.days === days) {
-        state.hero.series = parsed.prices;
-        state.hero.notice = null;
-      }
+      state.hero.cache[key] = parsed.prices;
+      state.hero.notice = null;
     }).catch(function (err) {
-      if (state.hero.days === days) state.hero.notice = liveNotice('CoinGecko', err);
+      state.hero.notice = liveNotice('CoinGecko', err);
+      throw err;
     }).then(function () {
-      state.hero.loading = false;
+      delete state.hero.pending[key];
       renderHero();
+    }, function (err) {
+      delete state.hero.pending[key];
+      renderHero();
+      throw err;
     });
   }
 
-  function wirePills() {
-    var group = el('heroPills');
-    if (!group) return;
-    group.addEventListener('click', function (ev) {
-      var btn = ev.target.closest ? ev.target.closest('.pill') : null;
-      if (!btn || !group.contains(btn)) return;
-      var days = parseInt(btn.getAttribute('data-days'), 10);
-      if (!days) return;
-      var pills = group.querySelectorAll('.pill');
-      for (var i = 0; i < pills.length; i++) pills[i].classList.toggle('is-on', pills[i] === btn);
-      loadHeroRange(days);
-    });
+  /* The screen's range tab: applies to whichever coin is on the dial. */
+  function setRange(days) {
+    if (!RANGE_LABELS[days]) return;
+    state.hero.days = days;
+    renderHero();
+    loadRange(coinForStop(currentStop()), days).catch(function () { /* shown as a notice */ });
+  }
+
+  /* Landing on a coin stop fetches its range if it is not cached yet. */
+  function ensureRange(stop) {
+    var coin = coinForStop(stop);
+    if (coin) loadRange(coin, state.hero.days).catch(function () { /* shown as a notice */ });
   }
 
   /* ---- markets ------------------------------------------------------------ */
@@ -3705,13 +3818,15 @@ tr.row-rule th {
     /* The meter subscribes to the router, so it must exist before the router
      * announces the first stop. */
     if (MP.meter) MP.meter.init();
-    if (MP.router) MP.router.start();
+    if (MP.router) {
+      MP.router.onChange(ensureRange);
+      MP.router.start();
+    }
     tickSession();
     renderHero();
     renderMarkets();
     renderAnalytics();
     if (MP.spotlight) MP.spotlight.render();
-    wirePills();
     every(renderStamp, 1000);
     every(tickSession, SESSION_TICK_MS);
 
@@ -3724,7 +3839,7 @@ tr.row-rule th {
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
     poll(loadSpotlight, DAILY_REFRESH_MS);
-    poll(function () { loadHeroRange(state.hero.days, true); }, HERO_REFRESH_MS);
+    poll(function () { return loadRange(coinForStop(currentStop()), state.hero.days, true); }, HERO_REFRESH_MS);
   }
 
   /* Stops every poll and timer. The debug bundle calls it before rendering
@@ -3745,7 +3860,9 @@ tr.row-rule th {
     renderMarkets: renderMarkets,
     renderSession: renderSession,
     reading: reading,
-    loadHeroRange: loadHeroRange,
+    setRange: setRange,
+    ensureRange: ensureRange,
+    RANGE_LABELS: RANGE_LABELS,
     INSTRUMENTS: INSTRUMENTS,
     config: {
       BTC_REFRESH_MS: BTC_REFRESH_MS,

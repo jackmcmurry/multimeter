@@ -11,7 +11,7 @@
 (function (root) {
   'use strict';
   var MP = (root.MP = root.MP || {});
-  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session, SEG = MP.sevenseg;
+  var S = MP.stats, F = MP.fmt, G = MP.geom, SRC = MP.sources, SES = MP.session;
 
   /* ---- configuration ------------------------------------------------------ */
   var BTC_REFRESH_MS = 45000;
@@ -56,7 +56,8 @@
     session: { data: null },
     history: { btc: null, ixic: null, spx: null, qqq: null, notice: null, pending: true },
     analytics: null,
-    hero: { days: 1, series: null, notice: null, loading: false, cache: {} },
+    /* range charts per coin and range, keyed 'coinId:days' */
+    hero: { days: 1, notice: null, cache: {}, pending: {} },
     teardown: []
   };
 
@@ -177,44 +178,63 @@
   /* ---- the meter's reading ------------------------------------------------ */
 
   /* One dial stop -> one reading:
-   *   { digits, neg, unit, mode, change: { value, label, suffix, dp }, spark, empty }
-   * digits is already fitted to the seven-segment cells; change is either a
-   * percent (suffix '%') or a plain delta in the reading's own units. Never
-   * throws: a stop whose data has not arrived reads '----'. */
+   *   { text, unit, mode, change: { pct, abs, delta, suffix, label, dp },
+   *     spark, empty, ranges, coin }
+   * text is the value already formatted for the screen. change carries a
+   * percent and an absolute move for prices, or a plain delta in the
+   * reading's own units for the statistics. ranges is true for the coins,
+   * whose chart follows the screen's range tabs. Never throws: a stop whose
+   * data has not arrived reads a dash. */
   function noReading(unit, mode, label) {
     return {
-      digits: '----', neg: false, unit: unit, mode: mode,
-      change: { value: NaN, label: label, suffix: '', dp: 2 },
-      spark: null, empty: true
+      text: F.DASH, unit: unit, mode: mode,
+      change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: label, dp: 2 },
+      spark: null, empty: true, ranges: false, coin: null
     };
   }
 
-  var SPARK_POINTS = 120;   /* how much history the LCD chart shows */
+  var SPARK_POINTS = 120;   /* how much history the screen shows when it is not a range */
+
+  /* Prices under ten dollars need the extra decimals; everything else reads
+   * like a brokerage: two, with thousands separators. */
+  function money(v) {
+    return S.isNum(v) ? F.usd(v, Math.abs(v) < 10 ? 4 : 2) : F.DASH;
+  }
 
   function quoteReading(key, unit, mode, changeLabel) {
-    var meta = INSTRUMENTS[key], d = state.quotes[key].data;
+    var d = state.quotes[key].data;
     var price = d && S.isNum(d.price) ? d.price : NaN;
-    var f = SEG.fit(price, { dp: meta.dp });
+    var pct = d && S.isNum(d.changePct) ? d.changePct : NaN;
     var series = seriesFor(key);
     return {
-      digits: f.text, neg: f.neg, unit: unit, mode: mode,
-      change: { value: d && S.isNum(d.changePct) ? d.changePct : NaN, label: changeLabel, suffix: '%', dp: 2 },
+      text: unit === 'USD' ? money(price) : (S.isNum(price) ? F.num(price, 2) : F.DASH),
+      unit: unit, mode: mode,
+      change: {
+        pct: pct,
+        abs: S.isNum(pct) && S.isNum(price) ? price - price / (1 + pct / 100) : NaN,
+        delta: NaN, suffix: '', label: changeLabel, dp: 2
+      },
       spark: series ? S.tail(series, SPARK_POINTS) : null,
-      empty: !S.isNum(price)
+      empty: !S.isNum(price), ranges: false, coin: null
     };
   }
 
-  /* BTC follows the drawer's range pills: the chart and the change are for
-   * the selected range, the price is live spot — the same rule renderHero
-   * applies. */
-  function btcReading() {
-    var r = quoteReading('btc', 'USD', 'BTC/USD', RANGE_LABELS[state.hero.days] || '24H');
-    var series = state.hero.series;
+  /* Coins carry the screen's range tabs: the chart and the change follow the
+   * chosen range, the price stays live spot. Until the range has loaded, the
+   * 24-hour change from the quote stands in. */
+  function withRange(r, coinId) {
+    if (!coinId) return r;
+    r.ranges = true;
+    r.coin = coinId;
+    r.change.label = RANGE_LABELS[state.hero.days] || '24H';
+    var series = rangeSeries(coinId);
     if (series && series.length > 1 && series[0] > 0) {
       r.spark = series;
-      r.change.value = (series[series.length - 1] / series[0] - 1) * 100;
+      r.change.pct = (series[series.length - 1] / series[0] - 1) * 100;
+      r.change.abs = series[series.length - 1] - series[0];
     } else if (state.hero.days !== 1) {
-      r.change.value = NaN;
+      r.change.pct = NaN;
+      r.change.abs = NaN;
     }
     return r;
   }
@@ -223,12 +243,16 @@
    * mode, series } from spotlight.js, or null before the scan has run. */
   function pickReading(r, fallbackMode) {
     if (!r) return noReading('USD', fallbackMode, '1D');
-    var f = SEG.fit(r.price, { dp: S.isNum(r.price) && r.price < 10 ? 4 : 2 });
+    var pct = r.changePct;
     return {
-      digits: f.text, neg: f.neg, unit: 'USD', mode: r.mode,
-      change: { value: r.changePct, label: r.changeLabel, suffix: '%', dp: 2 },
+      text: money(r.price), unit: 'USD', mode: r.mode,
+      change: {
+        pct: pct,
+        abs: S.isNum(pct) && S.isNum(r.price) ? r.price - r.price / (1 + pct / 100) : NaN,
+        delta: NaN, suffix: '', label: r.changeLabel, dp: 2
+      },
       spark: r.series ? S.tail(r.series, SPARK_POINTS) : null,
-      empty: !S.isNum(r.price)
+      empty: !S.isNum(r.price), ranges: false, coin: null
     };
   }
 
@@ -237,7 +261,8 @@
   }
 
   function cryptoReading() {
-    return pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
+    var r = pickReading(MP.spotlight && MP.spotlight.cryptoReading ? MP.spotlight.cryptoReading() : null, 'CRYPTO');
+    return withRange(r, coinForStop('crypto'));
   }
 
   function entryValues(entries) {
@@ -264,50 +289,68 @@
     else if (stop === 'beta') { value = c90.beta; series = entryValues(a.rollBeta); dp = 2; }
     else if (stop === 'vol') { value = a.currentBtcVol; series = entryValues(a.btcVol); dp = 1; scale = 100; suffix = '%'; }
     else { value = a.btcDd.now; series = a.btcDd.series; dp = 1; scale = 100; suffix = '%'; }
-    var f = SEG.fit(S.isNum(value) ? value * scale : NaN, { dp: dp });
+    var shown = S.isNum(value) ? value * scale : NaN;
+    var text = !S.isNum(shown) ? F.DASH
+      : stop === 'corr' || stop === 'beta' ? F.ratio(shown, dp)
+      : stop === 'dd' ? F.signedPct(value, dp)
+      : F.pct(value, dp);
     return {
-      digits: f.text, neg: f.neg, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
-      change: { value: deltaBack(series, CORR_WINDOW) * scale, label: '30S', suffix: suffix, dp: dp },
+      text: text, unit: ANALYTICS_UNIT[stop], mode: ANALYTICS_MODE[stop],
+      change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: '30S', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
-      empty: !S.isNum(value)
+      empty: !S.isNum(value), ranges: false, coin: null
     };
   }
 
   function reading(stop) {
     switch (stop) {
-      case 'btc': return btcReading();
-      case 'eth': return quoteReading('eth', 'USD', 'ETH/USD', '24H');
-      case 'nasdaq': return quoteReading('ixic', 'PTS', 'NASDAQ ^IXIC', '1D');
-      case 'spx': return quoteReading('spx', 'PTS', 'S&P 500 ^GSPC', '1D');
+      case 'btc': return withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc);
+      case 'eth': return withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth);
+      case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
+      case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
       case 'stock': return stockReading();
       case 'crypto': return cryptoReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
-      default:
-        return { digits: '', neg: false, unit: '', mode: '', change: { value: NaN, label: '', suffix: '', dp: 2 }, spark: null, empty: true };
+      default: return noReading('', '', '');
     }
   }
 
-  /* ---- hero (home) -------------------------------------------------------- */
+  /* ---- ranges: the screen's tabs ------------------------------------------ */
+
+  /* The coin a stop measures, when it has range tabs; null otherwise. */
+  function coinForStop(stop) {
+    if (stop === 'btc') return COINS.btc;
+    if (stop === 'eth') return COINS.eth;
+    if (stop === 'crypto') return MP.spotlight && MP.spotlight.cryptoId ? MP.spotlight.cryptoId() : null;
+    return null;
+  }
+
+  function currentStop() {
+    return MP.router && MP.router.currentView ? MP.router.currentView() : null;
+  }
+
+  function rangeKey(coinId, days) { return coinId + ':' + days; }
+
+  function rangeSeries(coinId) {
+    return (coinId && state.hero.cache[rangeKey(coinId, state.hero.days)]) || null;
+  }
+
   function seriesFor(key) {
-    if (key === 'btc' && state.hero.series) return state.hero.series;
+    if (COINS[key]) {
+      var ranged = rangeSeries(COINS[key]);
+      if (ranged) return ranged;
+    }
     var spot = state.quotes[key] && state.quotes[key].data;
     if (spot && spot.sparkline && spot.sparkline.length > 2) return spot.sparkline;
     var hist = state.history[key];
     return hist && hist.length > 2 ? S.tail(hist, 60).map(function (p) { return p.price; }) : null;
   }
 
+  /* The drawer's BTC panel: the range chart in the printed style. */
   function renderHero() {
     var spot = state.quotes.btc.data;
-    var price = el('heroPrice');
-    if (price) {
-      price.textContent = spot && S.isNum(spot.price) ? F.usd(spot.price, 0) : F.DASH;
-      price.classList.toggle('is-empty', !(spot && S.isNum(spot.price)));
-    }
-
-    /* Change is measured over the selected range, from the range's own series;
-     * the price above it is the live spot. */
-    var series = state.hero.series;
+    var series = rangeSeries(COINS.btc);
     var pct = NaN;
     if (series && series.length > 1 && series[0] > 0) {
       pct = (series[series.length - 1] / series[0] - 1) * 100;
@@ -323,56 +366,55 @@
 
     var host = el('heroChart');
     if (host) {
-      host.innerHTML = series && series.length > 1
-        ? G.sparkStep({ values: series, w: 900, h: 230, color: 'var(--c-btc)', area: true, strokeWidth: 1.8 })
+      var shown = series || seriesFor('btc');
+      host.innerHTML = shown && shown.length > 1
+        ? G.sparkStep({ values: shown, w: 900, h: 230, color: 'var(--c-btc)', area: true, strokeWidth: 1.8 })
         : '';
     }
     setHtml('heroNotice', noticeHtml(state.hero.notice || state.quotes.btc.notice));
     repaint();
   }
 
-  function loadHeroRange(days, refresh) {
-    state.hero.days = days;
-    var cached = state.hero.cache[days];
-    if (cached && !refresh) {
-      state.hero.series = cached;
-      state.hero.notice = null;
-      renderHero();
-      return;
-    }
-    if (!cached) state.hero.series = null;
-    state.hero.loading = true;
-    renderHero();
+  /* Fetches one coin's chart for one range and caches it, so switching tabs
+   * or stops back and forth is instant after the first load. */
+  function loadRange(coinId, days, refresh) {
+    if (!coinId) return Promise.resolve();
+    var key = rangeKey(coinId, days);
+    if (state.hero.cache[key] && !refresh) { renderHero(); return Promise.resolve(); }
+    if (state.hero.pending[key]) return Promise.resolve();
+    state.hero.pending[key] = true;
 
-    var spec = SRC.btcChart(days);
-    fetchJson(spec.url).then(function (payload) {
+    var spec = SRC.coinChart(coinId, days);
+    return fetchJson(spec.url).then(function (payload) {
       var parsed = spec.normalize(payload);
       if (!parsed) throw emptyError();
-      state.hero.cache[days] = parsed.prices;
-      if (state.hero.days === days) {
-        state.hero.series = parsed.prices;
-        state.hero.notice = null;
-      }
+      state.hero.cache[key] = parsed.prices;
+      state.hero.notice = null;
     }).catch(function (err) {
-      if (state.hero.days === days) state.hero.notice = liveNotice('CoinGecko', err);
+      state.hero.notice = liveNotice('CoinGecko', err);
+      throw err;
     }).then(function () {
-      state.hero.loading = false;
+      delete state.hero.pending[key];
       renderHero();
+    }, function (err) {
+      delete state.hero.pending[key];
+      renderHero();
+      throw err;
     });
   }
 
-  function wirePills() {
-    var group = el('heroPills');
-    if (!group) return;
-    group.addEventListener('click', function (ev) {
-      var btn = ev.target.closest ? ev.target.closest('.pill') : null;
-      if (!btn || !group.contains(btn)) return;
-      var days = parseInt(btn.getAttribute('data-days'), 10);
-      if (!days) return;
-      var pills = group.querySelectorAll('.pill');
-      for (var i = 0; i < pills.length; i++) pills[i].classList.toggle('is-on', pills[i] === btn);
-      loadHeroRange(days);
-    });
+  /* The screen's range tab: applies to whichever coin is on the dial. */
+  function setRange(days) {
+    if (!RANGE_LABELS[days]) return;
+    state.hero.days = days;
+    renderHero();
+    loadRange(coinForStop(currentStop()), days).catch(function () { /* shown as a notice */ });
+  }
+
+  /* Landing on a coin stop fetches its range if it is not cached yet. */
+  function ensureRange(stop) {
+    var coin = coinForStop(stop);
+    if (coin) loadRange(coin, state.hero.days).catch(function () { /* shown as a notice */ });
   }
 
   /* ---- markets ------------------------------------------------------------ */
@@ -730,13 +772,15 @@
     /* The meter subscribes to the router, so it must exist before the router
      * announces the first stop. */
     if (MP.meter) MP.meter.init();
-    if (MP.router) MP.router.start();
+    if (MP.router) {
+      MP.router.onChange(ensureRange);
+      MP.router.start();
+    }
     tickSession();
     renderHero();
     renderMarkets();
     renderAnalytics();
     if (MP.spotlight) MP.spotlight.render();
-    wirePills();
     every(renderStamp, 1000);
     every(tickSession, SESSION_TICK_MS);
 
@@ -749,7 +793,7 @@
     poll(loadQuotes, SNAPSHOT_REFRESH_MS);
     poll(loadHistory, DAILY_REFRESH_MS);
     poll(loadSpotlight, DAILY_REFRESH_MS);
-    poll(function () { loadHeroRange(state.hero.days, true); }, HERO_REFRESH_MS);
+    poll(function () { return loadRange(coinForStop(currentStop()), state.hero.days, true); }, HERO_REFRESH_MS);
   }
 
   /* Stops every poll and timer. The debug bundle calls it before rendering
@@ -770,7 +814,9 @@
     renderMarkets: renderMarkets,
     renderSession: renderSession,
     reading: reading,
-    loadHeroRange: loadHeroRange,
+    setRange: setRange,
+    ensureRange: ensureRange,
+    RANGE_LABELS: RANGE_LABELS,
     INSTRUMENTS: INSTRUMENTS,
     config: {
       BTC_REFRESH_MS: BTC_REFRESH_MS,

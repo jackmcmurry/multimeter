@@ -12,7 +12,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 [hidden] { display: none !important; }
 /* @inject styles.css */
@@ -38,13 +38,21 @@
             <span class="ann ann-hold" id="lcdHold">HOLD</span>
           </div>
           <div class="lcd-chart" id="lcdChart"></div>
-          <div class="lcd-main">
-            <div class="lcd-digits" id="lcdDigits"></div>
-            <span class="lcd-unit" id="lcdUnit"></span>
+          <div class="lcd-readout">
+            <div class="lcd-price-row">
+              <span class="lcd-price" id="lcdPrice"></span>
+              <span class="lcd-unit" id="lcdUnit"></span>
+            </div>
+            <div class="lcd-row lcd-foot">
+              <span class="lcd-chg" id="lcdChange"></span>
+              <span class="ann" id="lcdChangeLabel"></span>
+            </div>
           </div>
-          <div class="lcd-row lcd-foot">
-            <span class="lcd-chg" id="lcdChange"></span>
-            <span class="ann" id="lcdChangeLabel"></span>
+          <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range">
+            <button type="button" class="rng is-on" data-days="1" aria-pressed="true">24H</button>
+            <button type="button" class="rng" data-days="7" aria-pressed="false">1W</button>
+            <button type="button" class="rng" data-days="30" aria-pressed="false">1M</button>
+            <button type="button" class="rng" data-days="365" aria-pressed="false">1Y</button>
           </div>
         </div>
 
@@ -85,13 +93,7 @@
       </div>
 
       <div class="chartbox" id="heroChart"></div>
-
-      <div class="pills" id="heroPills" role="group" aria-label="Chart range">
-        <button type="button" class="pill is-on" data-days="1">24H</button>
-        <button type="button" class="pill" data-days="7">1W</button>
-        <button type="button" class="pill" data-days="30">1M</button>
-        <button type="button" class="pill" data-days="365">1Y</button>
-      </div>
+      <p class="foot">The range follows the tabs on the screen.</p>
 
       <div id="heroNotice"></div>
     </section>
@@ -176,7 +178,7 @@
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>A live market meter. Turn the dial to pick a reading (drag it, roll the wheel over it, or use the arrow keys); the tabs on the screen set the chart's range for the coins; press DATA to open the charts behind it. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
 
       <h2>Dial</h2>
       <p><b>BTC</b>, <b>ETH</b> — spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. They trade every calendar day.</p>

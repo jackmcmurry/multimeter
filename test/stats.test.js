@@ -223,27 +223,6 @@
       eq('every stop has a panel', R.VIEWS.filter(function (v) { return !R.PANELS[v]; }).length, 0);
     }
 
-    /* ---- seven-segment readout -------------------------------------------- */
-    var SEG = MP.sevenseg;
-    if (!SEG) {
-      ok('sevenseg module is loaded', false, 'MP.sevenseg missing');
-    } else {
-      eq('integer price fits as-is', SEG.fit(116432, { dp: 0 }).text, '116432');
-      eq('two decimals kept when they fit', SEG.fit(26081.724, { dp: 2 }).text, '26081.72');
-      eq('small ratio keeps its decimals', SEG.fit(0.42, { dp: 2 }).text, '0.42');
-      eq('decimals are dropped before overloading', SEG.fit(1234567.89, { dp: 2 }).text, '1234568');
-      eq('negative reading lights the sign', SEG.fit(-12.34, { dp: 1 }).neg, true);
-      eq('negative reading text is unsigned', SEG.fit(-12.34, { dp: 1 }).text, '12.3');
-      eq('rounds-to-zero is not negative', SEG.fit(-0.001, { dp: 2 }).neg, false);
-      eq('non-finite reads as dashes', SEG.fit(NaN).text, '----');
-      eq('too many digits overloads', SEG.fit(12345678, { dp: 0 }).text, 'OL');
-      eq('readout is right-aligned to seven cells', SEG.cells('42').length, 7);
-      eq('decimal point attaches to the preceding cell', SEG.cells('4.2')[5].dp, true);
-      var lit = SEG.svg('8.8', true);
-      ok('lit segments carry the on class', lit.indexOf('class="seg on"') > 0, 'no lit segment');
-      eq('every segment is always drawn', (SEG.svg('0').match(/class="seg/g) || []).length, SEG.DIGITS * 8 + 1);
-    }
-
     /* ---- dial ------------------------------------------------------------- */
     var M = MP.meter;
     if (!M) {
