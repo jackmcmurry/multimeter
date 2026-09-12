@@ -172,6 +172,7 @@
         reading.live ? 'Coinbase Exchange' : 'CoinGecko');
       series = st.history[key] || null;
       if (q && isNum(q.marketCap) && q.marketCap > 0) ctx.instrument.marketCap = q.marketCap;
+      if (q && isNum(q.volume) && q.volume > 0) ctx.instrument.volume = q.volume;
       ctx.sources = reading.live ? ['Coinbase Exchange', 'CoinGecko'] : ['CoinGecko'];
     } else if (stop === 'nasdaq' || stop === 'spx') {
       var ik = stop === 'nasdaq' ? 'ixic' : 'spx';
@@ -180,6 +181,8 @@
         symbol: stop === 'nasdaq' ? '^IXIC' : '^GSPC',
         name: stop === 'nasdaq' ? 'Nasdaq Composite' : 'S&P 500'
       };
+      var iq = st.quotes[ik].data;
+      if (iq && isNum(iq.volume) && iq.volume > 0) ctx.instrument.volume = iq.volume;
       ctx.price = priceBlock(reading.value, { basis: 'index level', source: 'Financial Modeling Prep', asOf: st.quotes[ik].stamp, live: false });
       ctx.change = changeBlock(reading.change.pct, reading.change.abs, reading.change.label, 'Financial Modeling Prep');
       series = st.history[ik] || null;

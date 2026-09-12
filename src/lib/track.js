@@ -30,7 +30,18 @@
     'range_changed',
     'watch_added',
     'feedback_opened',
-    'data_missing'
+    'data_missing',
+    /* PROBE: are students investigating, and does it send them back into the
+     * instrument? The question text is never recorded, only that one was
+     * asked. */
+    'probe_opened',
+    'probe_suggested_question_selected',
+    'probe_custom_question_submitted',
+    'probe_completed',
+    'probe_insufficient_evidence',
+    'probe_instrument_action_selected',
+    'probe_learn_selected',
+    'probe_failed'
   ];
 
   var started = Date.now();

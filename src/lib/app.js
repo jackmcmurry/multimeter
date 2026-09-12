@@ -60,9 +60,22 @@
       : null;
   }
 
+  /* A ticker the data job can publish closes for. The same test the watch
+   * list uses, so the two agree on what a stock is. */
+  function validTicker(sym) {
+    return typeof sym === 'string' && !!(MP.sources && MP.sources.stockPath(sym));
+  }
+
+  /* The subject the analytical tools measure. It is one of the built-in coin
+   * slots or a stock ticker, so that choosing NVDA and turning to VOL
+   * measures NVDA instead of silently measuring bitcoin. */
   function readStats(v) {
     var out = { coin: 'btc', index: 'ixic' };
-    if (v && STAT_COINS.indexOf(v.coin) >= 0) out.coin = v.coin;
+    if (v && typeof v.coin === 'string') {
+      if (STAT_COINS.indexOf(v.coin) >= 0) out.coin = v.coin;
+      else if (STAT_INDEXES.indexOf(v.coin) >= 0) out.coin = v.coin;   /* an index can be the subject too */
+      else if (validTicker(v.coin)) out.coin = v.coin.toUpperCase();
+    }
     if (v && STAT_INDEXES.indexOf(v.index) >= 0) out.index = v.index;
     return out;
   }
@@ -84,6 +97,8 @@
     note: { data: null, notice: null },
     /* the Nasdaq-100 from data/stocks.json, and members' closes loaded on demand */
     stocks: { list: null, rowsBy: {}, files: {}, pending: {}, notice: null },
+    /* which end of the week MOVER is showing: the rise, or the fall */
+    moverEnd: 'mover',
     /* the WATCH stop: the viewer's tickers, the one on screen, the range in sessions */
     watch: { list: MP.watch ? MP.watch.load() : [], index: 0, sessions: 21, query: '', results: [], notice: null },
     coinIdsAsked: '',
@@ -380,11 +395,38 @@
    * mover's price and 24-hour change. */
   var MOVER_TABS = [['stocks', 'STOCKS'], ['crypto', 'CRYPTO']];
 
+  /* MOVER carries both ends of the week. The dial holds one position and a
+   * soft key turns it over; the old LOSER view still resolves and forces the
+   * falling end. */
+  function moverEndFor(stop) {
+    return stop === 'loser' ? 'loser' : (state.moverEnd === 'loser' ? 'loser' : 'mover');
+  }
+
+  function moverEndLabel() {
+    return moverEndFor(currentStop()) === 'loser' ? 'MOVER' : 'LOSER';
+  }
+
+  function toggleMoverEnd() {
+    state.moverEnd = state.moverEnd === 'loser' ? 'mover' : 'loser';
+    var stop = currentStop();
+    if (stop === 'mover' || stop === 'loser') {
+      var subj = subjectForStop(stop);
+      if (subj && subj !== state.stats.coin) setStats({ coin: subj });
+    }
+    if (MP.meter) MP.meter.renderKeys();
+    repaint();
+    return state.moverEnd;
+  }
+
   function moverReading(stop) {
     var SP = MP.spotlight;
-    var r = SP && SP.reading ? SP.reading(stop) : noReading('', stop === 'loser' ? 'LOSER' : 'MOVER', '');
+    var which = moverEndFor(stop);
+    var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
     r.tabs = { kind: 'switch', label: 'Stocks or crypto', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks' };
-    var tick = r.empty ? null : freshTick(productForStop(stop));
+    r.what = (which === 'loser' ? 'LOSER: largest weekly fall.' : 'MOVER: largest weekly rise.') + ' ' + (r.chartDetail || 'Among tracked assets.');
+    if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
+      (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');
+    var tick = r.empty ? null : freshTick(productForStop(which));
     if (tick && S.isNum(tick.price)) {
       r.lead = money(tick.price);
       if (S.isNum(tick.pct24h)) {
@@ -478,24 +520,31 @@
 
   var ANALYTICS_UNIT = { corr: '', beta: '×', vol: '%', dd: '%' };
 
-  /* The screen's mode line names the pair the statistics measure. */
+  /* The dial keeps the short technical label, because that is what the
+   * instrument is. The screen spells the idea out, because a student reading
+   * the display should not have to already know that VOL means volatility. */
   function analyticsMode(stop) {
     var l = statsLabels();
-    if (stop === 'corr') return 'CORR ' + l.coin + '·' + l.indexShort + ' 90D';
-    if (stop === 'beta') return 'BETA ' + l.coin + '·' + l.indexShort + ' 90D';
-    if (stop === 'vol') return 'VOL ' + l.coin + ' 30D';
-    return 'DRAWDOWN ' + l.coin;
+    if (stop === 'corr') return 'CORRELATION · ' + l.coin + ' & ' + l.indexShort + ' · 90 SESSIONS';
+    if (stop === 'beta') return 'BETA · ' + l.coin + ' & ' + l.indexShort + ' · 90 SESSIONS';
+    if (stop === 'vol') return 'VOLATILITY · ' + l.coin + ' · 30 SESSIONS';
+    return 'DRAWDOWN · ' + l.coin;
   }
 
   function analyticsReading(stop) {
     var a = state.analytics;
-    if (!a) return noReading(ANALYTICS_UNIT[stop], analyticsMode(stop), '30S');
+    if (!a) {
+      var missing = noReading(ANALYTICS_UNIT[stop], analyticsMode(stop), '');
+      missing.chartState = 'INSUFFICIENT HISTORY';
+      missing.chartDetail = 'This tool needs dated prices for the subject and comparison. Press DATA to choose another asset, or INDEX to change the comparison.';
+      return missing;
+    }
     var c90 = a.coupling[1] || a.coupling[0];
     var value, series, dp, scale = 1, suffix = '';
     if (stop === 'corr') { value = c90.correlation; series = entryValues(a.rollCorr); dp = 2; }
     else if (stop === 'beta') { value = c90.beta; series = entryValues(a.rollBeta); dp = 2; }
-    else if (stop === 'vol') { value = a.currentCoinVol; series = entryValues(a.coinVol); dp = 1; scale = 100; suffix = '%'; }
-    else { value = a.coinDd.now; series = a.coinDd.series; dp = 1; scale = 100; suffix = '%'; }
+    else if (stop === 'vol') { value = a.currentCoinVol; series = entryValues(a.coinVol); dp = 1; scale = 100; suffix = ' pp'; }
+    else { value = a.coinDd.now; series = a.coinDd.series; dp = 1; scale = 100; suffix = ' pp'; }
     var shown = S.isNum(value) ? value * scale : NaN;
     var text = !S.isNum(shown) ? F.DASH
       : stop === 'corr' || stop === 'beta' ? F.ratio(shown, dp)
@@ -503,13 +552,121 @@
       : F.pct(value, dp);
     return {
       text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: analyticsMode(stop),
-      change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: '30S', dp: dp },
+      change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: 'VS 30 SESSIONS AGO', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
+      chartTitle: stop === 'vol' ? 'ROLLING 30-SESSION VOLATILITY' : stop === 'corr' ? 'ROLLING 90-SESSION CORRELATION' : stop === 'dd' ? 'DISTANCE BELOW THE RUNNING PEAK' : 'ROLLING BETA',
+      chartDetail: stop === 'vol' ? 'Annualized · matching trading sessions · through ' + a.windowTo : stop === 'corr' ? '−1 opposite · 0 little relationship · +1 together. Correlation is not causation.' : stop === 'dd' ? '0% is the peak. Lower points show a deeper decline.' : 'Calculated from matched returns.',
       empty: !S.isNum(value), ranges: false, coin: null
     };
   }
 
+  /* One plain sentence per stop, printed under the figure. It answers the
+   * first question a student has, which is not "what is the number" but
+   * "what am I looking at". A function where it has to name the instrument. */
+  var WHAT_LINES = {
+    btc: 'What one bitcoin costs in US dollars, and how much that has moved.',
+    eth: 'What one unit of ether costs in US dollars, and how much that has moved.',
+    nasdaq: 'One number tracking about 3,000 listed companies, heavily technology.',
+    spx: 'One number tracking 500 large US companies, the usual stand-in for "the market".',
+    mover: 'The biggest one-week gain among the things this instrument can price.',
+    loser: 'The biggest one-week fall among the things this instrument can price.',
+    watch: 'Something you are watching, at the price it last closed at.',
+    probe: 'A coin you picked, measured like the others.',
+    corr: function (L) { return 'Whether ' + L.coin + ' and the ' + L.indexName + ' tend to move on the same days.'; },
+    vol: function (L) { return 'How much ' + L.coin + '’s returns have been moving around.'; },
+    dd: function (L) { return 'How far ' + L.coin + ' sits below its own highest point.'; }
+  };
+
+  /* ---- the SUBJECT position -----------------------------------------------
+   * One detent covers every market. It reads whatever the active subject is,
+   * by handing off to the reading that instrument already had, so nothing
+   * about how a coin, an index or a stock is priced changes here. */
+  function subjectReading() {
+    var key = state.stats.coin;
+    if (key === 'eth') return reading('eth');
+    if (key === 'probe') return probeReading();
+    if (key === 'crypto') return moverReading('mover');
+    if (INDEX_META[key]) {
+      return quoteReading(key, 'INDEX', INDEX_META[key].name.toUpperCase(), '1D');
+    }
+    if (validTicker(key)) {
+      /* stocks are read through the watch list, which already holds their
+       * closes; point it at the subject before reading */
+      var w = state.watch, at = w.list.indexOf(key);
+      if (at >= 0) w.index = at;
+      else return stockSubjectReading(key);
+      return watchReading();
+    }
+    return reading('btc');
+  }
+
+  /* A stock that is the subject but not on the watch list. */
+  function stockSubjectReading(sym) {
+    var r = noReading('CLOSE', sym, '1M');
+    r.change.usd = true;
+    r.ticker = sym;
+    r.symbol = sym;
+    var series = stockSeries(sym), row = stockRow(sym);
+    var last = series ? series[series.length - 1] : row && S.isNum(row.close) ? { date: row.date, price: row.close } : null;
+    if (!last) {
+      r.hint = state.stocks.list && !row ? sym + ' is not in the current list' : 'Loading ' + sym;
+      return r;
+    }
+    r.dp = Math.abs(last.price) < 10 ? 4 : 2;
+    r.text = money(last.price);
+    r.value = last.price;
+    r.empty = false;
+    r.mode = sym + (last.date ? ' · ' + F.shortDate(last.date) : '');
+    if (series && series.length > 1) {
+      var slice = S.tail(series, 22), first = slice[0].price;
+      r.spark = slice.map(function (p) { return p.price; });
+      if (first > 0) {
+        r.change.pct = (last.price / first - 1) * 100;
+        r.change.abs = last.price - first;
+        r.change.dp = r.dp;
+      }
+    }
+    return r;
+  }
+
+  /* The dial's SUBJECT position wears the subject's ticker, and the drawer
+   * opens the panel that suits what it is pointing at. */
+  function syncSubjectPosition() {
+    var key = state.stats.coin;
+    var label = statsCoinSymbol(key) || 'BTC';
+    if (MP.meter && MP.meter.setStopLabel) MP.meter.setStopLabel('subject', label);
+    var panel = INDEX_META[key] ? 'markets' : validTicker(key) ? 'watch' : 'hero';
+    if (MP.router && MP.router.setPanel) MP.router.setPanel('subject', panel);
+    return label;
+  }
+
+  /* Which underlying view the subject position is standing in for. */
+  function subjectView() {
+    var key = state.stats.coin;
+    if (key === 'eth') return 'eth';
+    if (key === 'probe') return 'probe';
+    if (key === 'crypto') return 'mover';
+    if (INDEX_META[key]) return key === 'ixic' ? 'nasdaq' : 'spx';
+    if (validTicker(key)) return 'watch';
+    return 'btc';
+  }
+
+  function whatLine(stop) {
+    /* SUBJECT says whatever the market it is pointing at would say */
+    if (stop === 'subject') return whatLine(subjectView());
+    if (stop === 'mover') stop = moverEndFor(stop);
+    var w = WHAT_LINES[stop];
+    if (typeof w === 'function') { try { return w(statsLabels()); } catch (e) { return ''; } }
+    return w || '';
+  }
+
   function reading(stop) {
+    var r = readingFor(stop);
+    if (r && !r.what) r.what = whatLine(stop);
+    return r;
+  }
+
+  function readingFor(stop) {
     switch (stop) {
       case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), 'btc'), stop);
       case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), 'eth'), stop);
@@ -518,8 +675,9 @@
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
       case 'mover': case 'loser': return moverReading(stop);
       case 'watch': return watchReading();
+      case 'subject': return subjectReading();
       case 'probe': return probeReading();
-      case 'note': return noteReading();
+      case 'learn': return learnReading();
       case 'corr': case 'beta': case 'vol': case 'dd': return analyticsReading(stop);
       default: return noReading('', '', '');
     }
@@ -779,11 +937,14 @@
     setText('quoteStamp', S.isNum(ts) ? F.ago(ts) : '—');
   }
 
+  /* The coins one call covers: the dial's own, plus the whole crypto
+   * universe, so MOVER and LOSER can be ranked here even before the weekly
+   * scan has ever run. */
   function coinIds() {
     var ids = coinKeys().map(liveCoinId);
-    (MP.spotlight && MP.spotlight.cryptoIds ? MP.spotlight.cryptoIds() : []).forEach(function (id) {
-      if (id && ids.indexOf(id) < 0) ids.push(id);
-    });
+    function push(id) { if (id && ids.indexOf(id) < 0) ids.push(id); }
+    (MP.spotlight ? MP.spotlight.CRYPTO_UNIVERSE : []).forEach(function (c) { push(c.id); });
+    (MP.spotlight && MP.spotlight.cryptoIds ? MP.spotlight.cryptoIds() : []).forEach(push);
     return ids;
   }
 
@@ -806,7 +967,9 @@
       });
       if (MP.spotlight && MP.spotlight.setCoinQuotes) {
         var picked = {};
-        MP.spotlight.cryptoIds().forEach(function (id) { if (coins[id]) picked[id] = coins[id]; });
+        function keep(id) { if (id && coins[id]) picked[id] = coins[id]; }
+        MP.spotlight.CRYPTO_UNIVERSE.forEach(function (c) { keep(c.id); });
+        MP.spotlight.cryptoIds().forEach(keep);
         MP.spotlight.setCoinQuotes(picked);
       }
     }).catch(function (err) {
@@ -846,16 +1009,18 @@
   }
 
   /* ---- session ------------------------------------------------------------ */
+  /* One lamp and one word. This reports the US session; it is not a switch,
+   * so nothing here is clickable and the caption says "status". */
   function renderSession() {
     var d = state.session.data;
-    /* two square lamps: ON while the US market is open, OFF otherwise */
     var open = d && d.equityStatus === 'open';
-    var lampOn = el('lampOn'), lampOff = el('lampOff');
-    if (lampOn) lampOn.classList.toggle('is-lit', !!open);
-    if (lampOff) lampOff.classList.toggle('is-lit', !!(d && !open));
-    var lamps = document.querySelector('.jacks');
-    if (lamps) lamps.setAttribute('aria-label', d ? (open ? 'US market open' : 'US market closed') : 'US market status unknown');
-    /* the caption stays put; the lit lamp says which it is */
+    var lamp = el('marketLamp'), word = el('marketWord'), host = el('marketStatus');
+    if (lamp) {
+      lamp.classList.toggle('is-open', !!open);
+      lamp.classList.toggle('is-closed', !!(d && !open));
+    }
+    if (word) word.textContent = !d ? F.DASH : open ? 'OPEN' : 'CLOSED';
+    if (host) host.setAttribute('aria-label', 'Market status: ' + (d ? (open ? 'open' : 'closed') : 'unknown'));
   }
 
   function tickSession() {
@@ -887,6 +1052,8 @@
     if (coinKey === 'eth') return 'ETH';
     if (coinKey === 'crypto') { var cm = cryptoMover(); return cm ? cm.symbol : null; }
     if (coinKey === 'probe') return state.probe ? state.probe.symbol : null;
+    if (INDEX_META[coinKey]) return INDEX_META[coinKey].short;
+    if (validTicker(coinKey)) return coinKey;
     return null;
   }
 
@@ -909,6 +1076,10 @@
 
   function coinHistory(coinKey) {
     if (coinKey === 'btc') return state.history.btc;
+    /* an index subject measures on its own published daily closes */
+    if (INDEX_META[coinKey]) return state.history[coinKey] || null;
+    /* a stock subject measures on the closes the data job publishes for it */
+    if (validTicker(coinKey)) return stockSeries(coinKey);
     var id = statsCoinId(coinKey);
     var entry = id ? rangeEntry(id, 365) : null;
     if (!entry) return null;
@@ -922,6 +1093,7 @@
   function ensureCoinHistory() {
     var coinKey = state.stats.coin;
     if (coinKey === 'btc') return;
+    if (validTicker(coinKey)) { ensureStock(coinKey); return; }
     var id = statsCoinId(coinKey);
     if (id && !rangeEntry(id, 365)) loadRange(id, 365).catch(function () { /* shown as a notice */ });
   }
@@ -933,6 +1105,15 @@
 
   function computeAnalytics() {
     var labels = statsLabels();
+    /* An index measured against itself would correlate 1.00 and teach
+     * nothing, so the comparison moves to the other index instead. */
+    if (state.stats.coin === labels.indexKey) {
+      var other = labels.indexKey === 'ixic' ? 'spx' : 'ixic';
+      labels = Object.assign({}, labels, {
+        indexKey: other, index: INDEX_META[other].code,
+        indexShort: INDEX_META[other].short, indexName: INDEX_META[other].name
+      });
+    }
     return analyticsFor(coinHistory(state.stats.coin), state.history[labels.indexKey], state.history.qqq, labels);
   }
 
@@ -992,6 +1173,24 @@
     };
   }
 
+  /* Which subject a dial position is showing, or null for a position that is
+   * a tool rather than an instrument. */
+  function subjectForStop(view) {
+    if (view === 'subject') return null;                 /* it already is the subject */
+    if (view === 'btc' || view === 'eth' || view === 'probe') return view;
+    if (view === 'nasdaq') return 'ixic';
+    if (view === 'spx') return 'spx';
+    if (view === 'watch') return watchSymbol();
+    /* The week's mover is an instrument in its own right: landing on it makes
+     * it the subject, so VOL, DD and PROBE investigate the name on screen. */
+    if (view === 'mover' || view === 'loser') {
+      if (MP.spotlight && MP.spotlight.kind() === 'crypto') return 'crypto';
+      var mr = MP.spotlight && MP.spotlight.reading ? MP.spotlight.reading(moverEndFor(view)) : null;
+      return mr && mr.symbol && validTicker(mr.symbol) ? mr.symbol : null;
+    }
+    return null;
+  }
+
   /* The pair selector printed at the top of the three statistics panels. */
   function renderStatsPicker() {
     var hosts = document.querySelectorAll('.stats-picker');
@@ -1002,6 +1201,12 @@
       return '<button type="button" class="pill' + (state.stats.coin === key ? ' is-on' : '') + '" data-stat-coin="' + key + '"' +
         (sym ? '' : ' disabled') + '>' + F.escapeHtml(label) + '</button>';
     }).join('');
+    /* a stock subject is not one of the fixed slots, so it gets its own pill
+     * and the picker shows what is actually being measured */
+    if (validTicker(state.stats.coin)) {
+      coinPills += '<button type="button" class="pill is-on" data-stat-coin="' + F.escapeHtml(state.stats.coin) + '">' +
+        F.escapeHtml(state.stats.coin) + '</button>';
+    }
     var indexPills = STAT_INDEXES.map(function (key) {
       return '<button type="button" class="pill' + (state.stats.index === key ? ' is-on' : '') + '" data-stat-index="' + key + '">' +
         F.escapeHtml(INDEX_META[key].name) + '</button>';
@@ -1011,6 +1216,7 @@
       var L = statsLabels(), id = statsCoinId(L.coinKey);
       var coinLeg = coinHistory(L.coinKey), indexLeg = state.history[L.indexKey];
       if (!indexLeg && !state.history.pending) status = L.index + ' daily history appears after the first scheduled update.';
+      else if (validTicker(L.coinKey) && !coinLeg) status = L.coin + ' daily closes appear once the data job publishes them.';
       else if (L.coinKey !== 'btc' && id && !rangeEntry(id, 365)) status = 'Loading ' + L.coin + ' daily history…';
       else if (L.coinKey === 'btc' && !coinLeg && !state.history.pending) status = 'BTC daily history appears after the first scheduled update.';
       else if (coinLeg && indexLeg) status = 'Not enough overlapping sessions yet.';
@@ -1024,6 +1230,7 @@
   function setStats(patch) {
     state.stats = readStats(Object.assign({}, state.stats, patch || {}));
     if (MP.store) MP.store.set('stats', state.stats);
+    syncSubjectPosition();
     ensureCoinHistory();
     recomputeAnalytics();
     renderStatsPicker();
@@ -1150,14 +1357,32 @@
 
   /* [label, value, class, concept]: the fourth entry puts a question mark
    * beside the label that opens the explanation of what the figure means. */
+  /* [label, value, valueClass, conceptId, rawValue]. Where a concept has
+   * bands and the raw figure is known, the word for it prints under the
+   * figure, so a number arrives with a reading of its size. */
   function strip(items) {
     return items.map(function (it) {
-      var ask = it[3] && MP.concepts && MP.concepts.get(it[3])
-        ? '<button type="button" class="ask" data-concept="' + F.escapeHtml(it[3]) + '" aria-label="What ' + F.escapeHtml(MP.concepts.get(it[3]).term) + ' means">?</button>'
+      var c = it[3] && MP.concepts ? MP.concepts.get(it[3]) : null;
+      var ask = c
+        ? '<button type="button" class="ask" data-concept="' + F.escapeHtml(it[3]) + '" aria-label="What ' + F.escapeHtml(c.name) + ' means">?</button>'
         : '';
+      var b = c && it.length > 4 ? MP.concepts.band(it[3], it[4]) : null;
       return '<div><div class="stat-label">' + F.escapeHtml(it[0]) + ask + '</div>' +
-        '<div class="stat-value' + (it[2] ? ' ' + it[2] : '') + '">' + F.escapeHtml(it[1]) + '</div></div>';
+        '<div class="stat-value' + (it[2] ? ' ' + it[2] : '') + '">' + F.escapeHtml(it[1]) + '</div>' +
+        (b ? '<div class="stat-band is-' + b.tone + '">' + F.escapeHtml(b.label) + '</div>' : '') + '</div>';
     }).join('');
+  }
+
+  /* The peak a fall began from and the low it reached, as indices into the
+   * drawdown series, so the chart can show the drawdown happening. */
+  function ddMarks(dd, episodes) {
+    var deepest = (episodes || []).slice().sort(function (p, q) { return p.depth - q.depth; })[0];
+    if (!deepest || !dd || !dd.dates) return [];
+    var marks = [];
+    var pi = dd.dates.indexOf(deepest.peakDate), ti = dd.dates.indexOf(deepest.troughDate);
+    if (pi >= 0) marks.push({ index: pi, value: 0, label: 'peak ' + F.shortDate(deepest.peakDate) });
+    if (ti >= 0) marks.push({ index: ti, value: dd.series[ti], label: F.signedPct(deepest.depth, 0) });
+    return marks;
   }
 
   function datesForRolling(entries, dates, count) {
@@ -1187,9 +1412,9 @@
     /* coupling */
     var c90 = a.coupling[1] || a.coupling[0];
     setHtml('couplingStrip', strip([
-      ['Corr 90d', F.ratio(c90.correlation, 2), '', 'correlation'],
-      ['Beta 90d', F.ratio(c90.beta, 2), '', 'beta'],
-      ['R² 90d', F.ratio(c90.r2, 2), '', 'r2']
+      ['Corr 90d', F.ratio(c90.correlation, 2), '', 'correlation', c90.correlation],
+      ['Beta 90d', F.ratio(c90.beta, 2), '', 'beta', c90.beta],
+      ['R² 90d', F.ratio(c90.r2, 2), '', 'r2', c90.r2]
     ]));
 
     var rows = a.coupling.map(function (c) {
@@ -1230,8 +1455,8 @@
     var volRatio = S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol) && a.currentIndexVol
       ? a.currentCoinVol / a.currentIndexVol : NaN;
     setHtml('volStrip', strip([
-      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0), '', 'volatility'],
-      [L.index + ' 30d', F.pct(a.currentIndexVol, 0), '', 'volatility'],
+      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0), '', 'volatility', a.currentCoinVol],
+      [L.index + ' 30d', F.pct(a.currentIndexVol, 0), '', 'volatility', a.currentIndexVol],
       ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
     ]));
     setHtml('chartVol', G.columnChart({
@@ -1246,16 +1471,18 @@
 
     /* drawdown */
     setHtml('ddStrip', strip([
-      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg', 'drawdown'],
-      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg', 'drawdown'],
+      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg', 'drawdown', a.coinDd.now],
+      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg', 'drawdown', a.coinDd.max],
       [L.index + ' worst', F.signedPct(a.indexDd.max, 1), 'neg']
     ]));
     setHtml('chartDdBtc', G.underwaterChart({
       values: a.coinDd.series, w: 900, h: 150, color: 'var(--c-btc)',
+      marks: ddMarks(a.coinDd, a.coinEpisodes),
       xLabels: a.coinDd.dates.map(F.shortDate)
     }));
     setHtml('chartDdIxic', G.underwaterChart({
       values: a.indexDd.series, w: 900, h: 150, color: 'var(--c-idx)',
+      marks: ddMarks(a.indexDd, a.indexEpisodes),
       xLabels: a.indexDd.dates.map(F.shortDate)
     }));
 
@@ -1346,10 +1573,12 @@
       throw err;
     }).then(function () {
       renderWatch();
+      if (MP.meter && MP.meter.screen() === 'search') runSearch(find.query);
       if (MP.spotlight) MP.spotlight.render();
       repaint();
     }, function (err) {
       renderWatch();
+      if (MP.meter && MP.meter.screen() === 'search') renderSearchResults();
       throw err;
     });
   }
@@ -1366,14 +1595,16 @@
     st.pending[sym] = true;
     fetchJson(snapshotUrl(path)).then(function (payload) {
       var f = SRC.normalizeStockFile(payload);
-      if (!f) throw emptyError();
+      if (!f || f.symbol !== sym) throw emptyError();
       st.files[sym] = { series: f.series, name: f.name, session: session };
     }).catch(function () {
       if (have) have.session = session;
       else st.files[sym] = { series: null, name: null, session: session };
     }).then(function () {
       delete st.pending[sym];
+      if (state.stats.coin === sym) recomputeAnalytics();
       renderWatch();
+      if (MP.meter && MP.meter.screen() === 'search') runSearch(find.query);
       if (MP.spotlight) MP.spotlight.render();
       repaint();
     });
@@ -1412,6 +1643,11 @@
       if (MP.spotlight) MP.spotlight.render();
     }
     if (view === 'watch') ensureStock(watchSymbol());
+    /* The subject follows the dial. Landing on an instrument makes it the
+     * thing VOL, CORR and DD measure, so an investigation survives a turn of
+     * the knob instead of resetting to bitcoin. */
+    var subj = subjectForStop(view);
+    if (subj && subj !== state.stats.coin) setStats({ coin: subj });
     setStopNote(view);
     hideConcept();
     refreshContext(true);
@@ -1437,7 +1673,9 @@
     corr: 'Whether two things move together, and how strongly. Correlation near 1 is in step, near 0 is unrelated.',
     vol: 'How violently the price has been moving lately, next to the index, so you can tell calm from turbulent.',
     dd: 'How far below its own peak the asset sits, which is what a buyer at the top would still be down.',
-    note: 'Three plain sentences about the session, written from the figures below and checked before publishing.'
+    subject: 'The market you are looking at. Press DATA to point it at something else.',
+    investigate: 'Investigate what you were just looking at: what the figures show, what they could mean, and what they cannot tell you.',
+    learn: 'The idea behind the figure you were just looking at, explained with that figure, and the session in three plain sentences.'
   };
 
   function setStopNote(stop) {
@@ -1474,6 +1712,8 @@
     var line = unusualLine(ctx);
     setText('heroUnusual', currentStop() === 'btc' ? line : '');
     setText('volUnusual', currentStop() === 'vol' ? line : '');
+    /* a figure on the learn screen follows the data that produced it */
+    if (MP.meter && MP.meter.screen && MP.meter.screen() === 'learn') renderLearn();
   }
 
   /* The explainer bar: a question mark beside a figure opens it, and it
@@ -1484,15 +1724,638 @@
     if (!bar || !c) return;
     bar.hidden = false;
     bar.innerHTML = '<button type="button" class="pill close" data-concept-close="1">Close</button>' +
-      '<h3>' + F.escapeHtml(c.term) + '</h3>' +
-      '<p>' + F.escapeHtml(c.what) + '</p>' +
-      '<p class="here">' + F.escapeHtml(c.here) + '</p>';
+      '<h3>' + F.escapeHtml(c.name) + '</h3>' +
+      '<p>' + F.escapeHtml(c.beginner) + '</p>' +
+      '<p>' + F.escapeHtml(c.read) + '</p>' +
+      '<p class="here">' + F.escapeHtml(c.advanced) + '</p>' +
+      '<div class="learn-acts"><button type="button" class="lcd-act" data-learn-open="' + F.escapeHtml(c.id) +
+      '">See this on the screen →</button></div>';
     if (MP.track) MP.track.event('concept_opened', id);
   }
 
   function hideConcept() {
     var bar = el('conceptBar');
     if (bar) { bar.hidden = true; bar.innerHTML = ''; }
+  }
+
+  /* ---- LEARN --------------------------------------------------------------- */
+  /* Education attached to the measurement, not to a chapter. LEARN explains
+   * the idea behind the figure already on the screen, using that figure, and
+   * ends in a way back into the instrument. */
+  var learnTopic = null;
+
+  /* The learn stop has no reading of its own, so it explains the stop before
+   * it. Everywhere else, the stop under the dial. */
+  function learnStop() {
+    var s = currentStop();
+    if (s !== 'learn') return s;
+    var back = MP.meter && MP.meter.lastStop ? MP.meter.lastStop() : null;
+    return back && back !== 'learn' ? back : 'btc';
+  }
+
+  /* The figure a concept is about, printed as the screen prints it, with the
+   * raw value so the bands can judge it. Null where the page cannot measure
+   * it, which is never filled in with a guess. */
+  function learnMeasure(id, stop) {
+    var a = state.analytics, L = statsLabels();
+    var c90 = a && a.coupling ? (a.coupling[1] || a.coupling[0]) : null;
+    if (id === 'volatility') {
+      return a && S.isNum(a.currentCoinVol)
+        ? { text: F.pct(a.currentCoinVol, 1), raw: a.currentCoinVol, of: L.coin + ', 30 sessions' } : null;
+    }
+    if (id === 'correlation') {
+      return c90 && S.isNum(c90.correlation)
+        ? { text: F.ratio(c90.correlation, 2), raw: c90.correlation, of: L.coin + ' and the ' + L.indexName + ', 90 days' } : null;
+    }
+    if (id === 'beta') {
+      return c90 && S.isNum(c90.beta) ? { text: F.ratio(c90.beta, 2), raw: c90.beta, of: L.coin + ' on ' + L.index } : null;
+    }
+    if (id === 'r2') {
+      return c90 && S.isNum(c90.r2) ? { text: F.ratio(c90.r2, 2), raw: c90.r2, of: L.coin + ' and ' + L.index } : null;
+    }
+    if (id === 'drawdown') {
+      return a && a.coinDd && S.isNum(a.coinDd.now)
+        ? { text: F.signedPct(a.coinDd.now, 1), raw: a.coinDd.now, of: L.coin + ' below its peak' } : null;
+    }
+    var ctx = currentContext();
+    if (id === 'unusual') {
+      var m = ctx && ctx.statistics ? ctx.statistics.move : null;
+      return m && S.isNum(m.percentile)
+        ? { text: Math.round(m.percentile * 100) + '%', raw: m.percentile, of: 'of the last ' + m.comparedWith + ' daily moves' } : null;
+    }
+    if (id === 'marketcap') {
+      var cap = ctx && ctx.instrument ? ctx.instrument.marketCap : NaN;
+      return S.isNum(cap) && cap > 0 ? { text: F.compact(cap), raw: cap, of: ctx.instrument.symbol || '' } : null;
+    }
+    if (id === 'volume') {
+      var vol = ctx && ctx.instrument ? ctx.instrument.volume : NaN;
+      return S.isNum(vol) && vol > 0 ? { text: F.compact(vol), raw: vol, of: 'over 24 hours' } : null;
+    }
+    /* returns: the move the screen is showing, which carries no band of its
+     * own on purpose */
+    var r = reading(stop);
+    if (r && r.change && S.isNum(r.change.pct)) {
+      return { text: F.signedPctPoints(r.change.pct, 2), raw: NaN, of: (r.symbol || r.ticker || '') + ' ' + (r.change.label || '') };
+    }
+    return null;
+  }
+
+  var BAND_NOTE = 'LOW, MODERATE and the rest are rules of thumb this instrument uses so a figure has somewhere to stand. They are conventions, not facts about markets.';
+
+  var learnDeep = false;     /* level three, on request */
+  var learnCmpOn = false;    /* the comparison, on request */
+
+  /* The questions a student would actually ask next. Each carries where the
+   * answer lives, so an explanation never ends in a full stop. */
+  function learnQuestionHtml(qs) {
+    return (qs || []).map(function (q) {
+      var attr = q.concept ? ' data-learn-concept="' + F.escapeHtml(q.concept) + '"'
+        : q.stop ? ' data-learn-stop="' + F.escapeHtml(q.stop) + '"'
+        : ' data-learn-action="' + F.escapeHtml(q.action || '') + '"';
+      return '<button type="button" class="lcd-act"' + attr + '>' + F.escapeHtml(q.q) + ' →</button>';
+    }).join('');
+  }
+
+  /* A figure alone means nothing to a beginner. Only two comparisons here are
+   * financially sound: an asset's volatility against the index's, and its
+   * fall from peak against the index's. Anything else would be a number
+   * trick rather than a lesson. */
+  function learnCompare(id) {
+    var a = state.analytics;
+    if (!a) return null;
+    var L = statsLabels();
+    /* the index goes by its name here, not its ticker: a beginner reading
+     * "^GSPC" has learned nothing */
+    if (id === 'volatility' && S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol)) {
+      return {
+        mine: a.currentCoinVol, theirs: a.currentIndexVol, me: L.coin, them: L.indexName,
+        mineText: F.pct(a.currentCoinVol, 1), theirsText: F.pct(a.currentIndexVol, 1)
+      };
+    }
+    if (id === 'drawdown' && a.coinDd && a.indexDd && S.isNum(a.coinDd.now) && S.isNum(a.indexDd.now)) {
+      return {
+        mine: a.coinDd.now, theirs: a.indexDd.now, me: L.coin, them: L.indexName,
+        mineText: F.signedPct(a.coinDd.now, 1), theirsText: F.signedPct(a.indexDd.now, 1)
+      };
+    }
+    return null;
+  }
+
+  /* Level two: the measurement said back as a statement about this asset,
+   * built only from figures the page holds. */
+  function learnSentence(id, m, b, cmp) {
+    if (id === 'volatility' && cmp) {
+      var more = cmp.mine > cmp.theirs;
+      var times = cmp.theirs > 0 ? cmp.mine / cmp.theirs : NaN;
+      return cmp.me + '’s returns have moved around ' + (more ? 'more' : 'less') + ' than ' + cmp.them +
+        '’s over this period' + (S.isNum(times) && times >= 1.2 ? ', about ' + times.toFixed(1) + ' times as much' : '') + '.';
+    }
+    if (id === 'drawdown' && cmp) {
+      return cmp.me + ' sits ' + cmp.mineText + ' below its own peak, against ' + cmp.theirsText + ' for ' + cmp.them + '.';
+    }
+    if (id === 'correlation' && m && S.isNum(m.raw)) {
+      return m.raw > 0.2 ? 'These two have tended to rise and fall on the same days.'
+        : m.raw < -0.2 ? 'These two have tended to move in opposite directions.'
+        : 'Their daily moves have had little to do with each other.';
+    }
+    if (id === 'unusual' && m && S.isNum(m.raw)) {
+      return 'That move was bigger than ' + Math.round(m.raw * 100) + '% of its recent days.';
+    }
+    if (b && m) return 'On this instrument’s scale that counts as ' + b.label.toLowerCase() + '.';
+    return '';
+  }
+
+  /* A scale a student can point at, so the range is understood before the
+   * number is read. */
+  function correlationScale(v) {
+    if (!S.isNum(v)) return '';
+    var x = ((Math.max(-1, Math.min(1, v)) + 1) / 2) * 100;
+    return '<div class="cscale"><div class="cscale-bar"><i style="left:' + x.toFixed(1) + '%"></i></div>' +
+      '<div class="cscale-ends"><span>−1 opposite</span><span>0 unrelated</span><span>+1 together</span></div></div>';
+  }
+
+  /* Two bars, same scale: the whole point of a comparison is seeing one
+   * against the other rather than reading two numbers. */
+  function compareBars(cmp) {
+    if (!cmp) return '';
+    var max = Math.max(Math.abs(cmp.mine), Math.abs(cmp.theirs)) || 1;
+    function row(label, val, text) {
+      var w = Math.max(3, Math.round(Math.abs(val) / max * 100));
+      return '<div class="cbar"><span class="cbar-l">' + F.escapeHtml(label) + '</span>' +
+        '<span class="cbar-t"><i style="width:' + w + '%"></i></span>' +
+        '<span class="cbar-v">' + F.escapeHtml(text) + '</span></div>';
+    }
+    return '<div class="cbars">' + row(cmp.me, cmp.mine, cmp.mineText) +
+      row(cmp.them, cmp.theirs, cmp.theirsText) + '</div>';
+  }
+
+  /* Where a return came from: the two prices and the percent between them. */
+  function returnVisual(stop) {
+    var r = reading(stop);
+    if (!r || !r.change || !S.isNum(r.change.pct) || !S.isNum(r.value)) return '';
+    var end = r.value, pct = r.change.pct;
+    var start = pct === -100 ? NaN : end / (1 + pct / 100);
+    if (!S.isNum(start)) return '';
+    return '<div class="rvis"><span><b>' + F.escapeHtml(money(start)) + '</b>start</span>' +
+      '<span class="rvis-arrow">→</span><span><b>' + F.escapeHtml(money(end)) + '</b>now</span>' +
+      '<span class="rvis-pct"><b>' + F.escapeHtml(F.signedPctPoints(pct, 2)) + '</b>' +
+      F.escapeHtml(r.change.label || '') + '</span></div>';
+  }
+
+  /* A personal map of what the student has met, not a score. */
+  var EXPLORED_KEY = 'explored';
+
+  function markExplored(id) {
+    if (!MP.store || !id) return [];
+    var list = MP.store.get(EXPLORED_KEY, []);
+    if (!Array.isArray(list)) list = [];
+    if (list.indexOf(id) < 0) list.push(id);
+    list = list.slice(0, 40);
+    MP.store.set(EXPLORED_KEY, list);
+    return list;
+  }
+
+  function explored() {
+    var list = MP.store ? MP.store.get(EXPLORED_KEY, []) : [];
+    return Array.isArray(list) ? list.filter(function (id) { return !!(MP.concepts && MP.concepts.get(id)); }) : [];
+  }
+
+  /* The screen holds one layer at a time. Level one is the term, the live
+   * figure, the word for its size and one plain sentence. Level two says
+   * what that means for this asset. DEEPER swaps in level three. The
+   * comparison and the long form wait until they are asked for, so a
+   * beginner is never dropped into a textbook. */
+  function renderLearn() {
+    var c = MP.concepts ? MP.concepts.get(learnTopic) : null;
+    if (!c) return;
+    var stop = learnStop();
+    var m = learnMeasure(c.id, stop);
+    var b = m && S.isNum(m.raw) ? MP.concepts.band(c.id, m.raw) : null;
+    var cmp = learnCompare(c.id);
+
+    setText('lcdLearnTerm', c.name.toUpperCase());
+    setText('lcdLearnMeta', m && m.of ? m.of : '');
+    setText('lcdLearnValue', m ? m.text : F.DASH);
+    var bandEl = el('lcdLearnBand');
+    if (bandEl) {
+      bandEl.textContent = b ? b.label : '';
+      bandEl.className = 'lcd-learn-band' + (b ? ' is-' + b.tone : '');
+    }
+
+    setText('lcdLearnShort', c.beginner);
+    var said = learnSentence(c.id, m, b, cmp);
+    setText('lcdLearnRead', learnDeep ? c.advanced : (said || c.read));
+
+    /* show before explain, where showing teaches something */
+    var visual = '';
+    if (learnCmpOn && cmp) visual = compareBars(cmp);
+    else if (c.visual === 'scale') visual = correlationScale(m ? m.raw : NaN);
+    else if (c.visual === 'return') visual = returnVisual(stop);
+    setHtml('lcdLearnVisual', visual);
+
+    /* the questions, plus the one the keypad owns */
+    var qs = c.explorations.filter(function (q) {
+      return q.action !== 'compare' || !!cmp;
+    });
+    setHtml('lcdLearnActs', learnQuestionHtml(qs));
+
+    var deeper = keyOf('deeper');
+    if (deeper) {
+      deeper.textContent = learnDeep ? 'SIMPLER' : 'DEEPER';
+      deeper.classList.toggle('is-on', learnDeep);
+    }
+    renderLearnCard(c, m, b, cmp, said);
+  }
+
+  function keyOf(act) { return document.querySelector('.keys .key[data-act="' + act + '"]'); }
+
+  /* Level three, and back again. */
+  function learnDeeper() {
+    learnDeep = !learnDeep;
+    renderLearn();
+    return learnDeep;
+  }
+
+  /* The comparison is the answer to "is that a lot?", so it arrives when
+   * that question is pressed rather than sitting there by default. */
+  function learnAction(name) {
+    if (name === 'compare') {
+      learnCmpOn = true;
+      learnDeep = false;
+      renderLearn();
+    }
+    return name;
+  }
+
+  /* The drawer: the same concept in full, for a reader who wants all of it
+   * at once, plus the ideas met so far. */
+  function renderLearnCard(c, m, b, cmp, said) {
+    if (!c) { setHtml('learnCard', ''); return; }
+    var rows = [
+      ['What it is', c.beginner],
+      ['How to read it', c.read],
+      ['Why it matters', c.why],
+      ['The usual mistake', c.misconception],
+      ['How this page measures it', c.advanced]
+    ];
+    var met = explored();
+    var related = c.related.filter(function (id) { return !!MP.concepts.get(id); });
+    setHtml('learnCard',
+      '<div class="concept concept-learn">' +
+      '<h3>' + F.escapeHtml(c.name) + '</h3>' +
+      (m ? '<p class="learn-figure">' + F.escapeHtml(m.text) +
+        (b ? ' <span class="band is-' + b.tone + '">' + F.escapeHtml(b.label) + '</span>' : '') +
+        (m.of ? ' <span class="learn-of">' + F.escapeHtml(m.of) + '</span>' : '') + '</p>' : '') +
+      (said ? '<p class="learn-said">' + F.escapeHtml(said) + '</p>' : '') +
+      (cmp ? compareBars(cmp) : '') +
+      rows.map(function (r) {
+        return '<p class="learn-row"><b>' + F.escapeHtml(r[0]) + '</b> ' + F.escapeHtml(r[1]) + '</p>';
+      }).join('') +
+      '<div class="learn-acts">' + learnQuestionHtml(c.explorations) + '</div>' +
+      (related.length ? '<p class="learn-rel">Connects to ' + related.map(function (id) {
+        return '<button type="button" class="linkish" data-learn-concept="' + F.escapeHtml(id) + '">' +
+          F.escapeHtml(MP.concepts.get(id).name.toLowerCase()) + '</button>';
+      }).join(', ') + '.</p>' : '') +
+      (b ? '<p class="foot">' + F.escapeHtml(BAND_NOTE) + '</p>' : '') +
+      (met.length > 1 ? '<p class="learn-met"><b>Ideas you have met</b> ' + met.map(function (id) {
+        return '<button type="button" class="linkish" data-learn-concept="' + F.escapeHtml(id) + '">' +
+          F.escapeHtml(MP.concepts.get(id).name.toLowerCase()) + '</button>';
+      }).join(', ') + '</p>' : '') +
+      '</div>');
+  }
+
+  /* topic: a concept id, or nothing to explain whatever the dial is on.
+   * Every opening starts at level one with the comparison put away. */
+  function openLearn(topic) {
+    var wanted = MP.concepts && MP.concepts.get(topic) ? topic : null;
+    learnTopic = wanted || (MP.concepts ? MP.concepts.bindingFor(learnStop()) : null) || 'returns';
+    learnDeep = false;
+    learnCmpOn = false;
+    markExplored(learnTopic);
+    renderLearn();
+    if (MP.track) MP.track.event('concept_opened', learnTopic);
+    return learnTopic;
+  }
+
+  /* ---- the soft keys that need the page's state ---------------------------- */
+
+  /* WATCH on a mover: put that stock on the list, or take it off. Coins
+   * cannot go on a list of Nasdaq-100 stocks, so the key does nothing there. */
+  function toggleWatchCurrent() {
+    var stop = currentStop();
+    var r = reading(stop);
+    var sym = r ? r.symbol : null;
+    var crypto = MP.spotlight && MP.spotlight.kind() === 'crypto';
+    if (!sym || ((stop === 'mover' || stop === 'loser') && crypto)) return null;
+    if (isWatched(sym)) removeWatch(sym);
+    else addWatch(sym);
+    repaint();
+    return sym;
+  }
+
+  /* COMPARE on a statistics stop: measure against the other index. */
+  function cycleIndex() {
+    var next = state.stats.index === 'ixic' ? 'spx' : 'ixic';
+    setStats({ index: next });
+    return next;
+  }
+
+  /* ---- customize the dial --------------------------------------------------
+   * Which functions occupy the plate. OFF and SUBJECT are fixed; the rest can
+   * be switched off, as long as one way of explaining a reading survives. */
+  var dialDraft = null;
+
+  function openDialConfig() {
+    dialDraft = MP.dial ? MP.dial.load() : null;
+    renderDialConfig();
+  }
+
+  function renderDialConfig() {
+    var D = MP.dial;
+    if (!D || !dialDraft) return;
+    var rows = D.FIXED.concat(D.OPTIONAL).map(function (id) {
+      var fixed = D.FIXED.indexOf(id) >= 0;
+      var on = dialDraft.indexOf(id) >= 0;
+      var locked = fixed || (on && !D.canRemove(dialDraft, id));
+      /* here the slot is named by what it is, not by what it currently points
+       * at: this screen configures positions, not assets */
+      var name = id === 'subject' ? 'SUBJECT' : D.labelFor(id);
+      var note = id === 'subject'
+        ? 'Now showing ' + (statsCoinSymbol(state.stats.coin) || 'BTC') + '. ' + (D.NOTES[id] || '')
+        : (D.NOTES[id] || '');
+      return '<li><button type="button" class="cfg-row' + (on ? '' : ' is-off') + (locked ? ' is-fixed' : '') +
+        '" data-cfg="' + F.escapeHtml(id) + '"' + (locked ? ' aria-disabled="true"' : '') +
+        ' aria-pressed="' + (on ? 'true' : 'false') + '">' +
+        '<span class="cfg-mark">' + (on ? '■' : '□') + '</span>' +
+        '<span class="cfg-name">' + F.escapeHtml(name) + '</span>' +
+        '<span class="cfg-note">' + F.escapeHtml(note) + '</span></button></li>';
+    }).join('');
+    setHtml('lcdConfigRows', rows);
+    setText('lcdConfigCount', dialDraft.length + ' OF ' + D.MAX);
+  }
+
+  function toggleDialRow(id) {
+    var D = MP.dial;
+    if (!D || !dialDraft || D.FIXED.indexOf(id) >= 0) return dialDraft;
+    if (dialDraft.indexOf(id) >= 0) {
+      if (!D.canRemove(dialDraft, id)) return dialDraft;
+      dialDraft = D.read(dialDraft.filter(function (x) { return x !== id; }));
+    } else {
+      /* keep the canonical order rather than appending in click order */
+      dialDraft = D.read(D.OPTIONAL.filter(function (x) {
+        return x === id || dialDraft.indexOf(x) >= 0;
+      }));
+    }
+    renderDialConfig();
+    return dialDraft;
+  }
+
+  function saveDialConfig() {
+    if (!MP.dial || !dialDraft) return null;
+    var saved = MP.dial.save(dialDraft);
+    if (MP.meter) MP.meter.applyDial(saved);
+    syncSubjectPosition();
+    if (MP.meter) MP.meter.setScreen('reading');
+    repaint();
+    return saved;
+  }
+
+  function resetDialConfig() {
+    if (!MP.dial) return null;
+    var def = MP.dial.reset();
+    dialDraft = def.slice();
+    if (MP.meter) MP.meter.applyDial(def);
+    syncSubjectPosition();
+    renderDialConfig();
+    repaint();
+    return def;
+  }
+
+  function wireDialConfig() {
+    var host = el('lcdConfigRows');
+    if (!host) return;
+    host.addEventListener('click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('[data-cfg]') : null;
+      if (b && b.getAttribute('aria-disabled') !== 'true') toggleDialRow(b.getAttribute('data-cfg'));
+    });
+  }
+
+  /* ---- the first-visit orientation ------------------------------------------
+   * One overlay, about fifteen seconds of reading, with the instrument still
+   * visible behind it. Shown once; reachable afterwards from HOW IT WORKS. */
+  var INTRO_KEY = 'intro';
+  var introReturn = null;
+
+  function introSeen() {
+    return !!(MP.store && MP.store.get(INTRO_KEY, false));
+  }
+
+  function showIntro(force) {
+    var box = el('intro');
+    if (!box || (!force && introSeen())) return false;
+    introReturn = document.activeElement;
+    box.hidden = false;
+    var stage = document.querySelector('.stage');
+    if (stage) stage.setAttribute('inert', '');
+    var go = el('introGo');
+    if (go) setTimeout(function () { try { go.focus({ preventScroll: true }); } catch (e) { go.focus(); } }, 0);
+    return true;
+  }
+
+  function hideIntro() {
+    var box = el('intro');
+    if (!box || box.hidden) return false;
+    box.hidden = true;
+    var stage = document.querySelector('.stage');
+    if (stage) stage.removeAttribute('inert');
+    if (!introReturn || introReturn === document.body) introReturn = el('knob');
+    if (MP.store) MP.store.set(INTRO_KEY, true);
+    if (introReturn && introReturn.focus) { try { introReturn.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+    introReturn = null;
+    return true;
+  }
+
+  function wireIntro() {
+    var box = el('intro'), go = el('introGo'), how = el('howBtn');
+    if (go) go.addEventListener('click', hideIntro);
+    if (how) how.addEventListener('click', function () { showIntro(true); });
+    if (box) {
+      box.addEventListener('click', function (ev) { if (ev.target === box) hideIntro(); });
+    }
+    document.addEventListener('keydown', function (ev) {
+      if (!box || box.hidden) return;
+      if (ev.key === 'Escape') { hideIntro(); ev.preventDefault(); ev.stopImmediatePropagation(); }
+      else if (ev.key === 'Tab') { ev.preventDefault(); if (go) go.focus(); }
+    });
+    showIntro(false);
+  }
+
+  /* ---- PROBE ---------------------------------------------------------------
+   * The investigative mode. It reads the instrument's own context, answers
+   * what arithmetic can answer, and says plainly where nothing can. Naming
+   * note: renderProbe and wireProbe already belong to the custom-coin picker
+   * in the drawer, so the screen's functions carry their own names.
+   * ------------------------------------------------------------------------ */
+  var probeView = { ctx: null, finding: null, source: false };
+
+  function probeContext(question) {
+    if (!MP.probe) return null;
+    return MP.probe.build({
+      stop: currentStop(),
+      analytics: state.analytics,
+      labels: statsLabels(),
+      question: question || null
+    });
+  }
+
+  function probeSubjectLine(ctx) {
+    if (!ctx) return '';
+    var mode = { vol: 'VOLATILITY', corr: 'CORRELATION', dd: 'DRAWDOWN' }[ctx.mode] || '';
+    var sym = ctx.subject.symbol || '';
+    return mode && sym ? sym + ' / ' + mode : sym || mode;
+  }
+
+  function openProbe() {
+    probeView.ctx = probeContext(null);
+    probeView.finding = null;
+    probeView.source = false;
+    paintProbe();
+    if (MP.track) MP.track.event('probe_opened', currentStop());
+    return probeView.ctx;
+  }
+
+  function probeQuestionsHtml(list) {
+    return (list || []).map(function (q) {
+      return '<button type="button" class="probe-q" data-probe-q="' + F.escapeHtml(q) + '">' + F.escapeHtml(q) + '</button>';
+    }).join('');
+  }
+
+  function probeActionsHtml(actions) {
+    return (actions || []).map(function (a, i) {
+      return '<button type="button" class="lcd-act" data-probe-act="' + i + '">' + F.escapeHtml(a.label) + ' →</button>';
+    }).join('');
+  }
+
+  function probeSection(title, items, evidence) {
+    if (!items || !items.length) return '';
+    return '<p class="probe-sec">' + F.escapeHtml(title) + '</p><ul class="probe-list' + (evidence ? ' is-evidence' : '') + '">' +
+      items.map(function (it) {
+        return '<li>' + F.escapeHtml(typeof it === 'string' ? it : it.text) + '</li>';
+      }).join('') + '</ul>';
+  }
+
+  function paintProbe() {
+    var ctx = probeView.ctx, f = probeView.finding;
+    setText('lcdProbeSubject', probeSubjectLine(ctx));
+
+    if (probeView.source) {
+      setText('lcdProbeState', 'SOURCES');
+      setHtml('lcdProbeBody', probeSection('WHERE THIS COMES FROM', MP.probe ? MP.probe.provenance(ctx) : [], false));
+      return;
+    }
+
+    if (!f) {
+      var qs = MP.probe ? MP.probe.questionsFor(ctx) : [];
+      setText('lcdProbeState', qs.length ? 'PROBE READY' : 'INSUFFICIENT DATA');
+      setHtml('lcdProbeBody', qs.length
+        ? '<p class="probe-sum">What are you curious about?</p>' + probeQuestionsHtml(qs)
+        : '<p class="probe-sum">There is nothing measured on this stop yet for PROBE to investigate. Turn to a measurement, or ask a question below.</p>');
+      return;
+    }
+
+    var STATE = { answered: 'EVIDENCE FOUND', insufficient: 'LIMITED EVIDENCE', refused: 'OUT OF SCOPE', unavailable: 'PROBE UNAVAILABLE' };
+    setText('lcdProbeState', STATE[f.status] || 'EVIDENCE FOUND');
+    setHtml('lcdProbeBody',
+      '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline) + '</div>' +
+      (f.answer.summary ? '<p class="probe-sum">' + F.escapeHtml(f.answer.summary) + '</p>' : '') +
+      probeSection('WHAT WE SEE', f.observations, true) +
+      probeSection('WHAT IT COULD MEAN', f.interpretation, false) +
+      probeSection('WHAT WE CANNOT TELL', f.uncertainty, false) +
+      '<div class="probe-acts">' + probeActionsHtml(f.actions) + '</div>' +
+      (f.followUps && f.followUps.length ? '<p class="probe-sec">ASK NEXT</p>' + probeQuestionsHtml(f.followUps) : ''));
+  }
+
+  /* A question, answered from the instrument's own figures. */
+  function askProbe(question, suggested) {
+    if (!MP.probe) return null;
+    var q = String(question || '').trim();
+    if (!q) return null;
+    probeView.ctx = probeContext(q);
+    probeView.source = false;
+    if (MP.track) {
+      /* the topic is a fixed vocabulary; the student's words are never kept */
+      MP.track.event(suggested ? 'probe_suggested_question_selected' : 'probe_custom_question_submitted',
+        MP.probe.topicOf(q, probeView.ctx) || 'other');
+    }
+    probeView.finding = MP.probe.answer(probeView.ctx, q);
+    if (!probeView.finding) {
+      probeView.finding = {
+        status: 'unavailable', origin: 'local',
+        answer: { headline: 'PROBE CANNOT ANSWER THAT YET', summary: 'This question needs evidence Multimeter does not hold. The instrument keeps prices and the measurements taken from them, and nothing else.' },
+        observations: [], interpretation: [], uncertainty: ['No verified event or company information is loaded.'],
+        concepts: [], actions: [], followUps: []
+      };
+    }
+    paintProbe();
+    if (MP.track) {
+      MP.track.event(probeView.finding.status === 'answered' ? 'probe_completed' : 'probe_insufficient_evidence',
+        probeView.finding.status);
+    }
+    return probeView.finding;
+  }
+
+  /* Claude may one day suggest an action; the instrument decides what runs.
+   * Only the allowlist executes, and only against things that exist. */
+  function runProbeAction(a) {
+    if (!a || !MP.probe || !MP.probe.validAction(a)) return null;
+    if (a.type === 'OPEN_LEARN') {
+      if (MP.track) MP.track.event('probe_learn_selected', a.concept);
+      if (MP.meter) MP.meter.setScreen('learn', a.concept);
+      return a.type;
+    }
+    if (MP.track) MP.track.event('probe_instrument_action_selected', a.type.toLowerCase().slice(0, 16));
+    if (a.type === 'OPEN_MODE' && MP.router) MP.router.go(a.mode);
+    else if (a.type === 'SET_COMPARISON') setStats({ index: a.index });
+    else if (a.type === 'OPEN_DATA' && MP.meter) MP.meter.setScreen('search');
+    else if (a.type === 'RETURN' && MP.meter) MP.meter.setScreen('reading');
+    return a.type;
+  }
+
+  function focusProbeAsk() {
+    var input = el('lcdProbeInput');
+    if (input) { try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); } }
+  }
+
+  function toggleProbeSource() {
+    probeView.source = !probeView.source;
+    paintProbe();
+    return probeView.source;
+  }
+
+  function wireProbeScreen() {
+    var body = el('lcdProbeBody');
+    if (body) {
+      body.addEventListener('click', function (ev) {
+        var t = ev.target && ev.target.closest ? ev.target : null;
+        if (!t) return;
+        var q = t.closest('[data-probe-q]');
+        if (q) { askProbe(q.getAttribute('data-probe-q'), true); return; }
+        var act = t.closest('[data-probe-act]');
+        if (act && probeView.finding) {
+          runProbeAction(probeView.finding.actions[parseInt(act.getAttribute('data-probe-act'), 10)]);
+        }
+      });
+    }
+    var form = el('lcdProbeAsk');
+    if (form) {
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var input = el('lcdProbeInput');
+        if (!input) return;
+        askProbe(input.value, false);
+        input.value = '';
+      });
+    }
   }
 
   /* Feedback: three questions, opened as a GitHub issue the tester can read
@@ -1515,11 +2378,38 @@
         if (!t) return;
         var ask = t.closest('[data-concept]');
         if (ask) { showConcept(ask.getAttribute('data-concept')); return; }
+        var full = t.closest('[data-learn-open]');
+        if (full) {
+          if (MP.meter) MP.meter.setScreen('learn', full.getAttribute('data-learn-open'));
+          return;
+        }
         if (t.closest('[data-concept-close]')) hideConcept();
       });
     }
     var fb = el('feedbackBtn');
     if (fb) fb.addEventListener('click', openFeedback);
+
+    /* An explanation always ends somewhere in the instrument: another
+     * concept, or the stop that measures it. */
+    function actions(host) {
+      if (!host) return;
+      host.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-learn-stop],[data-learn-concept],[data-learn-action]') : null;
+        if (!b) return;
+        var concept = b.getAttribute('data-learn-concept');
+        if (concept) {
+          openLearn(concept);
+          if (MP.meter && MP.meter.screen() !== 'learn') MP.meter.setScreen('learn', concept);
+          return;
+        }
+        var act = b.getAttribute('data-learn-action');
+        if (act) { learnAction(act); return; }
+        var stop = b.getAttribute('data-learn-stop');
+        if (stop && MP.router) MP.router.go(stop);
+      });
+    }
+    actions(el('lcdLearnActs'));
+    actions(el('learnCard'));
   }
 
   /* ---- the screen's search ------------------------------------------------- */
@@ -1569,36 +2459,48 @@
     }).catch(function () { /* the local index has already answered */ });
   }
 
+  /* A beginner cannot be expected to know what a ticker stands for, so every
+   * row says what kind of thing it is. Stocks keep their last close beside
+   * the type, since a price is the one number a newcomer already reads. */
+  var KIND_LABEL = { stock: 'STOCK', coin: 'CRYPTO', index: 'INDEX' };
+
   function pickRow(i, e, active) {
     var meta = '', cls = '';
     if (e.kind === 'stock' && S.isNum(e.close)) {
       meta = money(e.close);
-      if (S.isNum(e.change1d)) { meta += '  ' + F.signedPctPoints(e.change1d, 1); cls = e.change1d >= 0 ? 'is-up' : 'is-down'; }
-    } else {
-      meta = e.kind === 'index' ? 'INDEX' : 'COIN';
+      if (S.isNum(e.change1d)) { meta += '  ' + F.signedPctPoints(e.change1d, 2); cls = e.change1d >= 0 ? 'is-up' : 'is-down'; }
     }
     return '<li><button type="button" class="lcd-pick' + (active ? ' is-active' : '') + '" role="option"' +
-      ' aria-selected="' + (active ? 'true' : 'false') + '" data-pick="' + i + '">' +
+      ' id="search-option-' + i + '" aria-selected="' + (active ? 'true' : 'false') + '" data-pick="' + i + '">' +
       '<span class="sym">' + F.escapeHtml(e.symbol) + '</span>' +
-      '<span class="desc">' + F.escapeHtml(e.name || '') + '</span>' +
+      '<span class="desc">' + F.escapeHtml(e.name || '') +
+      '<span class="kind">' + F.escapeHtml(KIND_LABEL[e.kind] || '') + '</span></span>' +
       '<span class="meta ' + cls + '">' + F.escapeHtml(meta) + '</span></button></li>';
   }
 
   function renderSearchResults() {
     var host = el('lcdResults');
     if (!host) return;
+    var input = el('lcdSearchInput');
+    if (input) input.removeAttribute('aria-activedescendant');
     if (!find.results.length) {
-      host.innerHTML = '<li class="lcd-empty">' +
-        (find.query ? 'Nothing matches "' + F.escapeHtml(find.query) + '"' : 'Type a ticker, a company or a coin') + '</li>';
+      var message = find.query ? 'Nothing matches "' + F.escapeHtml(find.query) + '"' : 'Type a ticker, a company or a coin';
+      if (!state.stocks.list) message = state.stocks.notice
+        ? 'Stock search is unavailable. The stock catalogue could not be loaded. You can still search indexes and crypto.'
+        : 'Loading the stock catalogue. Indexes and crypto are available now.';
+      host.innerHTML = '<li class="lcd-empty">' + message + '</li>';
       return;
     }
     host.innerHTML = find.results.map(function (e, i) { return pickRow(i, e, i === find.active); }).join('');
+    if (input) input.setAttribute('aria-activedescendant', 'search-option-' + find.active);
   }
 
   function moveSearch(by) {
     if (!find.results.length) return;
     find.active = (find.active + by + find.results.length) % find.results.length;
     renderSearchResults();
+    var option = el('search-option-' + find.active);
+    if (option) option.scrollIntoView({ block: 'nearest' });
   }
 
   /* Selecting sets the instrument, closes search and leaves the meter on the
@@ -1609,7 +2511,7 @@
     if (!r) return;
     if (MP.track) MP.track.event('instrument_selected', e.kind);
     if (r.action === 'setCoin') setProbe(r.coin);
-    if (r.action === 'watch') addWatch(r.symbol);
+    if (r.action === 'watch') { addWatch(r.symbol); syncSubjectToWatch(); r.stop = 'subject'; }
     if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
     if (MP.router) MP.router.go(r.stop);
     repaint();
@@ -1621,7 +2523,7 @@
     setText('lcdListCount', w.list.length ? (w.index + 1) + '/' + w.list.length : '');
     if (!host) return;
     if (!w.list.length) {
-      host.innerHTML = '<li class="lcd-empty">Press ADD to put a Nasdaq-100 stock on the list</li>';
+      host.innerHTML = '<li class="lcd-empty"><b>THINGS YOU WANT TO FOLLOW</b><p>Keep companies you are curious about here. You do not need to own them.</p><p>Press ADD, search a ticker, then select it. Your list stays in this browser.</p></li>';
       return;
     }
     host.innerHTML = w.list.map(function (sym, i) {
@@ -1629,7 +2531,7 @@
       var meta = row && S.isNum(row.close) ? money(row.close) : F.DASH;
       var cls = '';
       if (row && S.isNum(row.change1d)) {
-        meta += '  ' + F.signedPctPoints(row.change1d, 1);
+        meta += '  ' + F.signedPctPoints(row.change1d, 2);
         cls = row.change1d >= 0 ? 'is-up' : 'is-down';
       }
       return '<li><button type="button" class="lcd-pick' + (i === w.index ? ' is-active' : '') + '" role="option"' +
@@ -1640,9 +2542,11 @@
     }).join('');
   }
 
+  /* i below zero means the row already highlighted, which is what OPEN does. */
   function openWatchRow(i) {
-    state.watch.index = i;
+    if (S.isNum(i) && i >= 0) state.watch.index = i;
     ensureStock(watchSymbol());
+    syncSubjectToWatch();
     if (MP.meter) MP.meter.setScreen('reading');
     renderScreenList();
     renderWatch();
@@ -1683,6 +2587,18 @@
         if (b) openWatchRow(parseInt(b.getAttribute('data-row'), 10));
       });
     }
+    /* the first visit's three starting points */
+    var welcome = el('lcdWelcome');
+    if (welcome) {
+      welcome.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-welcome]') : null;
+        if (!b) return;
+        var stop = b.getAttribute('data-welcome');
+        if (MP.meter) MP.meter.dismissWelcome();
+        if (MP.router) MP.router.go(stop);
+        repaint();
+      });
+    }
   }
 
   /* ---- WATCH --------------------------------------------------------------- */
@@ -1691,10 +2607,18 @@
 
   function afterWatchChange() {
     ensureStock(watchSymbol());
+    syncSubjectToWatch();
     renderWatch();
     renderScreenList();
     if (MP.spotlight) MP.spotlight.render();
     repaint();
+  }
+
+  /* The row under the cursor on the WATCH stop is the subject, so stepping
+   * through the list and then turning to VOL measures the stock on screen. */
+  function syncSubjectToWatch() {
+    var sym = watchSymbol();
+    if (sym && currentStop() === 'watch' && sym !== state.stats.coin) setStats({ coin: sym });
   }
 
   function addWatch(sym) {
@@ -1821,7 +2745,7 @@
   /* The NOTE stop: the words take the chart's place, the session date the
    * price's, and the change line says who wrote it. No value, so REL,
    * MIN/MAX and ALERT pass it by. */
-  function noteReading() {
+  function learnReading() {
     var d = state.note.data;
     return {
       text: d ? F.shortDate(d.forSession) : F.DASH, value: NaN, dp: 0,
@@ -1926,7 +2850,11 @@
     wireWatch();
     renderWatch();
     wireScreen();
+    wireProbeScreen();
+    wireDialConfig();
+    wireIntro();
     wireLearn();
+    syncSubjectPosition();
     if (MP.track) MP.track.start();
     if (MP.spotlight && MP.spotlight.wire) MP.spotlight.wire();
     if (MP.meter && MP.meter.setStopLabel && state.probe) MP.meter.setStopLabel('probe', state.probe.symbol);
@@ -2008,6 +2936,35 @@
     refreshContext: refreshContext,
     coinHistory: coinHistory,
     showConcept: showConcept,
+    openLearn: openLearn,
+    renderLearn: renderLearn,
+    learnMeasure: learnMeasure,
+    learnDeeper: learnDeeper,
+    learnAction: learnAction,
+    learnCompare: learnCompare,
+    learnSentence: learnSentence,
+    explored: explored,
+    whatLine: whatLine,
+    toggleWatchCurrent: toggleWatchCurrent,
+    toggleMoverEnd: toggleMoverEnd,
+    moverEndLabel: moverEndLabel,
+    moverEndFor: moverEndFor,
+    cycleIndex: cycleIndex,
+    subjectView: subjectView,
+    syncSubjectPosition: syncSubjectPosition,
+    openDialConfig: openDialConfig,
+    toggleDialRow: toggleDialRow,
+    saveDialConfig: saveDialConfig,
+    resetDialConfig: resetDialConfig,
+    showIntro: showIntro,
+    hideIntro: hideIntro,
+    introSeen: introSeen,
+    openProbe: openProbe,
+    askProbe: askProbe,
+    probeContext: probeContext,
+    runProbeAction: runProbeAction,
+    focusProbeAsk: focusProbeAsk,
+    toggleProbeSource: toggleProbeSource,
     STOP_NOTES: STOP_NOTES,
     applyTick: applyTick,
     liveProducts: liveProducts,

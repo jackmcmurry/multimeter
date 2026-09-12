@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jackmcmurry.github.io/multimeter/og.png">
 <meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns, the week's highest and lowest movers, and a watch list of Nasdaq-100 stocks.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6b71f'/%3E%3Crect x='10' y='10' width='44' height='20' rx='3' fill='%230a1216'/%3E%3Ccircle cx='32' cy='46' r='11' fill='%2314171c'/%3E%3Crect x='30.5' y='36' width='3' height='9' fill='%23f6b71f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a1216'/%3E%3Cpath d='M12 49 L22 20 L32 36 L42 15 L52 38' fill='none' stroke='%232ee59d' stroke-width='6.5' stroke-linejoin='miter' stroke-linecap='square' stroke-miterlimit='6'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -37,6 +37,24 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
 </head>
 <body>
 
+<!-- First visit: what this is, in about fifteen seconds. The instrument stays
+     visible behind it, because the instrument is the explanation. -->
+<div class="intro" id="intro" hidden role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="intro-card" role="document">
+    <h2 class="intro-title" id="introTitle">MULTIMETER</h2>
+    <p class="intro-lead">A financial instrument for exploring how markets move.</p>
+    <ol class="intro-loop">
+      <li><b>SEE</b><span>Choose a market.</span></li>
+      <li><b>MEASURE</b><span>Use VOL, CORR and DD.</span></li>
+      <li><b>UNDERSTAND</b><span>LEARN explains the measurement.</span></li>
+      <li><b>INVESTIGATE</b><span>PROBE explores questions the data raises.</span></li>
+    </ol>
+    <p class="intro-turn">Turn the dial to begin.</p>
+    <button type="button" class="intro-go" id="introGo">START EXPLORING</button>
+    <p class="intro-foot">Real market data. Nothing here is investment advice.</p>
+  </div>
+</div>
+
 <main class="stage">
 
   <!-- ================= THE METER ================= -->
@@ -46,7 +64,11 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
         <div class="face face-screen">
 
         <div class="head">
-          <span class="brand">MULTIMETER</span>
+          <!-- the wordmark: the first M is drawn, not typed, so the letter
+               and the rising line are the same four strokes -->
+          <span class="brand">
+            <svg class="brand-mark" viewBox="0 0 70 86" role="img" aria-label="Multimeter"><path d="M4 80 L20 10 L34 37 L51 4 L65 39" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
+          </span>
           <span class="head-right">
             <span class="skin-picker">
               <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: gold. Choose a colour.">
@@ -71,7 +93,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
           <div class="lcd-row">
             <span class="ann" id="lcdMode"></span>
             <span class="ann-group">
-              <span class="ann ann-rel" id="lcdRel">REL</span>
+              <button type="button" class="ann ann-rel" id="lcdRel" aria-pressed="false" aria-label="Relative: zero the reading where it stands">REL</button>
               <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
               <button type="button" class="ann ann-sound is-on" id="lcdSound" aria-pressed="true" aria-label="Sound on. Press to mute."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
               <span class="ann ann-hold" id="lcdHold">HOLD</span>
@@ -95,11 +117,39 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
               <span class="lcd-chg" id="lcdChange"></span>
               <span class="ann" id="lcdChangeLabel"></span>
             </div>
+            <!-- what am I looking at: one plain sentence, on every stop -->
+            <p class="lcd-what" id="lcdWhat"></p>
             <div class="lcd-row lcd-minmax is-idle" id="lcdMinmax" aria-live="off">
               <span class="ann" id="lcdMin"></span>
               <span class="ann" id="lcdMax"></span>
             </div>
           </div>
+          <!-- first visit only: somewhere to start, then out of the way -->
+          <div class="lcd-panel lcd-welcome" id="lcdWelcome" hidden>
+            <div class="lcd-row">
+              <span class="ann">Welcome</span>
+              <span class="ann">MM-10</span>
+            </div>
+            <p class="lcd-welcome-lead">Explore real markets.<br>Learn what the numbers mean.</p>
+            <p class="lcd-welcome-sub">Start with</p>
+            <div class="lcd-welcome-acts">
+              <button type="button" class="lcd-act" data-welcome="btc">Bitcoin</button>
+              <button type="button" class="lcd-act" data-welcome="spx">S&amp;P 500</button>
+              <button type="button" class="lcd-act" data-welcome="nasdaq">Nasdaq</button>
+            </div>
+            <p class="lcd-welcome-foot">Or turn the dial to pick a reading.</p>
+          </div>
+
+          <!-- CUSTOMIZE DIAL: which functions occupy the plate -->
+          <div class="lcd-panel lcd-config" id="lcdConfig" hidden>
+            <div class="lcd-row">
+              <span class="ann">Customize dial</span>
+              <span class="ann" id="lcdConfigCount"></span>
+            </div>
+            <ul class="lcd-results" id="lcdConfigRows" role="group" aria-label="Dial functions"></ul>
+            <p class="lcd-config-foot" id="lcdConfigFoot">OFF and SUBJECT are fixed. SAVE keeps the layout in this browser.</p>
+          </div>
+
           <div class="lcd-panel lcd-search" id="lcdSearch" hidden>
             <div class="lcd-row">
               <span class="ann">Select instrument</span>
@@ -109,11 +159,44 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
             <ul class="lcd-results" id="lcdResults" role="listbox" aria-label="Instruments"></ul>
           </div>
 
+          <!-- LEARN: the concept behind the figure already on the screen,
+               with that figure in it and a way back into the instrument -->
+          <div class="lcd-panel lcd-learn" id="lcdLearn" hidden>
+            <div class="lcd-row">
+              <span class="ann" id="lcdLearnTerm"></span>
+              <span class="ann" id="lcdLearnMeta"></span>
+            </div>
+            <p class="lcd-remind">What the number on the screen means, in plain words. DEEPER shows how it is worked out.</p>
+            <div class="lcd-learn-head">
+              <span class="lcd-learn-value" id="lcdLearnValue"></span>
+              <span class="lcd-learn-band" id="lcdLearnBand"></span>
+            </div>
+            <p class="lcd-learn-line" id="lcdLearnShort"></p>
+            <p class="lcd-learn-line is-dim" id="lcdLearnRead"></p>
+            <div class="lcd-learn-visual" id="lcdLearnVisual"></div>
+            <div class="lcd-learn-acts" id="lcdLearnActs"></div>
+          </div>
+
+          <!-- PROBE: the investigative mode. Evidence first, then what it
+               could mean, then what it cannot tell us. -->
+          <div class="lcd-panel lcd-probe" id="lcdProbe" hidden>
+            <div class="lcd-row">
+              <span class="ann" id="lcdProbeState">PROBE READY</span>
+              <span class="ann" id="lcdProbeSubject"></span>
+            </div>
+            <p class="probe-capability">Investigates loaded measurements. No current news or connected AI service.</p><div class="lcd-probe-body" id="lcdProbeBody"></div>
+            <form class="lcd-probe-ask" id="lcdProbeAsk">
+              <input class="lcd-input" id="lcdProbeInput" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="Ask about what you're seeing…" aria-label="Ask a question about this measurement" maxlength="200">
+            </form>
+          </div>
+
           <div class="lcd-panel lcd-list" id="lcdList" hidden>
             <div class="lcd-row">
               <span class="ann">Watchlist</span>
               <span class="ann" id="lcdListCount"></span>
             </div>
+            <p class="lcd-remind">Things you are following. ADD puts one on the list, OPEN looks at it.</p>
             <ul class="lcd-results" id="lcdListRows" role="listbox" aria-label="Watched stocks"></ul>
           </div>
 
@@ -143,10 +226,13 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
           <span class="dial-hint" id="dialHint" aria-hidden="true">Turn the dial</span>
         </div>
 
+        <!-- a status indicator, not a control: one lamp, and the word for
+             what it is reading -->
         <div class="jacks">
-          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-on" id="lampOn"></span><span class="lamp-label">OPEN</span></span>
-          <span class="lamp-wrap" aria-hidden="true"><span class="lamp lamp-off" id="lampOff"></span><span class="lamp-label">CLOSED</span></span>
-          <span class="jack-text" id="sessionText">Market</span>
+          <span class="status" id="marketStatus" role="status">
+            <span class="status-cap">Market status</span>
+            <span class="status-val"><span class="status-lamp" id="marketLamp"></span><span class="status-word" id="marketWord">—</span></span>
+          </span>
         </div>
 
         </div>
@@ -161,6 +247,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <h2 id="viewTitle">Bitcoin</h2>
       <span class="drawer-tools">
         <span class="muted" id="quoteStamp">—</span>
+        <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
         <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
         <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
       </span>
@@ -255,8 +342,17 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <div class="table-scroll" id="ddTable"></div>
     </section>
 
-    <!-- NOTE -->
-    <section class="view" data-panel="note" hidden>
+    <!-- INVESTIGATE: where the investigation's figures came from -->
+    <section class="view" data-panel="investigate" hidden>
+      <p class="drawer-note">PROBE investigates the measurement on the screen. It answers from the figures this instrument holds, and says so plainly when those figures cannot answer the question.</p>
+      <div id="investigateSources"></div>
+      <p class="foot">PROBE holds no news, filings or announcements. Price data shows what happened; on its own it never shows why. Where a question needs evidence this instrument does not have, PROBE says that rather than guessing.</p>
+    </section>
+
+    <!-- LEARN -->
+    <section class="view" data-panel="learn" hidden>
+      <div id="learnCard"></div>
+      <h3 class="learn-h">Today’s reading</h3>
       <p class="note-text" id="noteText"></p>
       <p class="foot" id="noteMeta"></p>
       <div class="table-host" id="noteInputs"></div>
@@ -282,14 +378,18 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <p>Both ends describe the past week. Neither is a recommendation.</p>
       <p><b>WATCH</b>: up to eight Nasdaq-100 stocks you choose. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
       <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
-      <p><b>NOTE</b>: the daily reading. After each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template. The drawer shows the figures it was given.</p>
+      <p><b>LEARN</b>: the idea behind the figure you were just looking at, explained with that figure. Turn to it, or press LEARN at any stop. It names the concept, prints the live measurement, says what size that measurement counts as, gives one line on how to read it, and offers a way back into the instrument. The drawer holds the same concept in full, with why it matters, the common misconception, and how this page measures it. Underneath sits the daily reading: after each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template.</p>
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p><b>DATA</b> opens this drawer. <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. <b>MIN/MAX</b> captures the lowest and highest reading while it is on. <b>ALERT</b> sets a level on the current stop: when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. <b>HOLD</b> freezes the display. The speaker on the screen mutes the dial's click and the alarm. Alerts, the probe and these settings live in this browser only.</p>
+      <p>The five keys are soft keys: the first two and the last never move, and the middle two follow the stop, so the row always operates what is on the screen. <b>DATA</b> turns the display into the instrument search. <b>LEARN</b> explains the figure on the screen. <b>HOLD</b> freezes the display.</p>
+      <p>Between them, on a price: <b>MIN/MAX</b> captures the lowest and highest reading while it is on, and <b>ALERT</b> sets a level on the current stop, so that when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. On CORR, VOL and DD: <b>COMPARE</b> switches the index the coin is measured against, and <b>INFO</b> opens this drawer. On MOVER and LOSER: <b>WATCH</b> puts that stock on your list or takes it off. On WATCH: <b>LIST</b> shows the list and <b>REMOVE</b> drops the stock on the screen. With the list on the display the row becomes <b>OPEN</b>, <b>ADD</b>, <b>REMOVE</b> and <b>INFO</b>; in search it becomes <b>CANCEL</b>; in LEARN, <b>BACK</b>.</p>
+      <p>On the screen itself, <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. The speaker mutes the dial's click and the alarm. Clicking the display opens this drawer. Alerts, the probe and these settings live in this browser only.</p>
 
       <h2>Learning as you go</h2>
-      <p>Under each title, one line says what the stop answers. A question mark beside a figure opens what it measures and how this page computes it, so a concept arrives next to the number it describes. On bitcoin and on VOL, a line says how large the last session's move was against the last 251 daily moves, which is how you tell an ordinary day from a rare one. The line at the foot of the drawer names the source of the figures above it and when they were read.</p>
+      <p>The idea is to learn finance by using the instrument, so nothing here is a course. Under each title, one line says what the stop answers. A question mark beside a figure opens what it measures and how this page computes it, so a concept arrives next to the number it describes. LEARN goes further: it takes the measurement on the screen and says what size it counts as, which is the step from reading a number to judging one.</p>
+      <p>Those words are rules of thumb. LOW, MODERATE, HIGH, DEEP and the rest are thresholds this instrument adopts so a figure has somewhere to stand, and the panel says so wherever one appears. They are conventions, not facts about markets.</p>
+      <p>On bitcoin and on VOL, a line says how large the last session's move was against the last 251 daily moves, which is how you tell an ordinary day from a rare one. On DD, the chart marks the peak the current fall began from and the lowest point since, so the drawdown is shown happening rather than defined. The line at the foot of the drawer names the source of the figures above it and when they were read.</p>
       <p><b>FEEDBACK</b> opens a note you can send about what confused you. It carries nothing but what you type, and counts of which stops you opened if you choose to paste them. Those counts are kept in this browser, are never sent anywhere on their own, and hold no personal information.</p>
 
       <h2>Skins</h2>
@@ -304,7 +404,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
       <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the Nasdaq-100 members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Company logos load from Financial Modeling Prep's public image service. The market-open lamp is computed in your browser from NYSE hours and holidays.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the Nasdaq-100 members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Company logos load from Financial Modeling Prep's public image service. The market status is computed in your browser from NYSE hours and holidays; it reports the session and does not control anything.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>

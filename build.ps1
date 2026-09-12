@@ -34,6 +34,8 @@ $libOrder = @(
     'src/lib/concepts.js',
     'src/lib/context.js',
     'src/lib/track.js',
+    'src/lib/dial.js',
+    'src/lib/probe.js',
     'src/lib/router.js',
     'src/lib/funcs.js',
     'src/lib/alerts.js',
@@ -58,6 +60,7 @@ $findingsOrder = @(
 $debugOrder = @(
     'src/lib/findings.js',
     'src/lib/note.js',
+    'src/lib/probe-prompt.js',
     'src/lib/universe.js',
     'src/lib/pipeline.js',
     'test/stats.test.js',
@@ -153,7 +156,7 @@ $bundles = @{ 'release' = $release; 'findings' = $findingsPage }
 foreach ($name in $bundles.Keys) {
     $b = $bundles[$name]
     if ($b.IndexOf('@inject') -ge 0) { $problems += "an inject marker survived into the $name bundle" }
-    foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline', 'MP.note', 'MP.universe')) {
+    foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline', 'MP.note', 'MP.universe', 'MP.probePrompt')) {
         if ($b.IndexOf($leak) -ge 0) { $problems += "$leak leaked into the $name bundle" }
     }
     if (-not $b.StartsWith('<!doctype html>')) { $problems += "$name bundle must start with <!doctype html>" }

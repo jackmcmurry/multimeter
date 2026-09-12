@@ -71,6 +71,11 @@
   --pos: #2ee59d;
   --neg: #ff6b6b;
 
+  /* The wordmark's mint. It is deliberately the one colour a skin does not
+   * change: the instrument comes in seven colours, the maker's name does
+   * not. To let it follow the skin instead, set this to var(--holster). */
+  --brand: #2ee59d;
+
   --lcd-tab: #17303a;
 
   --f-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -113,6 +118,10 @@ body {
 :root { --meter-w: 900px; }
 .meter { --meter-max: 900px; width: min(100%, var(--meter-max)); }
 .face { min-width: 0; }
+/* The keys size against the face they sit on, not the window. Side by side
+ * the screen face is about half the meter, which is where MIN/MAX, COMPARE
+ * and REMOVE used to run past their own key. */
+.face-screen { container-type: inline-size; }
 
 .holster {
   position: relative;
@@ -160,22 +169,40 @@ body {
   justify-content: space-between;
   padding: 0 4px 12px;
 }
-/* The wordmark: the instrument's name, printed like a maker's badge. Wide,
- * heavy, in the skin's accent, lifted off the body with a light edge above,
- * a shadow below and a faint glow. */
+/* The wordmark: the instrument's name, printed like a maker's badge. The
+ * first M is drawn rather than typed, as four strokes whose second peak
+ * stands above the first and whose right foot lands above the left, so the
+ * letter and a rising line are the same shape. The stroke is set to the
+ * stem weight of the type beside it, which is what keeps it reading as an M
+ * and not as a chart pasted against a word. Flat, no glow. */
 .brand {
+  display: inline-flex;
+  align-items: center;
   font-family: var(--f-body);
-  font-size: 27px;
-  font-weight: 900;
-  letter-spacing: -0.01em;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.005em;
   line-height: 1;
-  color: var(--holster);
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.2),
-    0 -1px 0 rgba(0, 0, 0, 0.6),
-    0 0 22px var(--accent-glow);
+  color: var(--brand);
 }
-.model { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); }
+.brand-mark {
+  height: 0.98em;
+  width: auto;
+  overflow: visible;          /* the apex mitres past the box */
+  margin-right: 0.04em;
+  transform: translateY(0.015em);
+}
+.brand-word { text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+
+/* the model number is equipment labelling, not a second brand */
+.model {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  border: 1px solid var(--shell-lt);
+  padding: 3px 6px;
+}
 
 /* ---- display ------------------------------------------------------------- */
 .lcd {
@@ -216,8 +243,18 @@ body {
 .ann-hold.is-on { opacity: 1; color: var(--holster); }
 
 .ann-group { display: flex; align-items: center; gap: 14px; }
-.ann-rel { opacity: 0.18; }
+.ann-rel {
+  opacity: 0.35;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.ann-rel:hover { opacity: 0.8; }
 .ann-rel.is-on { opacity: 1; color: var(--holster); }
+.ann-rel:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .ann-bell {
   display: inline-flex; align-items: center; gap: 4px;
   background: none; border: 0; padding: 0; margin: 0;
@@ -348,14 +385,14 @@ body {
 .keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 2px 4px; filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.45)); }
 .key {
   font-family: var(--f-body);
-  font-size: 12px;
+  font-size: clamp(9px, 3.1cqw, 12.5px);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.03em;
   color: var(--key-text);
   background: var(--key);
   border: 0;
   border-radius: 0;
-  padding: 11px 6px;
+  padding: 11px 4px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -466,28 +503,32 @@ body {
   gap: 4px 26px;
   padding-top: 4px;
 }
-/* the market lamps: two squares, OFF and ON, unlit until the session clock
- * lights one; no glow */
-.lamp-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 5px; }
-.lamp {
-  width: 24px;
-  height: 24px;
-  background: var(--jack);
-  border: 3px solid var(--shell-lt);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition: background 200ms ease;
-}
-.lamp-off.is-lit { background: var(--hold); }
-.lamp-on.is-lit { background: var(--led); }
-.lamp-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--dim); }
-.jack-text {
-  flex-basis: 100%;
-  text-align: center;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+/* Market status: a reading, not a control. One lamp and one word, printed
+ * under a caption that says it is a status, so nothing here invites a press. */
+.status { display: inline-flex; flex-direction: column; align-items: center; gap: 7px; }
+.status-cap {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--dim);
+}
+.status-val { display: inline-flex; align-items: center; gap: 9px; }
+.status-lamp {
+  width: 14px;
+  height: 14px;
+  background: var(--jack);
+  border: 2px solid var(--shell-lt);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+  transition: background 200ms ease;
+}
+.status-lamp.is-open { background: var(--led); border-color: var(--led); }
+.status-lamp.is-closed { background: var(--hold); border-color: var(--hold); }
+.status-word {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text);
 }
 
 /* ---- drawer -------------------------------------------------------------- */
@@ -1012,7 +1053,19 @@ tr.row-rule th {
 .lcd.is-search .lcd-ranges,
 .lcd.is-list .lcd-chart,
 .lcd.is-list .lcd-readout,
-.lcd.is-list .lcd-ranges { visibility: hidden; }
+.lcd.is-list .lcd-ranges,
+.lcd.is-learn .lcd-chart,
+.lcd.is-learn .lcd-readout,
+.lcd.is-learn .lcd-ranges,
+.lcd.is-welcome .lcd-chart,
+.lcd.is-welcome .lcd-readout,
+.lcd.is-welcome .lcd-ranges,
+.lcd.is-probe .lcd-chart,
+.lcd.is-probe .lcd-readout,
+.lcd.is-probe .lcd-ranges,
+.lcd.is-config .lcd-chart,
+.lcd.is-config .lcd-readout,
+.lcd.is-config .lcd-ranges { visibility: hidden; }
 
 .lcd-panel {
   position: absolute;
@@ -1137,6 +1190,360 @@ tr.row-rule th {
 }
 .prov:empty { display: none; }
 
+/* One plain sentence under every reading: what the number on the screen
+ * actually is. It holds its line even when empty, so the display keeps one
+ * height across every stop and the dial never moves. */
+.lcd-what {
+  margin: 7px 0 0;
+  font-family: var(--f-ui);
+  font-size: clamp(10px, 2.2cqw, 13.5px);
+  line-height: 1.35;
+  /* a fixed two lines, not a minimum: a sentence that wraps must not make
+   * the display taller than one that does not, or the dial moves between
+   * stops */
+  height: 2.7em;
+  color: var(--lcd-dim);
+  overflow: hidden;
+}
+
+/* what kind of thing a search result is, for a reader who does not yet know
+ * what a ticker stands for */
+.lcd-pick .kind {
+  margin-left: 8px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--lcd-dim);
+}
+
+/* ---- first visit ---------------------------------------------------------- */
+.lcd-welcome { gap: 10px; }
+.lcd-welcome-lead {
+  margin: 0;
+  font-family: var(--f-ui);
+  font-size: clamp(15px, 3.6cqw, 24px);
+  line-height: 1.3;
+  color: var(--lcd-ink);
+}
+.lcd-welcome-sub {
+  margin: 0;
+  font-family: var(--f-lcd);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lcd-dim);
+}
+.lcd-welcome-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.lcd-welcome-foot {
+  margin: auto 0 0;
+  font-family: var(--f-lcd);
+  font-size: 11px;
+  color: var(--lcd-dim);
+}
+
+/* A one-line reminder of what a mode does, for the stops a student lands on
+ * without a reading to explain itself. */
+.lcd-remind {
+  margin: 0;
+  font-family: var(--f-ui);
+  font-size: clamp(10px, 2.2cqw, 12.5px);
+  line-height: 1.35;
+  color: var(--lcd-dim);
+}
+
+/* ---- customize the dial --------------------------------------------------- */
+.lcd-config { gap: 8px; }
+.lcd-config-foot { margin: 0; font-family: var(--f-lcd); font-size: 10px; line-height: 1.4; color: var(--lcd-dim); }
+.cfg-row {
+  display: grid;
+  grid-template-columns: 18px 68px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 6px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--lcd-dim);
+  font-family: var(--f-lcd);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.cfg-row .cfg-mark { color: var(--up); font-weight: 700; }
+.cfg-row.is-off { opacity: 0.45; }
+.cfg-row.is-off .cfg-mark { color: var(--lcd-dim); }
+.cfg-row.is-fixed { cursor: default; }
+.cfg-row .cfg-name { color: var(--lcd-ink); font-weight: 700; letter-spacing: 0.04em; }
+.cfg-row .cfg-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.cfg-row:hover:not(.is-fixed) { background: var(--lcd-tab); }
+.cfg-row:focus-visible { outline: 2px solid var(--holster); outline-offset: -2px; }
+
+/* ---- first visit ----------------------------------------------------------- */
+/* The instrument stays visible behind: this explains it, then gets out of the
+ * way. No landing page, no tour. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 8, 11, 0.72);
+}
+.intro-card {
+  width: min(100%, 430px);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 26px 26px 22px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--brand);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65);
+}
+.intro-title {
+  margin: 0;
+  font-family: var(--f-body);
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  color: var(--brand);
+}
+.intro-lead { margin: 8px 0 20px; font-size: 15px; line-height: 1.45; color: var(--text); }
+.intro-loop { margin: 0 0 20px; padding: 0; list-style: none; counter-reset: none; }
+.intro-loop li {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-top: 1px solid var(--rule);
+}
+.intro-loop li b {
+  font-family: var(--f-lcd);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: var(--holster);
+}
+.intro-loop li span { font-size: 13.5px; line-height: 1.4; color: var(--dim); }
+.intro-turn {
+  margin: 0 0 14px;
+  font-family: var(--f-lcd);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--lcd-dim);
+}
+.intro-go {
+  width: 100%;
+  padding: 13px 16px;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--lcd-dk);
+  background: var(--brand);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+.intro-go:hover { background: var(--up); }
+.intro-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+.intro-foot { margin: 12px 0 0; font-size: 11.5px; color: var(--dim); }
+
+@media (max-width: 480px) {
+  .intro-card { padding: 20px 18px 18px; }
+  .intro-title { font-size: 23px; }
+  .intro-lead { font-size: 14px; margin-bottom: 16px; }
+  .intro-loop li { grid-template-columns: 92px minmax(0, 1fr); }
+  .intro-loop li span { font-size: 12.5px; }
+}
+
+/* ---- PROBE --------------------------------------------------------------- */
+/* An analytical subsystem of the instrument, not an assistant. No bubbles,
+ * no avatar, no branding: the same screen, the same type, the same keys. */
+.lcd-probe { gap: 8px; }
+.lcd-probe-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.lcd-probe-ask { margin: 0; }
+.lcd-probe-ask .lcd-input { font-size: clamp(12px, 3cqw, 16px); }
+
+/* the entry state: what the instrument thinks you might want to ask */
+.probe-q {
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  font-family: var(--f-ui);
+  font-size: clamp(11px, 2.7cqw, 15px);
+  text-align: left;
+  color: var(--lcd-ink);
+  background: none;
+  border: 1px solid var(--lcd-tab);
+  cursor: pointer;
+}
+.probe-q:hover, .probe-q:focus-visible { background: var(--lcd-tab); outline: none; }
+
+/* a finding: answer first, then the evidence under it */
+.probe-head {
+  font-family: var(--f-ui);
+  font-size: clamp(14px, 3.6cqw, 22px);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--lcd-ink);
+}
+.probe-head.is-refused, .probe-head.is-insufficient { color: var(--holster); }
+.probe-sum { margin: 6px 0 10px; font-family: var(--f-ui); font-size: clamp(11px, 2.6cqw, 14px); line-height: 1.45; color: var(--lcd-ink); }
+.probe-sec { margin: 0 0 3px; font-family: var(--f-lcd); font-size: 9.5px; font-weight: 700; letter-spacing: 0.13em; color: var(--lcd-dim); }
+.probe-list { margin: 0 0 9px; padding: 0; list-style: none; }
+.probe-list li {
+  margin: 0 0 4px;
+  padding-left: 11px;
+  position: relative;
+  font-family: var(--f-ui);
+  font-size: clamp(10.5px, 2.4cqw, 13px);
+  line-height: 1.4;
+  color: var(--lcd-dim);
+}
+.probe-list li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 4px; height: 4px; background: var(--lcd-dim); }
+.probe-list.is-evidence li { color: var(--lcd-ink); }
+.probe-list.is-evidence li::before { background: var(--up); }
+.probe-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* ---- LEARN --------------------------------------------------------------- */
+/* The explanation takes the screen the way search and the list do: same box,
+ * same height, the figure it is about at the top in the size the reading
+ * would have had. */
+.lcd-learn { gap: 8px; }
+.lcd-learn-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lcd-learn-value {
+  font-family: var(--f-ui);
+  font-size: clamp(24px, 7cqw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--lcd-ink);
+}
+.lcd-learn-band {
+  font-family: var(--f-lcd);
+  font-size: clamp(10px, 2.2cqw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--lcd-dim);
+}
+.lcd-learn-band.is-warn { color: var(--down); }
+.lcd-learn-band.is-calm { color: var(--up); }
+.lcd-learn-line {
+  margin: 0;
+  font-family: var(--f-ui);
+  font-size: clamp(11px, 2.5cqw, 15px);
+  line-height: 1.45;
+  color: var(--lcd-ink);
+  overflow: hidden;
+}
+.lcd-learn-line.is-dim { color: var(--lcd-dim); }
+.lcd-learn-visual:empty { display: none; }
+.lcd-learn-visual { margin: 2px 0; }
+.lcd-learn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+
+/* the correlation scale: the range, before the number */
+.cscale { font-family: var(--f-lcd); }
+.cscale-bar {
+  position: relative;
+  height: 6px;
+  background: var(--lcd-tab);
+  margin: 6px 0 5px;
+}
+.cscale-bar i {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 14px;
+  margin-left: -1.5px;
+  background: var(--holster);
+}
+.cscale-ends { display: flex; justify-content: space-between; font-size: 9.5px; letter-spacing: 0.04em; color: var(--lcd-dim); }
+
+/* two bars on one scale: the comparison that makes a figure mean something */
+.cbars { display: flex; flex-direction: column; gap: 5px; }
+.cbar { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-family: var(--f-lcd); font-size: 11px; }
+.cbar-l { color: var(--lcd-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cbar-t { height: 9px; background: var(--lcd-tab); }
+.cbar-t i { display: block; height: 100%; background: var(--holster); }
+.cbar-v { color: var(--lcd-ink); font-variant-numeric: tabular-nums; }
+
+/* where a return came from: two prices and the percent between them */
+.rvis { display: flex; align-items: baseline; gap: 10px; font-family: var(--f-lcd); font-size: 10px; color: var(--lcd-dim); }
+.rvis b { display: block; font-family: var(--f-ui); font-size: 15px; font-weight: 600; color: var(--lcd-ink); }
+.rvis-arrow { font-size: 14px; color: var(--lcd-dim); }
+.rvis-pct b { color: var(--holster); }
+
+.learn-said { margin: 0 0 10px; font-size: 15px; line-height: 1.5; color: var(--text); }
+.learn-rel, .learn-met { margin: 10px 0 0; font-size: 12.5px; color: var(--dim); }
+.learn-met b, .learn-rel b { color: var(--text); font-weight: 600; }
+.learn-rel .linkish, .learn-met .linkish { font-size: 12.5px; }
+
+/* an action on the screen: the way out of an explanation and back into the
+ * instrument */
+.lcd-act {
+  font-family: var(--f-lcd);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lcd-dim);
+  background: none;
+  border: 1px solid var(--lcd-tab);
+  border-radius: 0;
+  padding: 6px 9px;
+  cursor: pointer;
+}
+.lcd-act:hover, .lcd-act:focus-visible {
+  color: var(--lcd-dk);
+  background: var(--holster);
+  border-color: var(--holster);
+  outline: none;
+}
+
+/* the word for a figure's size, wherever a figure is printed */
+.stat-band { margin-top: 3px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); }
+.stat-band.is-warn { color: var(--neg); }
+.stat-band.is-calm { color: var(--pos); }
+.band {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--card);
+  background: var(--dim);
+  vertical-align: 0.18em;
+}
+.band.is-warn { background: var(--neg); }
+.band.is-calm { background: var(--pos); }
+
+.learn-h {
+  margin: 24px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.concept-learn { border-left-color: var(--brand); }
+.learn-figure { margin: 0 0 10px; font-family: var(--f-ui); font-size: 26px; font-weight: 600; color: var(--text); }
+.learn-of { font-size: 12px; font-weight: 400; letter-spacing: 0.02em; color: var(--dim); }
+.learn-row { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.learn-row b { color: var(--holster); font-weight: 600; }
+.learn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; }
+.learn-acts .lcd-act { font-family: var(--f-body); text-transform: none; letter-spacing: 0.01em; color: var(--dim); border-color: var(--rule); }
+
+/* the peak a fall began from and the low it reached, on the drawdown chart */
+.gx-mark { stroke: var(--dim); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.7; }
+.gx-mark-dot { fill: var(--gold); }
+.gx-mark-text { fill: var(--dim); font-size: 10px; font-weight: 600; }
+
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
   .stage { padding: 10px 6px 32px; gap: 12px; }
@@ -1146,7 +1553,9 @@ tr.row-rule th {
   .lcd-chg { font-size: 16px; }
   .rng { padding: 8px 12px; font-size: 12px; }
   .keys { gap: 6px; }
-  .key { font-size: 10.5px; letter-spacing: 0.04em; padding: 10px 2px; }
+  .key { padding: 10px 2px; }
+  /* one line on a phone, still fixed, so the meter keeps fitting the screen */
+  .lcd-what { height: 1.35em; }
   .lcd-edit { left: 12px; right: 12px; top: 40px; }
   .drawer { border-radius: 14px; padding: 14px 12px 18px; }
   .dial { width: 100%; }
@@ -1158,3 +1567,31 @@ tr.row-rule th {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Release clarity: capability text stays secondary to the measurement. */
+.probe-capability { margin: 6px 0; font-size: 11px; line-height: 1.4; color: var(--dim); }
+
+.chart-state { height: 100%; display: grid; place-items: center; text-align: center; padding: 16px; font-size: 12px; color: var(--dim); }
+/* Measurements carry their question and period inside the fixed chart space. */
+.measurement-chart { height: 100%; display: flex; flex-direction: column; gap: 6px; }
+.lcd-chart .measurement-chart svg { flex: 1; min-height: 0; width: 100%; }
+.chart-title { font-size: 10px; letter-spacing: .04em; color: var(--dim); }
+.chart-detail { font-size: 10px; line-height: 1.35; color: var(--dim); }
+.chart-state { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; text-align: left; line-height: 1.5; }
+.chart-state p { margin: 0; }
+@media (max-width: 480px) { .chart-state { font-size: 11px; padding: 8px; gap: 6px; } }
+/* The rising M begins beside the display corner, outside the glass. */
+.brand { align-items: center; }
+/* The mark leans, and its first stroke drops well below the word, so the M
+ * reads as a maker's mark rather than a capital letter sitting in line. */
+.brand-mark {
+  width: auto;
+  height: 2.15em;
+  margin-left: -10px;
+  margin-right: .04em;
+  margin-bottom: -20px;
+  transform: rotate(-6deg);
+  transform-origin: 62% 68%;
+  flex-shrink: 0;
+}
+.brand-word { text-shadow: none; }

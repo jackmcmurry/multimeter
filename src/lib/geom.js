@@ -354,6 +354,25 @@
     s += '<line x1="' + p.l + '" y1="' + y(0).toFixed(2) + '" x2="' + (w - p.r) + '" y2="' + y(0).toFixed(2) +
       '" class="gx-axis"/>';
     s += '<line x1="' + p.l + '" y1="' + p.t + '" x2="' + p.l + '" y2="' + (h - p.b) + '" class="gx-axis"/>';
+
+    /* Named points on the path: the peak a fall began from and the low it
+     * reached. Teaching a drawdown means showing it happen, so the chart
+     * says where rather than leaving it to the table. */
+    (opts.marks || []).forEach(function (m) {
+      if (!m || !isNum(m.index) || m.index < 0 || m.index >= values.length) return;
+      var v = isNum(m.value) ? m.value : values[m.index];
+      if (!isNum(v)) return;
+      var mx = x(m.index), my = y(v);
+      s += '<line x1="' + mx.toFixed(2) + '" y1="' + my.toFixed(2) + '" x2="' + mx.toFixed(2) +
+        '" y2="' + (h - p.b) + '" class="gx-mark"/>';
+      s += '<rect x="' + (mx - 3).toFixed(2) + '" y="' + (my - 3).toFixed(2) +
+        '" width="6" height="6" class="gx-mark-dot"/>';
+      if (m.label) {
+        var anchor = mx > w - p.r - 60 ? 'end' : mx < p.l + 60 ? 'start' : 'middle';
+        s += axisText(mx, Math.max(p.t + 9, my - 8), m.label, anchor, 'gx-mark-text');
+      }
+    });
+
     s += xLabels(opts.xLabels, x, p, h);
     s += '</svg>';
     return s;
@@ -417,10 +436,6 @@
     var lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
 
     var s = open(w, h, 'chart-smooth');
-    s += '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" style="stop-color:' + color + ';stop-opacity:0.32"/>' +
-      '<stop offset="1" style="stop-color:' + color + ';stop-opacity:0"/></linearGradient></defs>';
-    s += '<path d="' + d + 'V' + (h - p.b).toFixed(2) + 'H' + xs[0].toFixed(2) + 'Z" fill="url(#' + gid + ')" stroke="none"/>';
     s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
       '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
     s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';

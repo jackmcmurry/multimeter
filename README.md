@@ -1,10 +1,40 @@
-﻿# Multimeter
+# Multimeter
 
-A live bitcoin-vs-Nasdaq tracker with the statistics that make the comparison
-mean something: correlation and beta across three windows, rolling realized
-volatility for both legs, and a drawdown table with recovery times, plus the
-week's highest and lowest movers among the Nasdaq-100 and among 15 large
-coins, and a watch list of Nasdaq-100 stocks you pick.
+A financial instrument for exploring how markets move.
+
+I'm Jack McMurry, a finance student at Emory building Multimeter. Students select an asset and turn a physical-style dial to examine its price movement, volatility, drawdown, and relationships with other assets. Contextual LEARN explanations connect financial concepts to the measurements on screen.
+
+I'm developing PROBE as an investigation layer grounded in those measurements. Its purpose is to help students ask better questions while distinguishing what market data shows from what it cannot explain.
+
+My next step is to test the prototype with students, identify where they struggle, and measure whether exploration improves their understanding.
+
+## Prototype status
+
+The development version uses a nine-position dial: OFF, the active SUBJECT, WATCH, MOVER, VOL, CORR, DD, PROBE, and LEARN. DATA opens asset search inside the display. MOVER includes gainers and decliners. The subject follows the student between tools.
+
+PROBE currently uses a local evidence engine. A separate Claude server implementation is in development; interactive Claude investigations are not yet verified as deployed. Available market data depends on provider coverage. Missing history must remain an explicit unavailable state.
+
+The public site and this development branch may differ until the release is published and checked. The technical documentation below predates some of these changes and still needs reconciliation.
+
+## Release plan
+
+1. Review the outstanding changes, update the remaining documentation, and publish the same version we test.
+2. Verify this path using production data: intro, search NVIDIA, price history, VOL, LEARN, correlation with the S&P 500, WATCH, and reopen NVIDIA. Check MOVER and DECLINERS too. Asset, graph, period, and timestamp must agree.
+3. Before enabling public Claude requests, finish server wiring, input validation, rate limits, spending controls, and evidence provenance checks. Keep the rest of the instrument usable when PROBE is unavailable.
+4. Run five student sessions. Observe without giving a tour after the intro. Fix the points where students cannot proceed or misinterpret a measurement.
+5. Prepare a working URL, an accurate README, and an optional 60–90 second walkthrough for external reviewers. State limitations plainly.
+
+## First student test
+
+Ask each student to find an asset, explain its movement, inspect volatility, and explain correlation. Then ask what they want to investigate next.
+
+Record whether they complete the tasks without help, correctly explain two concepts, choose another investigation, and voluntarily return within a week. Existing usage counters stay in the browser; they do not provide centralized retention reporting. Use observation and a short follow-up for this first test.
+
+## Next steps
+
+Use student feedback to improve the core flow, then test a bounded Claude integration and run one small campus workshop. Expand to another campus after students at Emory demonstrate a reason to return.
+
+Accounts, portfolios, predictions, social features, and additional dial functions are outside this release. The next evidence we need is whether students learn through exploration and choose to use the instrument again.
 
 **Live:** https://jackmcmurry.github.io/multimeter/
 

@@ -23,23 +23,48 @@
   var MP = (root.MP = root.MP || {});
   var G = MP.geom;
 
-  var STOPS = [
-    { id: 'off', label: 'OFF' },
-    { id: 'btc', label: 'BTC' },
-    { id: 'eth', label: 'ETH' },
-    { id: 'nasdaq', label: 'NASDAQ' },
-    { id: 'spx', label: 'S&P' },
-    { id: 'mover', label: 'MOVER' },      /* the week's highest move, stocks or crypto */
-    { id: 'loser', label: 'LOSER' },      /* and the lowest */
-    { id: 'watch', label: 'WATCH' },      /* the viewer's own Nasdaq-100 stocks */
-    { id: 'probe', label: 'PROBE' },      /* relabelled with the chosen coin's symbol */
-    { id: 'corr', label: 'CORR' },
-    { id: 'vol', label: 'VOL' },
-    { id: 'dd', label: 'DD' },
-    { id: 'note', label: 'NOTE' }         /* the daily reading */
-  ];
+  /* The dial's positions come from the stored layout (dial.js), not from a
+   * list of every view the application has. The array is mutated in place
+   * rather than replaced, so anything already holding MP.meter.STOPS keeps a
+   * live reference. */
+  var STOPS = [];
   var SWEEP_DEG = 320;                              /* OFF at the top to the last stop */
-  var STEP_DEG = SWEEP_DEG / (STOPS.length - 1);    /* the dead zone takes the rest */
+  var STEP_DEG = SWEEP_DEG;                         /* recomputed by applyDial */
+
+  function stopsFrom(layout) {
+    return layout.map(function (id) {
+      return { id: id, label: MP.dial ? MP.dial.labelFor(id) : String(id).toUpperCase() };
+    });
+  }
+
+  /* Rebuilds the plate for a layout: the stops, the angle between them, the
+   * printed face and the knob's range. Safe to call before the DOM exists. */
+  function applyDial(list) {
+    var layout = MP.dial ? MP.dial.read(list) : ['off', 'subject'];
+    var next = stopsFrom(layout);
+    STOPS.length = 0;
+    for (var i = 0; i < next.length; i++) STOPS.push(next[i]);
+    STEP_DEG = SWEEP_DEG / Math.max(1, STOPS.length - 1);
+    if (MP.meter) MP.meter.STEP_DEG = STEP_DEG;     /* the export carries the live value */
+    renderPlate();
+    var knob = el('knob');
+    if (knob) knob.setAttribute('aria-valuemax', String(STOPS.length - 1));
+    var idx = indexOf(currentId);
+    if (idx >= 0) settleOn(idx);
+    markLabel(currentId);
+    return STOPS.slice();
+  }
+
+  function renderPlate() {
+    var dial = el('dial');
+    if (!dial) return;
+    var old = dial.querySelector('.dial-plate');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    dial.insertAdjacentHTML('afterbegin', plateSvg());
+  }
+
+  STOPS.push.apply(STOPS, stopsFrom(MP.dial ? MP.dial.load() : ['off', 'subject']));
+  STEP_DEG = SWEEP_DEG / Math.max(1, STOPS.length - 1);
   var DETENT_MS = 220;                              /* how long the click feedback lasts */
   var WHEEL_MS = 110;                               /* one step per wheel notch, no faster */
 
@@ -81,6 +106,8 @@
     return -1;
   }
 
+  function changedFrom(was, id) { return was !== null && was !== id; }
+
   function polar(r, deg) {
     var t = deg * Math.PI / 180;
     return { x: (CX + r * Math.sin(t)).toFixed(2), y: (CY - r * Math.cos(t)).toFixed(2) };
@@ -104,13 +131,14 @@
       s += '<g class="dial-stop" data-stop="' + STOPS[i].id + '">' +
         '<circle class="dial-hit" cx="' + lp.x + '" cy="' + lp.y + '" r="' + R_HIT + '"/>' +
         '<text class="dial-lab" x="' + lp.x + '" y="' + lp.y + '" text-anchor="middle" dominant-baseline="central">' +
-        escapeText(STOPS[i].label) + '</text></g>';
+        (STOPS[i].id === 'mover' ? '<tspan x="' + lp.x + '" dy="-5">MOVER</tspan><tspan x="' + lp.x + '" dy="12">LOSER</tspan>' : escapeText(STOPS[i].label)) + '</text></g>';
     }
     return s + '</svg>';
   }
 
   /* ---- state -------------------------------------------------------------- */
   var currentId = null;
+  var lastStop = null;     /* the stop before this one, so BACK out of LEARN has somewhere to go */
   var shownAngle = 0;      /* continuous, so the knob always takes the short way */
   var dragging = false;
   var held = false;
@@ -360,7 +388,20 @@
     }, 1200);
   }
 
+  function firstVisit() {
+    return !!MP.store && !MP.store.get(HINT_KEY, false);
+  }
+
+  /* Choosing a starting point, or simply turning the dial, puts the welcome
+   * away and never brings it back. */
+  function dismissWelcome() {
+    if (MP.store) MP.store.set(HINT_KEY, true);
+    if (screenMode === 'welcome') setScreen('reading');
+    return true;
+  }
+
   function touchedDial() {
+    if (screenMode === 'welcome') { dismissWelcome(); return; }
     if (hintLive) endHint();
   }
 
@@ -644,6 +685,16 @@
     }
     if (cancel) cancel.addEventListener('click', closeEditor);
     if (bell) bell.addEventListener('click', showAlerts);
+    /* REL keeps its own annunciator rather than a key: the row has five
+     * slots and an explanation earned one of them. */
+    var relBtn = el('lcdRel');
+    if (relBtn) {
+      relBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        primeAudio();
+        relPress();
+      });
+    }
     var speaker = el('lcdSound');
     if (speaker) {
       speaker.addEventListener('click', function (ev) {
@@ -661,7 +712,7 @@
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
-        if (ev.target !== lcd) return;
+        if (ev.target !== lcd || screenMode !== 'reading') return;
         if (ev.key === 'Enter' || ev.key === ' ') { openDrawer(); ev.preventDefault(); }
       });
     }
@@ -727,6 +778,7 @@
     if (typeof r.note === 'string') {
       return title + ', session of ' + r.text + '. ' + r.note + ' ' + (r.caption || '') + '. Press to open the details.';
     }
+    if (r.badge && r.badge.dir === 'down') title = 'Largest weekly decline';
     if (r.say) return title + ': ' + r.say + '. Press to open the details.';
     var value = r.empty ? 'no reading yet' : r.text + (r.unit ? ' ' + r.unit : '');
     var c = r.change;
@@ -796,24 +848,36 @@
    * or lists the watched stocks, and the modes swap inside the same box, so
    * the screen never changes height and the dial never moves. */
   var screenMode = 'reading';
+  var MODES = ['search', 'list', 'learn', 'welcome', 'probe', 'config'];
 
   function screen() { return screenMode; }
 
-  function setScreen(mode) {
-    var next = mode === 'search' || mode === 'list' ? mode : 'reading';
-    if (next === screenMode) return screenMode;
+  /* topic: for the learn mode, the concept to explain. Re-entering learn with
+   * a new topic repaints rather than returning early. */
+  function setScreen(mode, topic) {
+    var next = MODES.indexOf(mode) >= 0 ? mode : 'reading';
+    if (next === screenMode && next !== 'learn') return screenMode;
     screenMode = next;
-    var lcd = el('lcd'), searchPanel = el('lcdSearch'), listPanel = el('lcdList');
+    var lcd = el('lcd');
     if (lcd) {
       lcd.classList.toggle('is-search', next === 'search');
       lcd.classList.toggle('is-list', next === 'list');
+      lcd.classList.toggle('is-learn', next === 'learn');
+      lcd.classList.toggle('is-welcome', next === 'welcome');
+      lcd.classList.toggle('is-probe', next === 'probe');
+      lcd.classList.toggle('is-config', next === 'config');
     }
-    if (searchPanel) searchPanel.hidden = next !== 'search';
-    if (listPanel) listPanel.hidden = next !== 'list';
+    [['lcdSearch', 'search'], ['lcdList', 'list'], ['lcdLearn', 'learn'], ['lcdWelcome', 'welcome'], ['lcdProbe', 'probe'], ['lcdConfig', 'config']].forEach(function (p) {
+      var node = el(p[0]);
+      if (node) node.hidden = next !== p[1];
+    });
     swapScreen();
     renderKeys();
     if (next === 'search' && MP.app && MP.app.openSearch) MP.app.openSearch();
     if (next === 'list' && MP.app && MP.app.renderScreenList) MP.app.renderScreenList();
+    if (next === 'learn' && MP.app && MP.app.openLearn) MP.app.openLearn(topic);
+    if (next === 'probe' && MP.app && MP.app.openProbe) MP.app.openProbe(topic);
+    if (next === 'config' && MP.app && MP.app.openDialConfig) MP.app.openDialConfig();
     refresh(true);
     return screenMode;
   }
@@ -822,13 +886,45 @@
   /* Five keys whose labels follow the mode, so the row always operates what
    * is on the screen. HOLD keeps the last slot everywhere: a red key that
    * moves is a trap. */
-  var KEY_SETS = {
-    reading: [['data', 'DATA'], ['info', 'INFO'], ['minmax', 'MIN/MAX'], ['alert', 'ALERT'], ['hold', 'HOLD']],
-    list: [['data', 'DATA'], ['info', 'INFO'], ['add', 'ADD'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
-    search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']]
+  /* What the screen is doing decides the row first. */
+  var MODE_KEYS = {
+    search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
+    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'INFO'], ['hold', 'HOLD']],
+    learn: [['back', 'BACK'], ['deeper', 'DEEPER'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
+    welcome: [['data', 'DATA'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
+    probe: [['back', 'BACK'], ['ask', 'ASK'], ['none', ''], ['source', 'SOURCE'], ['hold', 'HOLD']],
+    config: [['back', 'BACK'], ['none', ''], ['reset', 'RESET'], ['save', 'SAVE'], ['hold', 'HOLD']]
   };
 
-  function keySet(mode) { return KEY_SETS[mode || screenMode] || KEY_SETS.reading; }
+  /* Reading a price: the meter's own functions. Slot two is LEARN at every
+   * stop, so the way to an explanation never moves. */
+  var PRICE_KEYS = [['data', 'DATA'], ['learn', 'LEARN'], ['minmax', 'MIN/MAX'], ['alert', 'ALERT'], ['hold', 'HOLD']];
+
+  /* Stops whose third and fourth keys are worth something else. A statistic
+   * takes no alert and no minimum, so those slots carry the pair selector
+   * and the drawer instead; a mover is a stock you may want to keep. */
+  /* The key says INDEX, not COMPARE: it is the widest label on the row and
+   * ran past its own key at every size. The comparison it enables is taught
+   * by name inside LEARN, where there is room for the word. */
+  /* PROBE takes the fourth slot wherever a measurement exists for it to
+   * investigate. The drawer is still one click on the screen away. */
+  var STATS_KEYS = [['data', 'DATA'], ['learn', 'LEARN'], ['compare', 'INDEX'], ['probe', 'PROBE'], ['hold', 'HOLD']];
+  var STOP_KEYS = {
+    corr: STATS_KEYS,
+    vol: STATS_KEYS,
+    dd: STATS_KEYS,
+    mover: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
+    loser: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
+    watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
+    off: [['data', 'DATA'], ['learn', 'LEARN'], ['customize', 'DIAL'], ['info', 'INFO'], ['hold', 'HOLD']]
+  };
+
+  function keySet(mode, stop) {
+    var m = mode || screenMode;
+    if (MODE_KEYS[m]) return MODE_KEYS[m];
+    var s = stop === undefined ? currentId : stop;
+    return STOP_KEYS[s] || PRICE_KEYS;
+  }
 
   function keyEl(act) { return document.querySelector('.keys .key[data-act="' + act + '"]'); }
 
@@ -837,10 +933,14 @@
     var keys = document.querySelectorAll('.keys .key');
     for (var i = 0; i < keys.length && i < set.length; i++) {
       var act = set[i][0];
+      keys[i].removeAttribute('aria-pressed');
+      keys[i].removeAttribute('aria-expanded');
       keys[i].setAttribute('data-act', act);
       keys[i].textContent = set[i][1];
       keys[i].disabled = act === 'none';
       keys[i].classList.toggle('key-hold', act === 'hold');
+      /* the end key names the side it would turn to, not the side shown */
+      if (act === 'end' && MP.app && MP.app.moverEndLabel) keys[i].textContent = MP.app.moverEndLabel();
       if (act === 'info') keys[i].setAttribute('aria-controls', 'drawer');
       else keys[i].removeAttribute('aria-controls');
     }
@@ -858,14 +958,43 @@
     if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden ? 'true' : 'false');
   }
 
+  /* Where CANCEL and BACK land: the list on the watch stop, the explanation
+   * on the learn stop, the reading everywhere else. */
+  function homeMode() {
+    if (currentId === 'watch') return 'list';
+    if (currentId === 'learn') return 'learn';
+    if (currentId === 'investigate') return 'probe';
+    return 'reading';
+  }
+
   function pressSoftKey(act) {
     var form = el('lcdEdit');
-    if (act === 'data') { setScreen(screenMode === 'search' ? (currentId === 'watch' ? 'list' : 'reading') : 'search'); return; }
-    if (act === 'cancel') { setScreen(currentId === 'watch' ? 'list' : 'reading'); return; }
+    if (act === 'data') { setScreen(screenMode === 'search' ? homeMode() : 'search'); return; }
+    if (act === 'cancel') { setScreen(homeMode()); return; }
+    if (act === 'back') {
+      /* on the learn and investigate stops there is no reading to go back
+       * to, so the dial goes instead */
+      if (currentId === 'learn' || currentId === 'investigate') go(lastStop || 'btc');
+      else setScreen(homeMode());
+      return;
+    }
+    if (act === 'learn') { setScreen('learn'); return; }
+    if (act === 'deeper') { if (MP.app && MP.app.learnDeeper) MP.app.learnDeeper(); return; }
+    if (act === 'probe') { setScreen('probe'); return; }
+    if (act === 'ask') { if (MP.app && MP.app.focusProbeAsk) MP.app.focusProbeAsk(); return; }
+    if (act === 'source') { if (MP.app && MP.app.toggleProbeSource) MP.app.toggleProbeSource(); return; }
+    if (act === 'end') { if (MP.app && MP.app.toggleMoverEnd) MP.app.toggleMoverEnd(); return; }
+    if (act === 'customize') { setScreen('config'); return; }
+    if (act === 'save') { if (MP.app && MP.app.saveDialConfig) MP.app.saveDialConfig(); return; }
+    if (act === 'reset') { if (MP.app && MP.app.resetDialConfig) MP.app.resetDialConfig(); return; }
     if (act === 'info') { openDrawer(); markKeys(); return; }
     if (act === 'minmax') { minmaxPress(); return; }
     if (act === 'alert') { if (form && !form.hidden) closeEditor(); else openEditor(); return; }
     if (act === 'add') { setScreen('search'); return; }
+    if (act === 'open') { if (MP.app && MP.app.openWatchRow) MP.app.openWatchRow(-1); return; }
+    if (act === 'list') { setScreen('list'); return; }
+    if (act === 'watch') { if (MP.app && MP.app.toggleWatchCurrent) MP.app.toggleWatchCurrent(); return; }
+    if (act === 'compare') { if (MP.app && MP.app.cycleIndex) MP.app.cycleIndex(); return; }
     if (act === 'remove') { if (MP.app && MP.app.removeCurrentWatch) MP.app.removeCurrentWatch(); return; }
     if (act === 'hold') setHold(!held);
   }
@@ -884,18 +1013,24 @@
         modeEl.innerHTML = '<b class="lcd-badge is-' + (r.badge.dir === 'down' ? 'down' : 'up') + '">' +
           escapeText(r.badge.text) + '</b>' + escapeText(r.mode || '');
       } else {
-        modeEl.textContent = off ? '' : r.mode || '';
+        modeEl.textContent = off ? '' : screenMode === 'learn' ? 'LEARN · CURRENT MEASUREMENT' : screenMode === 'probe' ? 'PROBE · CURRENT MEASUREMENT' : r.mode || '';
       }
     }
 
     var chart = el('lcdChart');
     if (chart) {
       /* the NOTE stop shows words where the other stops draw a line */
-      chart.innerHTML = !off && typeof r.note === 'string'
-        ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
-        : !off && series.length > 1
-          ? G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
-          : '';
+      var graph = series.length > 1 && series.some(isNum);
+      var title = r.chartTitle || 'PRICE HISTORY';
+      var detail = r.chartDetail || (graph ? 'Historical prices. The selected range is shown below.' : 'A chart appears when verified history is available. Press DATA to choose another instrument.');
+      chart.innerHTML = off
+        ? '<div class="chart-state"><strong>READY TO EXPLORE</strong><p>Press DATA to choose a market.</p><p>Turn the dial to measure it. LEARN explains the numbers; PROBE investigates questions.</p></div>'
+        : typeof r.note === 'string' ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
+        : graph && ['vol', 'corr', 'dd', 'beta'].indexOf(currentId) < 0 ? G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
+        : graph ? '<div class="measurement-chart"><span class="chart-title">' + escapeText(title) + '</span>' +
+          G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 }) +
+          '<span class="chart-detail">' + escapeText(detail) + '</span></div>'
+        : '<div class="chart-state"><strong>' + escapeText(r.chartState || (['vol', 'corr', 'dd'].indexOf(currentId) >= 0 ? 'INSUFFICIENT HISTORY' : 'PRICE HISTORY UNAVAILABLE')) + '</strong><p>' + escapeText(detail) + '</p></div>';
     }
 
     var priceEl = el('lcdPrice');
@@ -906,7 +1041,7 @@
       else priceEl.textContent = off ? '' : r.text || '';
       priceEl.className = 'lcd-price' + (!off && r.headDir ? ' is-' + r.headDir : '');
     }
-    setText('lcdUnit', off ? '' : r.unit || '');
+    setText('lcdUnit', off || (r.unit === '%' && /%$/.test(r.text)) ? '' : r.unit || '');
 
     var chg = el('lcdChange');
     if (chg) {
@@ -916,6 +1051,8 @@
       chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
+    /* one plain sentence saying what the number above it is */
+    setText('lcdWhat', off ? '' : r.what || '');
 
     /* instrument functions and alerts */
     var relAnn = el('lcdRel');
@@ -938,7 +1075,10 @@
 
     renderTabs(off ? null : r.tabs || null);
 
-    lcd.setAttribute('aria-label', describe(r, off));
+    var workspaceLabels = { search: 'Select instrument', list: 'Watchlist', learn: 'Learn this measurement', probe: 'Investigate this measurement', config: 'Customize dial', welcome: 'Welcome to Multimeter' };
+    lcd.setAttribute('role', screenMode === 'reading' ? 'button' : 'region');
+    lcd.setAttribute('tabindex', screenMode === 'reading' ? '0' : '-1');
+    lcd.setAttribute('aria-label', workspaceLabels[screenMode] || describe(r, off));
   }
 
   /* A value formatted the way this reading formats its own. */
@@ -965,13 +1105,40 @@
   /* ---- routing ------------------------------------------------------------ */
   function onStop(id) {
     var idx = indexOf(id);
-    if (idx < 0) return;
+    /* A view the dial does not carry (an asset reached by search or by hash)
+     * is still shown. The knob parks on SUBJECT, which is the position that
+     * represents whatever market is being looked at. */
+    if (idx < 0) {
+      var seat = indexOf('subject');
+      var wasOff = currentId;
+      if (changedFrom(wasOff, id)) lastStop = wasOff && wasOff !== 'learn' ? wasOff : lastStop;
+      currentId = id;
+      if (seat >= 0 && !dragging) settleOn(seat);
+      markLabel('subject');
+      if (screenMode !== 'reading' && screenMode !== 'welcome') setScreen('reading');
+      renderKeys();
+      refresh();
+      return;
+    }
     var changed = currentId !== null && currentId !== id;
+    if (changed && currentId !== 'learn' && currentId !== 'investigate') lastStop = currentId;
     currentId = id;
-    if (!hintArmed) { hintArmed = true; hint(); }   /* the first stop, once the page knows it */
-    /* the watch list is a screen mode, not a panel below the meter */
+    /* the watch list and the explanation are screen modes, not panels below
+     * the meter, so the display stays the workspace */
     if (id === 'watch') setScreen('list');
-    else if (screenMode !== 'reading') setScreen('reading');
+    else if (id === 'learn') setScreen('learn');
+    else if (id === 'investigate') setScreen('probe');
+    else if (screenMode !== 'reading' && screenMode !== 'welcome') setScreen('reading');
+    /* The first-visit orientation is the intro overlay (app.js); the dial
+     * keeps only its one-time nudge once that has been dismissed. */
+    if (!hintArmed) {
+      hintArmed = true;
+      hint();
+    }
+    /* the middle keys belong to the stop, and a stop can change without the
+     * screen's mode changing, so the row is rebuilt here rather than only
+     * in setScreen */
+    renderKeys();
     if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
@@ -983,7 +1150,7 @@
   function init() {
     var dial = el('dial'), knob = el('knob');
     if (!dial || !knob) return;
-    if (!dial.querySelector('.dial-plate')) dial.insertAdjacentHTML('afterbegin', plateSvg());
+    renderPlate();
     knob.setAttribute('aria-valuemin', '0');
     knob.setAttribute('aria-valuemax', String(STOPS.length - 1));
     wireDial(dial, knob);
@@ -1098,9 +1265,14 @@
     var h = root.innerHeight;
     if (!meter || !h) return;
     meter.style.width = '';
+    /* Both paddings, not just the top: counting only the top left the stage's
+     * bottom padding hanging past the fold, so the page scrolled by exactly
+     * that much on a laptop. */
     var stage = meter.parentNode;
-    var pad = stage ? parseFloat(root.getComputedStyle(stage).paddingTop) || 0 : 0;
-    var avail = h - pad - 12;
+    var cs = stage ? root.getComputedStyle(stage) : null;
+    var padTop = cs ? parseFloat(cs.paddingTop) || 0 : 0;
+    var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
+    var avail = h - padTop - padBottom;
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
     if (h1 > avail && w1 > FIT_MIN_W) {
       var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
@@ -1128,10 +1300,15 @@
     clampToSweep: clampToSweep,
     plateSvg: plateSvg,
     setStopLabel: setStopLabel,
+    applyDial: applyDial,
+    onDial: function (id) { return indexOf(id) >= 0; },
     clickParams: clickParams,
     toggleSkins: toggleSkins,
     setScreen: setScreen,
     screen: screen,
+    lastStop: function () { return lastStop; },
+    firstVisit: firstVisit,
+    dismissWelcome: dismissWelcome,
     keySet: keySet,
     renderKeys: renderKeys,
     setSound: setSound,

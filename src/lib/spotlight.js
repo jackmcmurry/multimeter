@@ -130,7 +130,56 @@
     return view.kind;
   }
 
-  function setOf(k) { return view.movers ? view.movers[k || view.kind] || null : null; }
+  /* ---- standing in for a scan that has not run ----------------------------- */
+  /* MOVER and LOSER must never read blank. When the job has not published a
+   * week's movers yet, the page works them out from what it does have: the
+   * previous published week for the stocks, at the last close, and a live
+   * CoinGecko pass over the fixed universe for the coins. A derived set says
+   * so, and a published one always wins. */
+  var derived = { stocks: null, crypto: null };
+
+  function setOf(k) {
+    var kind = k || view.kind;
+    var published = view.movers ? view.movers[kind] : null;
+    return published || derived[kind] || null;
+  }
+
+  /* The legacy version 1 file holds one name, the largest absolute move of
+   * its week, and the runner-up. Both are measured five-session moves, so
+   * ranking the two of them gives an honest highest and lowest. */
+  function deriveStocks(snap) {
+    var c = snap && snap.current;
+    derived.stocks = null;
+    if (!c || typeof c.symbol !== 'string' || !S.isNum(c.changePct5d)) return;
+    var rows = [{ symbol: c.symbol, name: c.name || c.symbol, change: c.changePct5d }];
+    if (c.runnerUp && typeof c.runnerUp.symbol === 'string' && S.isNum(c.runnerUp.changePct5d)) {
+      rows.push({ symbol: c.runnerUp.symbol, name: c.runnerUp.symbol, change: c.runnerUp.changePct5d });
+    }
+    var pick = selectMovers(rows, 'change');
+    if (!pick) return;
+    derived.stocks = Object.assign({ weekOf: c.weekOf || null }, pick, {
+      scanned: S.isNum(c.scanned) ? c.scanned : pick.scanned,
+      skipped: S.isNum(c.skipped) ? c.skipped : pick.skipped,
+      measuredTo: typeof c.computedAt === 'string' ? c.computedAt.slice(0, 10) : null,
+      rule: 'From the last published weekly scan, at the previous close. ' + (c.rule || STOCK_RULE),
+      derived: true
+    });
+  }
+
+  /* The coins the page already polls carry their own seven-day move, so the
+   * crypto end can always be ranked here and now. */
+  function deriveCrypto() {
+    var rows = [];
+    CRYPTO_UNIVERSE.forEach(function (c) {
+      var q = view.coins[c.id];
+      if (q && S.isNum(q.change7d)) rows.push({ symbol: c.symbol, name: c.name, id: c.id, change: q.change7d });
+    });
+    var pick = selectMovers(rows, 'change');
+    derived.crypto = pick ? Object.assign({ weekOf: weekOf(new Date()) }, pick, {
+      rule: CRYPTO_RULE + ' Ranked from CoinGecko in this browser, not from the weekly scan.',
+      derived: true
+    }) : null;
+  }
 
   function entryFor(which, k) {
     var set = setOf(k);
@@ -219,7 +268,14 @@
     r.text = F.signedPctPoints(e.change, 2);
     r.headDir = e.change < 0 ? 'down' : 'up';
     /* the switch below names the kind, so the mode line holds only the rank */
-    r.mode = S.isNum(e.rank) && S.isNum(set.scanned) ? 'Rank ' + e.rank + ' of ' + set.scanned : '';
+    /* A stock set standing in for a scan is priced at the last close, and the
+     * screen says so the way every other last-close reading does. The rank
+     * goes short there, so the two together still fit the annunciator. */
+    var atClose = !!set.derived && k === 'stocks';
+    r.mode = S.isNum(e.rank) && S.isNum(set.scanned)
+      ? 'Rank ' + e.rank + (atClose ? '/' : ' of ') + set.scanned
+      : '';
+    if (atClose) r.mode = (S.isNum(set.scanned) ? set.scanned + ' PRICED · ' : '') + 'LAST SCAN';
     var px = priceOf(e, k);
     if (px) {
       var dp = Math.abs(px.price) < 10 ? 4 : 2;
@@ -231,6 +287,9 @@
       }
     }
     r.spark = seriesOf(e, k, SCREEN_SESSIONS);
+    var history = k === 'stocks' && MP.app ? MP.app.stockSeries(e.symbol) : null;
+    r.chartTitle = e.symbol + (k === 'stocks' ? ' · LAST 30 CLOSES' : ' · 7-DAY PRICE HISTORY');
+    r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. ' + (history && history.length ? 'Chart through ' + history[history.length - 1].date + '.' : 'Chart and ranking have separate periods.');
     r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
       e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');
     return r;
@@ -380,6 +439,7 @@
   function applySnapshot(snap) {
     if (!snap) return;
     view.movers = snap.movers || null;
+    deriveStocks(snap);
     view.notice = null;
     render();
   }
@@ -393,6 +453,7 @@
   /* coins: CoinGecko id -> coinSpot for the crypto movers. */
   function setCoinQuotes(coins) {
     view.coins = coins || {};
+    deriveCrypto();
     render();
   }
 
@@ -408,6 +469,9 @@
     BOARD_SIZE: BOARD_SIZE,
     KINDS: KINDS,
     selectMovers: selectMovers,
+    deriveStocks: deriveStocks,
+    deriveCrypto: deriveCrypto,
+    derived: derived,
     weekOf: weekOf,
     nameFor: nameFor,
     view: view,

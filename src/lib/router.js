@@ -18,7 +18,10 @@
   var MP = (root.MP = root.MP || {});
 
   /* Dial order, clockwise from the top. */
-  var VIEWS = ['off', 'btc', 'eth', 'nasdaq', 'spx', 'mover', 'loser', 'watch', 'probe', 'corr', 'vol', 'dd', 'note'];
+  /* Every view the application can show. The dial carries a curated subset of
+   * these (see dial.js); the rest stay reachable by hash, by search and by
+   * the actions inside the screen. */
+  var VIEWS = ['off', 'subject', 'btc', 'eth', 'nasdaq', 'spx', 'mover', 'loser', 'watch', 'probe', 'corr', 'vol', 'dd', 'investigate', 'learn'];
 
   var ALIASES = {
     ixic: 'nasdaq',
@@ -39,8 +42,9 @@
     volatility: 'vol',
     drawdown: 'dd',
     about: 'off',
-    reading: 'note',
-    daily: 'note'
+    note: 'learn',
+    reading: 'learn',
+    daily: 'learn'
   };
 
   /* What an alias meant beyond the stop it lands on. */
@@ -53,6 +57,7 @@
   /* Which drawer panel (.view[data-panel]) each stop opens. */
   var PANELS = {
     off: 'about',
+    subject: 'hero',        /* repointed by the page as the subject changes */
     btc: 'hero',
     eth: 'markets',
     nasdaq: 'markets',
@@ -64,11 +69,13 @@
     corr: 'coupling',
     vol: 'volatility',
     dd: 'drawdown',
-    note: 'note'
+    investigate: 'investigate',
+    learn: 'learn'
   };
 
   var TITLES = {
     off: 'Off',
+    subject: 'Subject',
     btc: 'Bitcoin',
     eth: 'Ether',
     nasdaq: 'Nasdaq Composite',
@@ -80,7 +87,8 @@
     corr: 'Correlation',
     vol: 'Volatility',
     dd: 'Drawdown',
-    note: 'Daily reading'
+    investigate: 'Investigate',
+    learn: 'Learn'
   };
 
   /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
@@ -154,6 +162,15 @@
 
   function onChange(fn) { if (typeof fn === 'function') listeners.push(fn); }
 
+  /* The subject position shows whichever panel suits what it is pointing at:
+   * a coin's chart, an index row, a stock's table. */
+  function setPanel(view, panel) {
+    if (VIEWS.indexOf(view) < 0 || typeof panel !== 'string') return null;
+    PANELS[view] = panel;
+    if (current === view) applyPanel(view);
+    return panel;
+  }
+
   function start() {
     show(parseHash(root.location && root.location.hash));
     if (root.addEventListener) {
@@ -174,6 +191,7 @@
     show: show,
     go: go,
     overridePanel: overridePanel,
+    setPanel: setPanel,
     currentPanel: function () { return override || (current ? PANELS[current] : null); },
     onChange: onChange,
     start: start,

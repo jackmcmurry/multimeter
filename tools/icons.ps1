@@ -1,9 +1,13 @@
 <#
     icons.ps1: renders the app icons into docs/icons with System.Drawing.
 
-    The art is the favicon's: a yellow rounded square, a dark screen, a knob
-    with a yellow mark. Run once, commit the PNGs, rerun only when the art
-    changes. The GitHub Action never needs this file.
+    The art is the wordmark's mark: the rising M, mint on the instrument's
+    dark screen colour. Four strokes, two peaks, the second higher than the
+    first and the right foot higher than the left, so the letter reads as an
+    M and as a price line at the same time. It must match src/icon.svg.
+
+    Run once, commit the PNGs, rerun only when the art changes. The GitHub
+    Action never needs this file.
 
     Usage:  .\tools\icons.ps1
 #>
@@ -17,9 +21,14 @@ $here = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $out = Join-Path $here 'docs/icons'
 if (-not (Test-Path $out)) { New-Item -ItemType Directory -Path $out | Out-Null }
 
-$yellow = [System.Drawing.ColorTranslator]::FromHtml('#f6b71f')
-$screen = [System.Drawing.ColorTranslator]::FromHtml('#0a1216')
-$knob = [System.Drawing.ColorTranslator]::FromHtml('#14171c')
+$ground = [System.Drawing.ColorTranslator]::FromHtml('#0a1216')
+$mint = [System.Drawing.ColorTranslator]::FromHtml('#2ee59d')
+
+# The mark's five points in the 64-unit box, the same as src/icon.svg.
+$markPoints = @(
+    @(12.0, 49.0), @(22.0, 20.0), @(32.0, 36.0), @(42.0, 15.0), @(52.0, 38.0)
+)
+$markWidth = 6.5
 
 function Rounded([double]$x, [double]$y, [double]$w, [double]$h, [double]$r) {
     $p = New-Object System.Drawing.Drawing2D.GraphicsPath
@@ -33,7 +42,7 @@ function Rounded([double]$x, [double]$y, [double]$w, [double]$h, [double]$r) {
 }
 
 # Draws the 64-unit art scaled to `art` pixels, centred on a `size` canvas.
-# maskable: the whole canvas is yellow and the art sits inside the safe zone.
+# maskable: the whole canvas is the ground and the art sits inside the safe zone.
 function Draw-Icon([int]$size, [bool]$maskable, [string]$name) {
     $bmp = New-Object System.Drawing.Bitmap $size, $size
     $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -41,7 +50,7 @@ function Draw-Icon([int]$size, [bool]$maskable, [string]$name) {
     $g.Clear([System.Drawing.Color]::Transparent)
 
     if ($maskable) {
-        $g.FillRectangle((New-Object System.Drawing.SolidBrush $yellow), 0, 0, $size, $size)
+        $g.FillRectangle((New-Object System.Drawing.SolidBrush $ground), 0, 0, $size, $size)
         $art = $size * 0.72
     } else {
         $art = $size
@@ -50,11 +59,19 @@ function Draw-Icon([int]$size, [bool]$maskable, [string]$name) {
     $s = $art / 64.0
 
     if (-not $maskable) {
-        $g.FillPath((New-Object System.Drawing.SolidBrush $yellow), (Rounded $off $off $art $art (14 * $s)))
+        $g.FillPath((New-Object System.Drawing.SolidBrush $ground), (Rounded $off $off $art $art (12 * $s)))
     }
-    $g.FillPath((New-Object System.Drawing.SolidBrush $screen), (Rounded ($off + 10 * $s) ($off + 10 * $s) (44 * $s) (20 * $s) (3 * $s)))
-    $g.FillEllipse((New-Object System.Drawing.SolidBrush $knob), ($off + 21 * $s), ($off + 35 * $s), (22 * $s), (22 * $s))
-    $g.FillPath((New-Object System.Drawing.SolidBrush $yellow), (Rounded ($off + 30.5 * $s) ($off + 36 * $s) (3 * $s) (9 * $s) (1 * $s)))
+
+    $pen = New-Object System.Drawing.Pen($mint, ($markWidth * $s))
+    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Miter
+    $pen.MiterLimit = 6
+    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Square
+    $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Square
+    $pts = foreach ($p in $markPoints) {
+        New-Object System.Drawing.PointF(([float]($off + $p[0] * $s)), ([float]($off + $p[1] * $s)))
+    }
+    $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
+    $pen.Dispose()
 
     $path = Join-Path $out $name
     $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
