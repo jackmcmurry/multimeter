@@ -423,7 +423,7 @@
     var which = moverEndFor(stop);
     var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
     r.tabs = { kind: 'switch', label: 'Stocks or crypto', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks' };
-    r.what = (which === 'loser' ? 'LOSER: largest weekly fall.' : 'MOVER: largest weekly rise.') + ' ' + (r.chartDetail || 'Among tracked assets.');
+    r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') + '. ' + (r.chartDetail || '');
     if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
       (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');
     var tick = r.empty ? null : freshTick(productForStop(which));
@@ -1020,7 +1020,7 @@
       lamp.classList.toggle('is-closed', !!(d && !open));
     }
     if (word) word.textContent = !d ? F.DASH : open ? 'OPEN' : 'CLOSED';
-    if (host) host.setAttribute('aria-label', 'Market status: ' + (d ? (open ? 'open' : 'closed') : 'unknown'));
+    if (host) host.setAttribute('aria-label', 'US stock market: ' + (d ? (open ? 'open' : 'closed') : 'unknown'));
   }
 
   function tickSession() {
@@ -2177,7 +2177,10 @@
 
   function wireIntro() {
     var box = el('intro'), go = el('introGo'), how = el('howBtn');
-    if (go) go.addEventListener('click', hideIntro);
+    if (go) go.addEventListener('click', function () { hideIntro(); if (MP.meter) MP.meter.setScreen('search'); });
+    var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
+    if (about && aboutBtn) aboutBtn.addEventListener('click', function () { about.showModal(); });
+    if (about) about.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
     if (how) how.addEventListener('click', function () { showIntro(true); });
     if (box) {
       box.addEventListener('click', function (ev) { if (ev.target === box) hideIntro(); });

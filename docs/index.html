@@ -170,7 +170,7 @@ body {
   position: relative;
   background: var(--holster);
   border-radius: 0;
-  padding: 8px;
+  padding: 4px;
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.35),
     inset 0 -3px 0 var(--holster-dk),
@@ -202,7 +202,7 @@ body {
   z-index: 1;
   background: var(--shell);
   border-radius: 0;
-  padding: 16px 18px 18px;
+  padding: 20px 22px 22px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 var(--shell-dk);
 }
 
@@ -748,7 +748,7 @@ body {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     column-gap: 30px;
     align-items: center;
-    padding: 18px 24px 18px;
+    padding: 22px 28px 22px;
   }
   .face-dial .dial { width: 100%; margin: 0 auto; }
   .face-dial .jacks { padding-top: 0; }
@@ -1591,8 +1591,8 @@ tr.row-rule th {
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
   .stage { padding: 10px 6px 32px; gap: 12px; }
-  .holster { padding: 10px; }
-  .shell { padding: 12px 12px 14px; }
+  .holster { padding: 4px; }
+  .shell { padding: 18px 18px 20px; }
   .lcd { padding: 12px 14px 12px; }
   .lcd-chg { font-size: 16px; }
   .rng { padding: 8px 12px; font-size: 12px; }
@@ -1644,6 +1644,13 @@ tr.row-rule th {
 .lcd-identity, .mv-identity { margin: 5px 0 0; font-family: var(--f-ui); font-size: 11px; line-height: 1.35; color: var(--lcd-dim); overflow-wrap: anywhere; }
 .mv-identity { color: var(--dim); }
 
+.about-dialog { width: min(560px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; box-sizing: border-box; padding: 24px; border: 1px solid var(--dim); background: var(--shell); color: var(--text); }
+.about-dialog::backdrop { background: rgba(0, 0, 0, .72); }
+.about-dialog form { display: flex; justify-content: flex-end; }
+.about-link { border: 0; padding: 6px 0; background: transparent; color: var(--dim); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.about-link:hover { color: var(--text); }
+.about-link:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
 </style>
 </head>
 <body>
@@ -1655,13 +1662,12 @@ tr.row-rule th {
     <h2 class="intro-title" id="introTitle">MULTIMETER</h2>
     <p class="intro-lead">A financial instrument for exploring how markets move.</p>
     <ol class="intro-loop">
-      <li><b>SEE</b><span>Choose a market.</span></li>
-      <li><b>MEASURE</b><span>Use VOL, CORR and DD.</span></li>
-      <li><b>UNDERSTAND</b><span>LEARN explains the measurement.</span></li>
-      <li><b>INVESTIGATE</b><span>PROBE explores questions the data raises.</span></li>
+      <li><b>1 · CHOOSE</b><span>Search for an asset, such as NVIDIA.</span></li>
+      <li><b>2 · MEASURE</b><span>Turn to VOL (volatility) to inspect how much its price moves.</span></li>
+      <li><b>3 · LEARN</b><span>Press LEARN to understand the number you just measured.</span></li>
     </ol>
-    <p class="intro-turn">Turn the dial to begin.</p>
-    <button type="button" class="intro-go" id="introGo">START EXPLORING</button>
+    <p class="intro-turn">Next: CORR explores relationships; DD measures the fall from a peak.</p>
+    <button type="button" class="intro-go" id="introGo">CHOOSE AN ASSET</button>
     <p class="intro-foot">Real market data. Nothing here is investment advice.</p>
   </div>
 </div>
@@ -1696,7 +1702,7 @@ tr.row-rule th {
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
               </span>
             </span>
-            <span class="model" aria-hidden="true">MM-10</span>
+            <button type="button" class="about-link" id="aboutBtn">About</button><span class="model" aria-hidden="true">MM-10</span>
           </span>
         </div>
 
@@ -1842,7 +1848,7 @@ tr.row-rule th {
              what it is reading -->
         <div class="jacks">
           <span class="status" id="marketStatus" role="status">
-            <span class="status-cap">Market status</span>
+            <span class="status-cap">US stock market</span>
             <span class="status-val"><span class="status-lamp" id="marketLamp"></span><span class="status-word" id="marketWord">—</span></span>
           </span>
         </div>
@@ -1860,6 +1866,7 @@ tr.row-rule th {
       <span class="drawer-tools">
         <span class="muted" id="quoteStamp">—</span>
         <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
+
         <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
         <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
       </span>
@@ -2028,6 +2035,20 @@ tr.row-rule th {
     <p class="prov" id="drawerProv"></p>
   </div>
 </main>
+
+<dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
+  <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
+  <h2 id="aboutTitle">About Multimeter</h2>
+  <p>I'm Jack McMurry, a finance student at Emory. I'm building Multimeter to make market concepts easier to explore through a hands-on instrument: choose an asset, measure its movement, and understand what the numbers mean.</p>
+  <h2>My contribution &amp; process</h2>
+  <p>I set the learning goals and design direction, evaluate the experience, and guide each iteration. I develop with Claude Code and Codex assistance, checking calculations and testing the interface as it evolves. My next step is student testing: observe where people struggle and improve the explanations.</p>
+  <h2>Try one task</h2>
+  <p>Press DATA, search NVIDIA, turn to VOL (volatility), then press LEARN. CORR means correlation between assets; DD means drawdown from a peak.</p>
+  <h2>Current limitations</h2>
+  <p>This is an educational prototype. Stock data uses published snapshots and may be delayed; crypto can update while the US stock market is closed. Rankings cover only the assets the data source can price, not the whole market. Chart history and ranking windows are labeled separately.</p>
+  <p>PROBE currently uses local calculations; interactive Claude is not connected. Price data alone cannot establish why a market moved. Figures may be incomplete or incorrect. Nothing here is investment advice.</p>
+  <p><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View the project on GitHub</a></p>
+</dialog>
 
 <script>
 /* ==== src/lib/stats.js ==================================================== */
@@ -7729,8 +7750,10 @@ tr.row-rule th {
     }
     r.spark = seriesOf(e, k, SCREEN_SESSIONS);
     var history = k === 'stocks' && MP.app ? MP.app.stockSeries(e.symbol) : null;
-    r.chartTitle = e.symbol + (k === 'stocks' ? ' · LAST 30 CLOSES' : ' · 7-DAY PRICE HISTORY');
-    r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. ' + (history && history.length ? 'Chart through ' + history[history.length - 1].date + '.' : 'Chart and ranking have separate periods.');
+    r.universe = (S.isNum(set.scanned) ? set.scanned + ' priced ' : 'priced ') + (k === 'stocks' ? 'Nasdaq-100 stocks' : 'tracked coins (excludes BTC & ETH)');
+    var chartPeriod = k === 'stocks' ? 'last ' + (r.spark ? r.spark.length : 0) + ' closes' : '7-day history';
+    r.chartTitle = e.symbol + ' · ' + chartPeriod.toUpperCase();
+    r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. Chart: ' + chartPeriod + (history && history.length ? ' through ' + history[history.length - 1].date : '') + '.';
     r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
       e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');
     return r;
@@ -8360,7 +8383,7 @@ tr.row-rule th {
     var which = moverEndFor(stop);
     var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
     r.tabs = { kind: 'switch', label: 'Stocks or crypto', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks' };
-    r.what = (which === 'loser' ? 'LOSER: largest weekly fall.' : 'MOVER: largest weekly rise.') + ' ' + (r.chartDetail || 'Among tracked assets.');
+    r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') + '. ' + (r.chartDetail || '');
     if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
       (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');
     var tick = r.empty ? null : freshTick(productForStop(which));
@@ -8957,7 +8980,7 @@ tr.row-rule th {
       lamp.classList.toggle('is-closed', !!(d && !open));
     }
     if (word) word.textContent = !d ? F.DASH : open ? 'OPEN' : 'CLOSED';
-    if (host) host.setAttribute('aria-label', 'Market status: ' + (d ? (open ? 'open' : 'closed') : 'unknown'));
+    if (host) host.setAttribute('aria-label', 'US stock market: ' + (d ? (open ? 'open' : 'closed') : 'unknown'));
   }
 
   function tickSession() {
@@ -10114,7 +10137,10 @@ tr.row-rule th {
 
   function wireIntro() {
     var box = el('intro'), go = el('introGo'), how = el('howBtn');
-    if (go) go.addEventListener('click', hideIntro);
+    if (go) go.addEventListener('click', function () { hideIntro(); if (MP.meter) MP.meter.setScreen('search'); });
+    var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
+    if (about && aboutBtn) aboutBtn.addEventListener('click', function () { about.showModal(); });
+    if (about) about.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
     if (how) how.addEventListener('click', function () { showIntro(true); });
     if (box) {
       box.addEventListener('click', function (ev) { if (ev.target === box) hideIntro(); });

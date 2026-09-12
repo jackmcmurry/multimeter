@@ -419,8 +419,10 @@
     }
     r.spark = seriesOf(e, k, SCREEN_SESSIONS);
     var history = k === 'stocks' && MP.app ? MP.app.stockSeries(e.symbol) : null;
-    r.chartTitle = e.symbol + (k === 'stocks' ? ' · LAST 30 CLOSES' : ' · 7-DAY PRICE HISTORY');
-    r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. ' + (history && history.length ? 'Chart through ' + history[history.length - 1].date + '.' : 'Chart and ranking have separate periods.');
+    r.universe = (S.isNum(set.scanned) ? set.scanned + ' priced ' : 'priced ') + (k === 'stocks' ? 'Nasdaq-100 stocks' : 'tracked coins (excludes BTC & ETH)');
+    var chartPeriod = k === 'stocks' ? 'last ' + (r.spark ? r.spark.length : 0) + ' closes' : '7-day history';
+    r.chartTitle = e.symbol + ' · ' + chartPeriod.toUpperCase();
+    r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. Chart: ' + chartPeriod + (history && history.length ? ' through ' + history[history.length - 1].date : '') + '.';
     r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
       e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');
     return r;

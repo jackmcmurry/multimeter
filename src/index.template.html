@@ -55,13 +55,12 @@
     <h2 class="intro-title" id="introTitle">MULTIMETER</h2>
     <p class="intro-lead">A financial instrument for exploring how markets move.</p>
     <ol class="intro-loop">
-      <li><b>SEE</b><span>Choose a market.</span></li>
-      <li><b>MEASURE</b><span>Use VOL, CORR and DD.</span></li>
-      <li><b>UNDERSTAND</b><span>LEARN explains the measurement.</span></li>
-      <li><b>INVESTIGATE</b><span>PROBE explores questions the data raises.</span></li>
+      <li><b>1 · CHOOSE</b><span>Search for an asset, such as NVIDIA.</span></li>
+      <li><b>2 · MEASURE</b><span>Turn to VOL (volatility) to inspect how much its price moves.</span></li>
+      <li><b>3 · LEARN</b><span>Press LEARN to understand the number you just measured.</span></li>
     </ol>
-    <p class="intro-turn">Turn the dial to begin.</p>
-    <button type="button" class="intro-go" id="introGo">START EXPLORING</button>
+    <p class="intro-turn">Next: CORR explores relationships; DD measures the fall from a peak.</p>
+    <button type="button" class="intro-go" id="introGo">CHOOSE AN ASSET</button>
     <p class="intro-foot">Real market data. Nothing here is investment advice.</p>
   </div>
 </div>
@@ -96,7 +95,7 @@
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
               </span>
             </span>
-            <span class="model" aria-hidden="true">MM-10</span>
+            <button type="button" class="about-link" id="aboutBtn">About</button><span class="model" aria-hidden="true">MM-10</span>
           </span>
         </div>
 
@@ -242,7 +241,7 @@
              what it is reading -->
         <div class="jacks">
           <span class="status" id="marketStatus" role="status">
-            <span class="status-cap">Market status</span>
+            <span class="status-cap">US stock market</span>
             <span class="status-val"><span class="status-lamp" id="marketLamp"></span><span class="status-word" id="marketWord">—</span></span>
           </span>
         </div>
@@ -260,6 +259,7 @@
       <span class="drawer-tools">
         <span class="muted" id="quoteStamp">—</span>
         <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
+
         <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
         <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
       </span>
@@ -428,6 +428,20 @@
     <p class="prov" id="drawerProv"></p>
   </div>
 </main>
+
+<dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
+  <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
+  <h2 id="aboutTitle">About Multimeter</h2>
+  <p>I'm Jack McMurry, a finance student at Emory. I'm building Multimeter to make market concepts easier to explore through a hands-on instrument: choose an asset, measure its movement, and understand what the numbers mean.</p>
+  <h2>My contribution &amp; process</h2>
+  <p>I set the learning goals and design direction, evaluate the experience, and guide each iteration. I develop with Claude Code and Codex assistance, checking calculations and testing the interface as it evolves. My next step is student testing: observe where people struggle and improve the explanations.</p>
+  <h2>Try one task</h2>
+  <p>Press DATA, search NVIDIA, turn to VOL (volatility), then press LEARN. CORR means correlation between assets; DD means drawdown from a peak.</p>
+  <h2>Current limitations</h2>
+  <p>This is an educational prototype. Stock data uses published snapshots and may be delayed; crypto can update while the US stock market is closed. Rankings cover only the assets the data source can price, not the whole market. Chart history and ranking windows are labeled separately.</p>
+  <p>PROBE currently uses local calculations; interactive Claude is not connected. Price data alone cannot establish why a market moved. Figures may be incomplete or incorrect. Nothing here is investment advice.</p>
+  <p><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View the project on GitHub</a></p>
+</dialog>
 
 <script>
 /* @inject lib */
