@@ -1594,3 +1594,7 @@ tr.row-rule th {
   flex-shrink: 0;
 }
 .brand-word { text-shadow: none; }
+
+/* Asset identity stays secondary to the reading and its explanation. */
+.lcd-identity, .mv-identity { margin: 5px 0 0; font-family: var(--f-ui); font-size: 11px; line-height: 1.35; color: var(--lcd-dim); overflow-wrap: anywhere; }
+.mv-identity { color: var(--dim); }

@@ -17,6 +17,136 @@
 
   /* The stock movers rank every Nasdaq-100 member the data job priced (see
    * universe.js); the crypto movers rank the fixed list below. */
+  /* Short factual identities, separate from price-movement explanations. */
+  var STOCK_IDENTITIES = {
+  "SPCX": "Space launches and satellite internet",
+  "STX": "Hard drives and data storage",
+  "TER": "Chip testing equipment and robotics",
+  "TRI": "Professional information and software",
+  "AAPL": "Phones, computers and digital services",
+  "ABNB": "Short-stay rentals and experiences",
+  "ADBE": "Creative and document software",
+  "ADI": "Analog and mixed-signal chips",
+  "ADP": "Payroll and HR services",
+  "ADSK": "Design and engineering software",
+  "AEP": "Electric power utility",
+  "ALAB": "Data-center connectivity chips",
+  "ALNY": "RNA-based medicines",
+  "AMAT": "Chip manufacturing equipment",
+  "AMD": "Processors and graphics chips",
+  "AMGN": "Biotechnology medicines",
+  "AMZN": "Online retail and cloud services",
+  "APP": "Mobile advertising software",
+  "ARM": "Processor architecture and chip designs",
+  "ASML": "Chipmaking lithography machines",
+  "AVGO": "Semiconductors and infrastructure software",
+  "AXON": "Public-safety devices and software",
+  "BKNG": "Online travel booking",
+  "BKR": "Energy technology and equipment",
+  "CCEP": "Bottled drinks production and distribution",
+  "CDNS": "Electronic chip-design software",
+  "CEG": "Electricity generation",
+  "CMCSA": "Broadband, media and entertainment",
+  "COST": "Membership warehouse retail",
+  "CPRT": "Online vehicle auctions",
+  "CRWD": "Cloud cybersecurity software",
+  "CRWV": "Cloud computing for AI",
+  "CSCO": "Networking equipment and security",
+  "CSX": "Freight rail transportation",
+  "CTAS": "Work uniforms and facility services",
+  "DASH": "Local delivery marketplace",
+  "DDOG": "Cloud application monitoring",
+  "DXCM": "Continuous glucose monitoring",
+  "EXC": "Electric and gas utilities",
+  "FANG": "Oil and natural gas production",
+  "FAST": "Industrial supplies distribution",
+  "FER": "Transport infrastructure development",
+  "FTNT": "Network cybersecurity products",
+  "GEHC": "Medical imaging and diagnostics",
+  "GILD": "Biopharmaceutical medicines",
+  "GOOG": "Search, advertising and cloud services",
+  "GOOGL": "Search, advertising and cloud services",
+  "HON": "Industrial automation and technology",
+  "HONA": "Aircraft systems and aerospace technology",
+  "IDXX": "Veterinary diagnostics",
+  "INTC": "Processors and semiconductor manufacturing",
+  "INTU": "Tax, accounting and finance software",
+  "ISRG": "Robotic surgery systems",
+  "KDP": "Coffee and soft drinks",
+  "KHC": "Packaged foods and condiments",
+  "KLAC": "Chip manufacturing inspection equipment",
+  "LIN": "Industrial gases and engineering",
+  "LITE": "Optical networking components and lasers",
+  "LRCX": "Semiconductor manufacturing equipment",
+  "MAR": "Hotels and lodging brands",
+  "MCHP": "Microcontrollers and embedded chips",
+  "MDLZ": "Snacks, biscuits and chocolate",
+  "MELI": "Online commerce and digital payments",
+  "META": "Social platforms and digital advertising",
+  "MNST": "Energy drinks",
+  "MPWR": "Power-management chips",
+  "MRVL": "Data infrastructure chips",
+  "MSFT": "Software, cloud and productivity tools",
+  "MSTR": "Bitcoin treasury and analytics software",
+  "MU": "Memory and storage chips",
+  "NBIS": "Cloud infrastructure for AI",
+  "NFLX": "Streaming films and television",
+  "NVDA": "Graphics chips and AI computing",
+  "NXPI": "Automotive and embedded chips",
+  "ODFL": "Freight trucking",
+  "ORLY": "Automotive parts retail",
+  "PANW": "Cybersecurity platforms",
+  "PAYX": "Payroll and HR services",
+  "PCAR": "Commercial trucks",
+  "PDD": "Online shopping marketplaces",
+  "PEP": "Snacks and beverages",
+  "PLTR": "Data analysis software",
+  "PYPL": "Digital payments",
+  "QCOM": "Wireless and mobile chips",
+  "REGN": "Biotechnology medicines",
+  "RKLB": "Rocket launches and space systems",
+  "ROP": "Vertical software and technology",
+  "ROST": "Discount clothing and home retail",
+  "SBUX": "Coffee shops and beverages",
+  "SHOP": "Software for online merchants",
+  "SNDK": "Flash storage products",
+  "SNPS": "Chip-design and verification software",
+  "TEAM": "Team collaboration software",
+  "TMUS": "Wireless phone services",
+  "TSLA": "Electric vehicles and energy storage",
+  "TTD": "Digital advertising platform",
+  "TTWO": "Video games",
+  "TXN": "Analog and embedded chips",
+  "VRTX": "Medicines for serious diseases",
+  "WBD": "Film, television and streaming",
+  "WDAY": "HR and finance software",
+  "WDC": "Hard drives and data storage",
+  "WMT": "Retail stores and online shopping",
+  "XEL": "Electric and natural gas utility"
+};
+  var COIN_IDENTITIES = {
+  "SOL": "Blockchain for apps and payments",
+  "XRP": "Token used on XRP Ledger",
+  "BNB": "BNB Chain network token",
+  "ADA": "Cardano blockchain network token",
+  "DOGE": "Peer-to-peer meme cryptocurrency",
+  "AVAX": "Avalanche blockchain network token",
+  "LINK": "Token for blockchain data services",
+  "DOT": "Token for interconnected blockchains",
+  "LTC": "Peer-to-peer payment cryptocurrency",
+  "TRX": "TRON blockchain network token",
+  "UNI": "Uniswap exchange governance token",
+  "XLM": "Stellar payments network token",
+  "BCH": "Peer-to-peer payment cryptocurrency",
+  "NEAR": "NEAR blockchain network token",
+  "APT": "Aptos blockchain network token"
+};
+  function identity(e, kind) {
+    if (!e) return "";
+    var descriptions = kind === "crypto" ? COIN_IDENTITIES : STOCK_IDENTITIES;
+    return Object.prototype.hasOwnProperty.call(descriptions, e.symbol) ? descriptions[e.symbol] : "";
+  }
+
   var STOCK_RULE = 'Highest and lowest five-session move among the Nasdaq-100 members the data job could price.';
   var BOARD_SIZE = 5;   /* names at each end of the leaderboard */
 
@@ -265,6 +395,7 @@
     r.empty = false;
     r.symbol = e.symbol;
     r.ticker = e.symbol;
+    r.identity = (e.name || e.symbol) + (identity(e, k) ? " · " + identity(e, k) : "");
     r.text = F.signedPctPoints(e.change, 2);
     r.headDir = e.change < 0 ? 'down' : 'up';
     /* the switch below names the kind, so the mode line holds only the rank */
@@ -378,7 +509,8 @@
     setHtml('mvHead', logoHtml(e, k) +
       '<div class="mv-id"><div class="mv-title">' + F.escapeHtml(e.symbol) +
       '<span class="mv-badge is-' + (w === 'loser' ? 'down' : 'up') + '">' + BADGE[w] + '</span>' + watchBtn + '</div>' +
-      '<div class="mv-name">' + F.escapeHtml((px && px.name) || e.name || e.symbol) + '</div></div>' +
+      '<div class="mv-name">' + F.escapeHtml((px && px.name) || e.name || e.symbol) + '</div>' +
+      (identity(e, k) ? '<p class="mv-identity">' + F.escapeHtml(identity(e, k)) + '</p>' : '') + '</div>' +
       '<div class="mv-move is-' + dir + '">' + F.escapeHtml(F.signedPctPoints(e.change, 2)) +
       '<span class="mv-move-label">' + (k === 'crypto' ? '7 days' : '5 sessions') + '</span></div>');
 

@@ -255,7 +255,7 @@
       ch[i] = v;
       peak = Math.max(peak, Math.abs(v));
     }
-    if (peak > 0) for (var j = 0; j < n; j++) ch[j] *= 0.09 / peak;
+    if (peak > 0) for (var j = 0; j < n; j++) ch[j] *= 0.135 / peak;
     return buffer;
   }
 
@@ -983,6 +983,11 @@
       if (!off && r.ticker) priceEl.innerHTML = '<span class="lcd-ticker">' + escapeText(r.ticker) + '</span>' + escapeText(r.text || '');
       else priceEl.textContent = off ? '' : r.text || '';
       priceEl.className = 'lcd-price' + (!off && r.headDir ? ' is-' + r.headDir : '');
+    }
+    var identityEl = el('lcdIdentity');
+    if (identityEl) {
+      identityEl.textContent = off ? '' : r.identity || '';
+      identityEl.hidden = off || !r.identity;
     }
     setText('lcdUnit', off || (r.unit === '%' && /%$/.test(r.text)) ? '' : r.unit || '');
 
