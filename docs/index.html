@@ -1638,7 +1638,9 @@ tr.row-rule th {
   transform-origin: 62% 68%;
   flex-shrink: 0;
 }
-.brand-word { text-shadow: none; }
+.head { --wordmark-rise: clamp(5px, .55vw, 7px); }
+.brand-word { text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
+.head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* Asset identity stays secondary to the reading and its explanation. */
 .lcd-identity, .mv-identity { margin: 5px 0 0; font-family: var(--f-ui); font-size: 11px; line-height: 1.35; color: var(--lcd-dim); overflow-wrap: anywhere; }
