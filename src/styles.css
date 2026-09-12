@@ -2,7 +2,7 @@
  * styles.css: Multimeter.
  *
  * The page is a handheld digital multimeter in the classic field-instrument
- * livery: a graphite body in a rubber holster (gold unless a skin is chosen), a backlit dark display
+ * livery: a graphite body in a rubber holster (green unless a skin is chosen), a backlit dark display
  * up top with a luminous readout, a rotary function switch in the middle and
  * two square market lamps along the bottom. The detail drawer beneath it is a dark
  * card so the charts and tables read as the instrument's manual, not more
@@ -22,9 +22,9 @@
   --bg: #0b0d12;
 
   /* holster and body */
-  --holster: #f6b71f;
-  --holster-dk: #c98f0c;
-  --holster-lt: #ffd35a;
+  --holster: #22c55e;
+  --holster-dk: #15803d;
+  --holster-lt: #7ee8a4;
   --shell: #23272e;
   --shell-dk: #15181d;
   --shell-lt: #333942;
@@ -40,8 +40,8 @@
   /* controls */
   --knob: #14171c;
   --knob-lt: #2c3139;
-  --knob-mark: #f6b71f;
-  --accent-glow: rgba(246, 183, 31, 0.5);
+  --knob-mark: #4ade80;
+  --accent-glow: rgba(74, 222, 128, 0.5);
   --key: #333942;
   --key-dk: #0f1215;
   --key-text: #eef1f5;
@@ -71,10 +71,8 @@
   --pos: #2ee59d;
   --neg: #ff6b6b;
 
-  /* The wordmark's mint. It is deliberately the one colour a skin does not
-   * change: the instrument comes in seven colours, the maker's name does
-   * not. To let it follow the skin instead, set this to var(--holster). */
-  --brand: #2ee59d;
+  /* The wordmark and brand accents follow the selected palette. */
+  --brand: var(--holster);
 
   --lcd-tab: #17303a;
 
@@ -583,9 +581,10 @@ body {
 
 /* ---- skins ------------------------------------------------------------------ */
 /* A skin recolours the holster and the accent (the knob's mark, the active
- * label, focus rings, headings). Gold is the default and needs no attribute.
+ * label, focus rings, headings). Green is the default and needs no attribute.
  * meter.js sets data-skin on <html>; an inline script in the page head
  * applies a saved skin before the first paint. */
+:root[data-skin="gold"] { --holster: #f6b71f; --holster-dk: #c98f0c; --holster-lt: #ffd35a; --knob-mark: #f6b71f; --accent-glow: rgba(246, 183, 31, 0.5); }
 :root[data-skin="blue"] { --holster: #3b82f6; --holster-dk: #1e56c8; --holster-lt: #7fb0ff; --knob-mark: #6aa8ff; --accent-glow: rgba(106, 168, 255, 0.55); }
 :root[data-skin="pink"] { --holster: #f472b6; --holster-dk: #c7367f; --holster-lt: #ffb3da; --knob-mark: #ff8cc6; --accent-glow: rgba(255, 140, 198, 0.55); }
 :root[data-skin="green"] { --holster: #22c55e; --holster-dk: #15803d; --holster-lt: #7ee8a4; --knob-mark: #4ade80; --accent-glow: rgba(74, 222, 128, 0.5); }

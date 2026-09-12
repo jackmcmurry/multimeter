@@ -22,8 +22,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap">
 <script>
-/* The meter's skin carries over to this page. */
-try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
+/* Apply the green-default migration once, before the first paint. */
+(function () {
+  var skin = 'green';
+  try {
+    if (localStorage.getItem('mm.skinVersion') !== 'green-v1') {
+      localStorage.setItem('mm.skin', JSON.stringify('green'));
+      localStorage.setItem('mm.skinVersion', 'green-v1');
+    }
+    var saved = JSON.parse(localStorage.getItem('mm.skin'));
+    if (['gold', 'blue', 'pink', 'green', 'red', 'purple', 'silver'].indexOf(saved) >= 0) skin = saved;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-skin', skin);
+})();
 </script>
 <style>
 [hidden] { display: none !important; }

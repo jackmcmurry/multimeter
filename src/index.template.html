@@ -27,8 +27,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap">
 <script>
-/* A saved skin goes on before the first paint, so the page never flashes gold first. */
-try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
+/* Apply the green-default migration once, before the first paint. */
+(function () {
+  var skin = 'green';
+  try {
+    if (localStorage.getItem('mm.skinVersion') !== 'green-v1') {
+      localStorage.setItem('mm.skin', JSON.stringify('green'));
+      localStorage.setItem('mm.skinVersion', 'green-v1');
+    }
+    var saved = JSON.parse(localStorage.getItem('mm.skin'));
+    if (['gold', 'blue', 'pink', 'green', 'red', 'purple', 'silver'].indexOf(saved) >= 0) skin = saved;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-skin', skin);
+})();
 </script>
 <style>
 [hidden] { display: none !important; }
@@ -71,15 +82,15 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
           </span>
           <span class="head-right">
             <span class="skin-picker">
-              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: gold. Choose a colour.">
+              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: green. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
               </button>
               <span class="skin-menu" id="skins" role="group" aria-label="Skin" hidden>
                 <svg class="skin-board" viewBox="0 0 24 22" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM9.6 14.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 1 0 0-2.8z"/></svg>
-                <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
+                <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
-                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="true"></button>
                 <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>

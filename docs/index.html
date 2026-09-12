@@ -27,8 +27,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap">
 <script>
-/* A saved skin goes on before the first paint, so the page never flashes gold first. */
-try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mmSkin !== 'gold') document.documentElement.setAttribute('data-skin', mmSkin); } catch (e) {}
+/* Apply the green-default migration once, before the first paint. */
+(function () {
+  var skin = 'green';
+  try {
+    if (localStorage.getItem('mm.skinVersion') !== 'green-v1') {
+      localStorage.setItem('mm.skin', JSON.stringify('green'));
+      localStorage.setItem('mm.skinVersion', 'green-v1');
+    }
+    var saved = JSON.parse(localStorage.getItem('mm.skin'));
+    if (['gold', 'blue', 'pink', 'green', 'red', 'purple', 'silver'].indexOf(saved) >= 0) skin = saved;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-skin', skin);
+})();
 </script>
 <style>
 [hidden] { display: none !important; }
@@ -36,7 +47,7 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
  * styles.css: Multimeter.
  *
  * The page is a handheld digital multimeter in the classic field-instrument
- * livery: a graphite body in a rubber holster (gold unless a skin is chosen), a backlit dark display
+ * livery: a graphite body in a rubber holster (green unless a skin is chosen), a backlit dark display
  * up top with a luminous readout, a rotary function switch in the middle and
  * two square market lamps along the bottom. The detail drawer beneath it is a dark
  * card so the charts and tables read as the instrument's manual, not more
@@ -56,9 +67,9 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
   --bg: #0b0d12;
 
   /* holster and body */
-  --holster: #f6b71f;
-  --holster-dk: #c98f0c;
-  --holster-lt: #ffd35a;
+  --holster: #22c55e;
+  --holster-dk: #15803d;
+  --holster-lt: #7ee8a4;
   --shell: #23272e;
   --shell-dk: #15181d;
   --shell-lt: #333942;
@@ -74,8 +85,8 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
   /* controls */
   --knob: #14171c;
   --knob-lt: #2c3139;
-  --knob-mark: #f6b71f;
-  --accent-glow: rgba(246, 183, 31, 0.5);
+  --knob-mark: #4ade80;
+  --accent-glow: rgba(74, 222, 128, 0.5);
   --key: #333942;
   --key-dk: #0f1215;
   --key-text: #eef1f5;
@@ -105,10 +116,8 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
   --pos: #2ee59d;
   --neg: #ff6b6b;
 
-  /* The wordmark's mint. It is deliberately the one colour a skin does not
-   * change: the instrument comes in seven colours, the maker's name does
-   * not. To let it follow the skin instead, set this to var(--holster). */
-  --brand: #2ee59d;
+  /* The wordmark and brand accents follow the selected palette. */
+  --brand: var(--holster);
 
   --lcd-tab: #17303a;
 
@@ -617,9 +626,10 @@ body {
 
 /* ---- skins ------------------------------------------------------------------ */
 /* A skin recolours the holster and the accent (the knob's mark, the active
- * label, focus rings, headings). Gold is the default and needs no attribute.
+ * label, focus rings, headings). Green is the default and needs no attribute.
  * meter.js sets data-skin on <html>; an inline script in the page head
  * applies a saved skin before the first paint. */
+:root[data-skin="gold"] { --holster: #f6b71f; --holster-dk: #c98f0c; --holster-lt: #ffd35a; --knob-mark: #f6b71f; --accent-glow: rgba(246, 183, 31, 0.5); }
 :root[data-skin="blue"] { --holster: #3b82f6; --holster-dk: #1e56c8; --holster-lt: #7fb0ff; --knob-mark: #6aa8ff; --accent-glow: rgba(106, 168, 255, 0.55); }
 :root[data-skin="pink"] { --holster: #f472b6; --holster-dk: #c7367f; --holster-lt: #ffb3da; --knob-mark: #ff8cc6; --accent-glow: rgba(255, 140, 198, 0.55); }
 :root[data-skin="green"] { --holster: #22c55e; --holster-dk: #15803d; --holster-lt: #7ee8a4; --knob-mark: #4ade80; --accent-glow: rgba(74, 222, 128, 0.5); }
@@ -1668,15 +1678,15 @@ tr.row-rule th {
           </span>
           <span class="head-right">
             <span class="skin-picker">
-              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: gold. Choose a colour.">
+              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: green. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
               </button>
               <span class="skin-menu" id="skins" role="group" aria-label="Skin" hidden>
                 <svg class="skin-board" viewBox="0 0 24 22" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM9.6 14.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 1 0 0-2.8z"/></svg>
-                <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="true"></button>
+                <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
-                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="false"></button>
+                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="true"></button>
                 <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
@@ -6504,7 +6514,7 @@ tr.row-rule th {
 
   function currentSkin() {
     var s = document.documentElement.getAttribute('data-skin');
-    return SKINS.indexOf(s) >= 0 ? s : 'gold';
+    return SKINS.indexOf(s) >= 0 ? s : 'green';
   }
 
   function markSkin() {
@@ -6532,7 +6542,7 @@ tr.row-rule th {
   /* Unknown names are ignored. Returns the skin in force. */
   function setSkin(name) {
     if (SKINS.indexOf(name) < 0) return currentSkin();
-    if (name === 'gold') document.documentElement.removeAttribute('data-skin');
+    if (name === 'green') document.documentElement.removeAttribute('data-skin');
     else document.documentElement.setAttribute('data-skin', name);
     if (MP.store) MP.store.set('skin', name);
     markSkin();
@@ -6540,9 +6550,8 @@ tr.row-rule th {
   }
 
   function wireSkins() {
-    var saved = MP.store ? MP.store.get('skin', 'gold') : 'gold';
-    if (SKINS.indexOf(saved) >= 0 && saved !== currentSkin()) setSkin(saved);
-    else markSkin();
+    /* The head script has already migrated and applied the saved palette. */
+    markSkin();
     var host = el('skins');
     if (!host) return;
     host.addEventListener('click', function (ev) {

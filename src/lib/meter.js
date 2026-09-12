@@ -1178,7 +1178,7 @@
 
   function currentSkin() {
     var s = document.documentElement.getAttribute('data-skin');
-    return SKINS.indexOf(s) >= 0 ? s : 'gold';
+    return SKINS.indexOf(s) >= 0 ? s : 'green';
   }
 
   function markSkin() {
@@ -1206,7 +1206,7 @@
   /* Unknown names are ignored. Returns the skin in force. */
   function setSkin(name) {
     if (SKINS.indexOf(name) < 0) return currentSkin();
-    if (name === 'gold') document.documentElement.removeAttribute('data-skin');
+    if (name === 'green') document.documentElement.removeAttribute('data-skin');
     else document.documentElement.setAttribute('data-skin', name);
     if (MP.store) MP.store.set('skin', name);
     markSkin();
@@ -1214,9 +1214,8 @@
   }
 
   function wireSkins() {
-    var saved = MP.store ? MP.store.get('skin', 'gold') : 'gold';
-    if (SKINS.indexOf(saved) >= 0 && saved !== currentSkin()) setSkin(saved);
-    else markSkin();
+    /* The head script has already migrated and applied the saved palette. */
+    markSkin();
     var host = el('skins');
     if (!host) return;
     host.addEventListener('click', function (ev) {
