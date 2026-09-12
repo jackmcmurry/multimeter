@@ -25,6 +25,8 @@
     'dial_mode_changed',
     'drawer_opened',
     'concept_opened',
+    'search_opened',
+    'instrument_selected',
     'range_changed',
     'watch_added',
     'feedback_opened',

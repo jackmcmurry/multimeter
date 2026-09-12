@@ -581,6 +581,66 @@
       if (hintBefore === null) MP.store.remove('hinted'); else MP.store.set('hinted', hintBefore);
     }
 
+    /* ---- one instrument search --------------------------------------------- */
+    var SE = MP.search;
+    if (!SE) {
+      ok('search module is loaded', false, 'MP.search missing');
+    } else {
+      var idx = SE.build({
+        stocks: [{ symbol: 'AMD', name: 'Advanced Micro Devices, Inc.', close: 210.5, change1d: 1.2 },
+          { symbol: 'AMAT', name: 'Applied Materials, Inc.' }, { symbol: 'NVDA', name: 'NVIDIA Corporation' }],
+        coins: [{ id: 'solana', symbol: 'SOL', name: 'Solana' }],
+        remote: [{ id: 'ripple', symbol: 'XRP', name: 'XRP' }]
+      });
+      ok('the built-in instruments are always in the index', ['^IXIC', '^GSPC', 'BTC', 'ETH'].every(function (s) {
+        return idx.some(function (e) { return e.symbol === s; });
+      }));
+      ok('the index holds no duplicate instrument', (function () {
+        var seen = {};
+        return idx.every(function (e) { var k = e.kind + e.symbol; if (seen[k]) return false; seen[k] = 1; return true; });
+      })());
+      function syms(list) { return list.map(function (e) { return e.symbol; }).join(','); }
+      eq('an exact ticker matches alone when nothing else does', syms(SE.query(idx, 'amd')), 'AMD');
+      eq('a ticker prefix lists every match, by ticker', syms(SE.query(idx, 'am')), 'AMAT,AMD');
+      eq('a company name finds its ticker', syms(SE.query(idx, 'nvidia')), 'NVDA');
+      eq('a coin found remotely is searchable', syms(SE.query(idx, 'xrp')), 'XRP');
+      eq('an empty query offers a shortlist', SE.query(idx, '').length, Math.min(SE.LIMIT, idx.length));
+      eq('the result count is capped', SE.query(idx, 'a', 3).length, 3);
+      eq('nothing matches nonsense', SE.query(idx, 'zzzz').length, 0);
+
+      eq('an index routes to its own stop', SE.route({ kind: 'index', symbol: '^IXIC', stop: 'nasdaq' }).stop, 'nasdaq');
+      eq('bitcoin routes to its own stop', SE.route(SE.BUILT_IN[2]).stop, 'btc');
+      var coinRoute = SE.route({ kind: 'coin', symbol: 'SOL', name: 'Solana', id: 'solana' });
+      eq('another coin routes to the coin stop', coinRoute.stop + ':' + coinRoute.action, 'probe:setCoin');
+      eq('the coin route carries what the picker needs', coinRoute.coin.id, 'solana');
+      var stockRoute = SE.route({ kind: 'stock', symbol: 'NVDA', name: 'NVIDIA Corporation' });
+      eq('a stock routes to the watch list', stockRoute.stop + ':' + stockRoute.action + ':' + stockRoute.symbol, 'watch:watch:NVDA');
+      ok('an unusable entry routes nowhere', SE.route({ kind: 'stock' }) === null && SE.route(null) === null);
+    }
+
+    /* ---- the screen's modes and the soft keys ------------------------------- */
+    if (M && M.keySet) {
+      ['reading', 'list', 'search'].forEach(function (mode) {
+        var set = M.keySet(mode);
+        eq('the ' + mode + ' key row has five keys', set.length, 5);
+        eq('HOLD keeps the last slot in ' + mode, set[4][0], 'hold');
+      });
+      eq('the reading row starts with DATA', M.keySet('reading')[0][1], 'DATA');
+      eq('the watch row offers ADD and REMOVE', M.keySet('list')[2][1] + ',' + M.keySet('list')[3][1], 'ADD,REMOVE');
+      eq('search offers a way out', M.keySet('search')[0][1], 'CANCEL');
+
+      var screenBefore = M.screen();
+      eq('the screen can become the search', M.setScreen('search'), 'search');
+      ok('the search panel is the one on show', !document.getElementById('lcdSearch').hidden && document.getElementById('lcdList').hidden);
+      eq('the keys follow the mode', document.querySelector('.keys .key').getAttribute('data-act'), 'cancel');
+      eq('the screen can list the watchlist', M.setScreen('list'), 'list');
+      ok('the list panel is the one on show', !document.getElementById('lcdList').hidden && document.getElementById('lcdSearch').hidden);
+      eq('an unknown mode reads as the reading', M.setScreen('nonsense'), 'reading');
+      ok('the reading is back and both panels are away',
+        document.getElementById('lcdSearch').hidden && document.getElementById('lcdList').hidden);
+      M.setScreen(screenBefore);
+    }
+
     /* ---- concepts, context and counting ------------------------------------ */
     var CO = MP.concepts;
     if (!CO) {

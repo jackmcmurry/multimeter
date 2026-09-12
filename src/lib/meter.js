@@ -484,32 +484,30 @@
   /* ---- hold, drawer, range tabs ------------------------------------------- */
   function setHold(on) {
     held = !!on;
-    var btn = el('holdBtn');
-    if (btn) {
-      btn.classList.toggle('is-held', held);
-      btn.setAttribute('aria-pressed', held ? 'true' : 'false');
-    }
+    markKeys();
     var ann = el('lcdHold');
     if (ann) ann.classList.toggle('is-on', held);
     if (!held) refresh();
   }
 
   function openDrawer(open) {
-    var drawer = el('drawer'), btn = el('detailBtn');
+    var drawer = el('drawer');
     if (!drawer) return;
     var show = open === undefined ? drawer.hidden : !!open;
     drawer.hidden = !show;
+    var btn = keyEl('info');
     if (btn) {
       btn.setAttribute('aria-expanded', show ? 'true' : 'false');
       btn.classList.toggle('is-on', show);
     }
+    if (show && MP.track) MP.track.event('drawer_opened', MP.router && MP.router.currentView ? MP.router.currentView() : '');
   }
 
   /* ---- REL, MIN/MAX, ALERT ------------------------------------------------ */
   var lastReading = null;   /* the reading last painted, for the function keys */
 
-  function pressKey(id, on, attr) {
-    var btn = el(id);
+  function pressKey(act, on, attr) {
+    var btn = keyEl(act);
     if (!btn) return;
     btn.classList.toggle('is-on', !!on);
     btn.setAttribute(attr || 'aria-pressed', on ? 'true' : 'false');
@@ -534,13 +532,13 @@
 
   function openEditor() {
     var form = el('lcdEdit'), input = el('lcdEditLevel');
-    if (!form || !input || !lastReading || currentId === 'off' || !isNum(lastReading.value)) return;
+    if (!form || !input || !lastReading || currentId === 'off' || screenMode !== 'reading' || !isNum(lastReading.value)) return;
     primeAudio();
     var dp = isNum(lastReading.dp) ? lastReading.dp : 2;
     input.value = String(Number(lastReading.value.toFixed(dp)));
     input.step = dp ? String(Math.pow(10, -dp)) : '1';
     form.hidden = false;
-    pressKey('alertBtn', true, 'aria-expanded');
+    pressKey('alert', true, 'aria-expanded');
     input.focus();
     input.select();
   }
@@ -548,7 +546,7 @@
   function closeEditor() {
     var form = el('lcdEdit');
     if (form) form.hidden = true;
-    pressKey('alertBtn', false, 'aria-expanded');
+    pressKey('alert', false, 'aria-expanded');
   }
 
   function submitEditor(ev) {
@@ -630,16 +628,16 @@
   }
 
   function wireButtons() {
-    var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd'), ranges = el('lcdRanges');
-    var rel = el('relBtn'), minmax = el('minmaxBtn'), alertBtn = el('alertBtn');
+    var lcd = el('lcd'), ranges = el('lcdRanges'), keys = el('keys');
     var form = el('lcdEdit'), cancel = el('lcdEditCancel'), bell = el('lcdBell');
-    if (hold) hold.addEventListener('click', function () { setHold(!held); });
-    if (detail) detail.addEventListener('click', function () { openDrawer(); });
-    if (rel) rel.addEventListener('click', relPress);
-    if (minmax) minmax.addEventListener('click', minmaxPress);
-    if (alertBtn) alertBtn.addEventListener('click', function () {
-      if (form && !form.hidden) closeEditor(); else openEditor();
-    });
+    if (keys) {
+      keys.addEventListener('click', function (ev) {
+        var btn = ev.target.closest ? ev.target.closest('.key[data-act]') : null;
+        if (!btn || btn.disabled) return;
+        primeAudio();
+        pressSoftKey(btn.getAttribute('data-act'));
+      });
+    }
     if (form) {
       form.addEventListener('submit', submitEditor);
       form.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { closeEditor(); ev.preventDefault(); } });
@@ -657,8 +655,9 @@
     }
     if (lcd) {
       lcd.addEventListener('click', function (ev) {
-        /* the tabs, the editor, the bell are controls of their own */
-        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell, #lcdSound')) return;
+        /* the tabs, the editor, the bell, the panels are controls of their own */
+        if (screenMode !== 'reading') return;
+        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell, #lcdSound, .lcd-panel')) return;
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
@@ -792,6 +791,85 @@
     detentTimer = setTimeout(function () { lcd.classList.remove('is-swap'); }, DETENT_MS);
   }
 
+  /* ---- the screen's modes --------------------------------------------------- */
+  /* The display is the workspace. It reads an instrument, searches for one,
+   * or lists the watched stocks, and the modes swap inside the same box, so
+   * the screen never changes height and the dial never moves. */
+  var screenMode = 'reading';
+
+  function screen() { return screenMode; }
+
+  function setScreen(mode) {
+    var next = mode === 'search' || mode === 'list' ? mode : 'reading';
+    if (next === screenMode) return screenMode;
+    screenMode = next;
+    var lcd = el('lcd'), searchPanel = el('lcdSearch'), listPanel = el('lcdList');
+    if (lcd) {
+      lcd.classList.toggle('is-search', next === 'search');
+      lcd.classList.toggle('is-list', next === 'list');
+    }
+    if (searchPanel) searchPanel.hidden = next !== 'search';
+    if (listPanel) listPanel.hidden = next !== 'list';
+    swapScreen();
+    renderKeys();
+    if (next === 'search' && MP.app && MP.app.openSearch) MP.app.openSearch();
+    if (next === 'list' && MP.app && MP.app.renderScreenList) MP.app.renderScreenList();
+    refresh(true);
+    return screenMode;
+  }
+
+  /* ---- soft keys ------------------------------------------------------------ */
+  /* Five keys whose labels follow the mode, so the row always operates what
+   * is on the screen. HOLD keeps the last slot everywhere: a red key that
+   * moves is a trap. */
+  var KEY_SETS = {
+    reading: [['data', 'DATA'], ['info', 'INFO'], ['minmax', 'MIN/MAX'], ['alert', 'ALERT'], ['hold', 'HOLD']],
+    list: [['data', 'DATA'], ['info', 'INFO'], ['add', 'ADD'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
+    search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']]
+  };
+
+  function keySet(mode) { return KEY_SETS[mode || screenMode] || KEY_SETS.reading; }
+
+  function keyEl(act) { return document.querySelector('.keys .key[data-act="' + act + '"]'); }
+
+  function renderKeys() {
+    var set = keySet();
+    var keys = document.querySelectorAll('.keys .key');
+    for (var i = 0; i < keys.length && i < set.length; i++) {
+      var act = set[i][0];
+      keys[i].setAttribute('data-act', act);
+      keys[i].textContent = set[i][1];
+      keys[i].disabled = act === 'none';
+      keys[i].classList.toggle('key-hold', act === 'hold');
+      if (act === 'info') keys[i].setAttribute('aria-controls', 'drawer');
+      else keys[i].removeAttribute('aria-controls');
+    }
+    markKeys();
+  }
+
+  /* the lit states the current row still owns */
+  function markKeys() {
+    var hold = keyEl('hold');
+    if (hold) {
+      hold.classList.toggle('is-held', held);
+      hold.setAttribute('aria-pressed', held ? 'true' : 'false');
+    }
+    var info = keyEl('info'), drawer = el('drawer');
+    if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden ? 'true' : 'false');
+  }
+
+  function pressSoftKey(act) {
+    var form = el('lcdEdit');
+    if (act === 'data') { setScreen(screenMode === 'search' ? (currentId === 'watch' ? 'list' : 'reading') : 'search'); return; }
+    if (act === 'cancel') { setScreen(currentId === 'watch' ? 'list' : 'reading'); return; }
+    if (act === 'info') { openDrawer(); markKeys(); return; }
+    if (act === 'minmax') { minmaxPress(); return; }
+    if (act === 'alert') { if (form && !form.hidden) closeEditor(); else openEditor(); return; }
+    if (act === 'add') { setScreen('search'); return; }
+    if (act === 'remove') { if (MP.app && MP.app.removeCurrentWatch) MP.app.removeCurrentWatch(); return; }
+    if (act === 'hold') setHold(!held);
+  }
+
   function paint(r) {
     var lcd = el('lcd');
     if (!lcd) return;
@@ -842,8 +920,7 @@
     /* instrument functions and alerts */
     var relAnn = el('lcdRel');
     if (relAnn) relAnn.classList.toggle('is-on', !off && !!r.rel);
-    pressKey('relBtn', !off && MP.funcs && MP.funcs.rel.get(currentId) !== null);
-    pressKey('minmaxBtn', !off && MP.funcs && MP.funcs.minmax.isShown(currentId));
+    pressKey('minmax', !off && MP.funcs && MP.funcs.minmax.isShown(currentId));
     var mmRow = el('lcdMinmax');
     if (mmRow) {
       var mm = !off && r.minmax;
@@ -892,6 +969,9 @@
     var changed = currentId !== null && currentId !== id;
     currentId = id;
     if (!hintArmed) { hintArmed = true; hint(); }   /* the first stop, once the page knows it */
+    /* the watch list is a screen mode, not a panel below the meter */
+    if (id === 'watch') setScreen('list');
+    else if (screenMode !== 'reading') setScreen('reading');
     if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
@@ -911,6 +991,7 @@
     wireButtons();
     wireSkins();
     markSound();
+    renderKeys();
     if (MP.router) MP.router.onChange(onStop);
 
     fitToWindow();
@@ -1049,6 +1130,10 @@
     setStopLabel: setStopLabel,
     clickParams: clickParams,
     toggleSkins: toggleSkins,
+    setScreen: setScreen,
+    screen: screen,
+    keySet: keySet,
+    renderKeys: renderKeys,
     setSound: setSound,
     soundOn: soundOn,
     hint: hint,

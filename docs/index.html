@@ -1037,6 +1037,82 @@ tr.row-rule th {
 }
 .dial-hint.is-on { opacity: 1; }
 
+/* ---- the screen as a workspace -------------------------------------------- */
+/* Search and the watch list take over the screen without changing its size,
+ * so the dial never moves under a finger. The reading stays in the layout
+ * and gives up its ink. */
+.lcd.is-search .lcd-chart,
+.lcd.is-search .lcd-readout,
+.lcd.is-search .lcd-ranges,
+.lcd.is-list .lcd-chart,
+.lcd.is-list .lcd-readout,
+.lcd.is-list .lcd-ranges { visibility: hidden; }
+
+.lcd-panel {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 40px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lcd-input {
+  width: 100%;
+  font-family: var(--f-lcd);
+  font-size: clamp(16px, 4.2cqw, 26px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--lcd-ink);
+  background: var(--lcd-dk);
+  border: 0;
+  border-bottom: 2px solid var(--holster);
+  padding: 8px 2px;
+  caret-color: var(--holster);
+}
+.lcd-input::placeholder { color: var(--lcd-dim); }
+.lcd-input:focus { outline: none; }
+.lcd-input::-webkit-search-cancel-button { display: none; }
+
+.lcd-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.lcd-results li { margin: 0; }
+.lcd-pick {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 6px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--lcd-dim);
+  font-family: var(--f-lcd);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.lcd-pick .sym { font-size: 15px; font-weight: 700; color: var(--lcd-ink); letter-spacing: 0.04em; }
+.lcd-pick .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lcd-pick .meta { font-variant-numeric: tabular-nums; }
+.lcd-pick .meta.is-up { color: var(--up); }
+.lcd-pick .meta.is-down { color: var(--down); }
+.lcd-pick.is-active, .lcd-pick:hover { background: var(--lcd-tab); color: var(--lcd-ink); }
+.lcd-pick:focus-visible { outline: 2px solid var(--holster); outline-offset: -2px; }
+.lcd-empty { padding: 10px 6px; color: var(--lcd-dim); font-family: var(--f-lcd); font-size: 13px; }
+
+.key[disabled] { opacity: 0.35; cursor: default; }
+.key:empty { visibility: hidden; }
+
 /* ---- what a stop is, what a figure means, where it came from --------------- */
 .drawer-note {
   margin: -6px 0 14px;
@@ -1184,6 +1260,23 @@ tr.row-rule th {
               <span class="ann" id="lcdMax"></span>
             </div>
           </div>
+          <div class="lcd-panel lcd-search" id="lcdSearch" hidden>
+            <div class="lcd-row">
+              <span class="ann">Select instrument</span>
+              <span class="ann" id="lcdSearchHint">TYPE, THEN ENTER</span>
+            </div>
+            <input class="lcd-input" id="lcdSearchInput" type="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ticker, company or coin" aria-label="Search instruments" aria-controls="lcdResults" role="combobox" aria-expanded="true">
+            <ul class="lcd-results" id="lcdResults" role="listbox" aria-label="Instruments"></ul>
+          </div>
+
+          <div class="lcd-panel lcd-list" id="lcdList" hidden>
+            <div class="lcd-row">
+              <span class="ann">Watchlist</span>
+              <span class="ann" id="lcdListCount"></span>
+            </div>
+            <ul class="lcd-results" id="lcdListRows" role="listbox" aria-label="Watched stocks"></ul>
+          </div>
+
           <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range" data-kind="ranges" data-sig="ranges|1,7,30,365">
             <button type="button" class="rng is-on" data-tab="ranges" data-value="1" aria-pressed="true">24H</button>
             <button type="button" class="rng" data-tab="ranges" data-value="7" aria-pressed="false">1W</button>
@@ -1192,12 +1285,14 @@ tr.row-rule th {
           </div>
         </div>
 
-        <div class="keys">
-          <button type="button" class="key" id="detailBtn" aria-expanded="false" aria-controls="drawer">DATA</button>
-          <button type="button" class="key" id="relBtn" aria-pressed="false" title="Relative: zero the reading here">REL</button>
-          <button type="button" class="key" id="minmaxBtn" aria-pressed="false" title="Capture the lowest and highest reading">MIN/MAX</button>
-          <button type="button" class="key" id="alertBtn" aria-expanded="false" aria-controls="lcdEdit" title="Beep when the reading crosses a level">ALERT</button>
-          <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
+        <!-- soft keys: the labels and the actions follow the dial and the
+             screen's mode, so the row always operates what is on screen -->
+        <div class="keys" id="keys">
+          <button type="button" class="key" data-slot="1" data-act="data">DATA</button>
+          <button type="button" class="key" data-slot="2" data-act="info">INFO</button>
+          <button type="button" class="key" data-slot="3" data-act="minmax">MIN/MAX</button>
+          <button type="button" class="key" data-slot="4" data-act="alert">ALERT</button>
+          <button type="button" class="key key-hold" data-slot="5" data-act="hold">HOLD</button>
         </div>
 
         </div>
@@ -3311,6 +3406,8 @@ tr.row-rule th {
     'dial_mode_changed',
     'drawer_opened',
     'concept_opened',
+    'search_opened',
+    'instrument_selected',
     'range_changed',
     'watch_added',
     'feedback_opened',
@@ -4283,32 +4380,30 @@ tr.row-rule th {
   /* ---- hold, drawer, range tabs ------------------------------------------- */
   function setHold(on) {
     held = !!on;
-    var btn = el('holdBtn');
-    if (btn) {
-      btn.classList.toggle('is-held', held);
-      btn.setAttribute('aria-pressed', held ? 'true' : 'false');
-    }
+    markKeys();
     var ann = el('lcdHold');
     if (ann) ann.classList.toggle('is-on', held);
     if (!held) refresh();
   }
 
   function openDrawer(open) {
-    var drawer = el('drawer'), btn = el('detailBtn');
+    var drawer = el('drawer');
     if (!drawer) return;
     var show = open === undefined ? drawer.hidden : !!open;
     drawer.hidden = !show;
+    var btn = keyEl('info');
     if (btn) {
       btn.setAttribute('aria-expanded', show ? 'true' : 'false');
       btn.classList.toggle('is-on', show);
     }
+    if (show && MP.track) MP.track.event('drawer_opened', MP.router && MP.router.currentView ? MP.router.currentView() : '');
   }
 
   /* ---- REL, MIN/MAX, ALERT ------------------------------------------------ */
   var lastReading = null;   /* the reading last painted, for the function keys */
 
-  function pressKey(id, on, attr) {
-    var btn = el(id);
+  function pressKey(act, on, attr) {
+    var btn = keyEl(act);
     if (!btn) return;
     btn.classList.toggle('is-on', !!on);
     btn.setAttribute(attr || 'aria-pressed', on ? 'true' : 'false');
@@ -4333,13 +4428,13 @@ tr.row-rule th {
 
   function openEditor() {
     var form = el('lcdEdit'), input = el('lcdEditLevel');
-    if (!form || !input || !lastReading || currentId === 'off' || !isNum(lastReading.value)) return;
+    if (!form || !input || !lastReading || currentId === 'off' || screenMode !== 'reading' || !isNum(lastReading.value)) return;
     primeAudio();
     var dp = isNum(lastReading.dp) ? lastReading.dp : 2;
     input.value = String(Number(lastReading.value.toFixed(dp)));
     input.step = dp ? String(Math.pow(10, -dp)) : '1';
     form.hidden = false;
-    pressKey('alertBtn', true, 'aria-expanded');
+    pressKey('alert', true, 'aria-expanded');
     input.focus();
     input.select();
   }
@@ -4347,7 +4442,7 @@ tr.row-rule th {
   function closeEditor() {
     var form = el('lcdEdit');
     if (form) form.hidden = true;
-    pressKey('alertBtn', false, 'aria-expanded');
+    pressKey('alert', false, 'aria-expanded');
   }
 
   function submitEditor(ev) {
@@ -4429,16 +4524,16 @@ tr.row-rule th {
   }
 
   function wireButtons() {
-    var hold = el('holdBtn'), detail = el('detailBtn'), lcd = el('lcd'), ranges = el('lcdRanges');
-    var rel = el('relBtn'), minmax = el('minmaxBtn'), alertBtn = el('alertBtn');
+    var lcd = el('lcd'), ranges = el('lcdRanges'), keys = el('keys');
     var form = el('lcdEdit'), cancel = el('lcdEditCancel'), bell = el('lcdBell');
-    if (hold) hold.addEventListener('click', function () { setHold(!held); });
-    if (detail) detail.addEventListener('click', function () { openDrawer(); });
-    if (rel) rel.addEventListener('click', relPress);
-    if (minmax) minmax.addEventListener('click', minmaxPress);
-    if (alertBtn) alertBtn.addEventListener('click', function () {
-      if (form && !form.hidden) closeEditor(); else openEditor();
-    });
+    if (keys) {
+      keys.addEventListener('click', function (ev) {
+        var btn = ev.target.closest ? ev.target.closest('.key[data-act]') : null;
+        if (!btn || btn.disabled) return;
+        primeAudio();
+        pressSoftKey(btn.getAttribute('data-act'));
+      });
+    }
     if (form) {
       form.addEventListener('submit', submitEditor);
       form.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { closeEditor(); ev.preventDefault(); } });
@@ -4456,8 +4551,9 @@ tr.row-rule th {
     }
     if (lcd) {
       lcd.addEventListener('click', function (ev) {
-        /* the tabs, the editor, the bell are controls of their own */
-        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell, #lcdSound')) return;
+        /* the tabs, the editor, the bell, the panels are controls of their own */
+        if (screenMode !== 'reading') return;
+        if (ev.target.closest && ev.target.closest('#lcdRanges, #lcdEdit, #lcdBell, #lcdSound, .lcd-panel')) return;
         openDrawer();
       });
       lcd.addEventListener('keydown', function (ev) {
@@ -4591,6 +4687,85 @@ tr.row-rule th {
     detentTimer = setTimeout(function () { lcd.classList.remove('is-swap'); }, DETENT_MS);
   }
 
+  /* ---- the screen's modes --------------------------------------------------- */
+  /* The display is the workspace. It reads an instrument, searches for one,
+   * or lists the watched stocks, and the modes swap inside the same box, so
+   * the screen never changes height and the dial never moves. */
+  var screenMode = 'reading';
+
+  function screen() { return screenMode; }
+
+  function setScreen(mode) {
+    var next = mode === 'search' || mode === 'list' ? mode : 'reading';
+    if (next === screenMode) return screenMode;
+    screenMode = next;
+    var lcd = el('lcd'), searchPanel = el('lcdSearch'), listPanel = el('lcdList');
+    if (lcd) {
+      lcd.classList.toggle('is-search', next === 'search');
+      lcd.classList.toggle('is-list', next === 'list');
+    }
+    if (searchPanel) searchPanel.hidden = next !== 'search';
+    if (listPanel) listPanel.hidden = next !== 'list';
+    swapScreen();
+    renderKeys();
+    if (next === 'search' && MP.app && MP.app.openSearch) MP.app.openSearch();
+    if (next === 'list' && MP.app && MP.app.renderScreenList) MP.app.renderScreenList();
+    refresh(true);
+    return screenMode;
+  }
+
+  /* ---- soft keys ------------------------------------------------------------ */
+  /* Five keys whose labels follow the mode, so the row always operates what
+   * is on the screen. HOLD keeps the last slot everywhere: a red key that
+   * moves is a trap. */
+  var KEY_SETS = {
+    reading: [['data', 'DATA'], ['info', 'INFO'], ['minmax', 'MIN/MAX'], ['alert', 'ALERT'], ['hold', 'HOLD']],
+    list: [['data', 'DATA'], ['info', 'INFO'], ['add', 'ADD'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
+    search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']]
+  };
+
+  function keySet(mode) { return KEY_SETS[mode || screenMode] || KEY_SETS.reading; }
+
+  function keyEl(act) { return document.querySelector('.keys .key[data-act="' + act + '"]'); }
+
+  function renderKeys() {
+    var set = keySet();
+    var keys = document.querySelectorAll('.keys .key');
+    for (var i = 0; i < keys.length && i < set.length; i++) {
+      var act = set[i][0];
+      keys[i].setAttribute('data-act', act);
+      keys[i].textContent = set[i][1];
+      keys[i].disabled = act === 'none';
+      keys[i].classList.toggle('key-hold', act === 'hold');
+      if (act === 'info') keys[i].setAttribute('aria-controls', 'drawer');
+      else keys[i].removeAttribute('aria-controls');
+    }
+    markKeys();
+  }
+
+  /* the lit states the current row still owns */
+  function markKeys() {
+    var hold = keyEl('hold');
+    if (hold) {
+      hold.classList.toggle('is-held', held);
+      hold.setAttribute('aria-pressed', held ? 'true' : 'false');
+    }
+    var info = keyEl('info'), drawer = el('drawer');
+    if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden ? 'true' : 'false');
+  }
+
+  function pressSoftKey(act) {
+    var form = el('lcdEdit');
+    if (act === 'data') { setScreen(screenMode === 'search' ? (currentId === 'watch' ? 'list' : 'reading') : 'search'); return; }
+    if (act === 'cancel') { setScreen(currentId === 'watch' ? 'list' : 'reading'); return; }
+    if (act === 'info') { openDrawer(); markKeys(); return; }
+    if (act === 'minmax') { minmaxPress(); return; }
+    if (act === 'alert') { if (form && !form.hidden) closeEditor(); else openEditor(); return; }
+    if (act === 'add') { setScreen('search'); return; }
+    if (act === 'remove') { if (MP.app && MP.app.removeCurrentWatch) MP.app.removeCurrentWatch(); return; }
+    if (act === 'hold') setHold(!held);
+  }
+
   function paint(r) {
     var lcd = el('lcd');
     if (!lcd) return;
@@ -4641,8 +4816,7 @@ tr.row-rule th {
     /* instrument functions and alerts */
     var relAnn = el('lcdRel');
     if (relAnn) relAnn.classList.toggle('is-on', !off && !!r.rel);
-    pressKey('relBtn', !off && MP.funcs && MP.funcs.rel.get(currentId) !== null);
-    pressKey('minmaxBtn', !off && MP.funcs && MP.funcs.minmax.isShown(currentId));
+    pressKey('minmax', !off && MP.funcs && MP.funcs.minmax.isShown(currentId));
     var mmRow = el('lcdMinmax');
     if (mmRow) {
       var mm = !off && r.minmax;
@@ -4691,6 +4865,9 @@ tr.row-rule th {
     var changed = currentId !== null && currentId !== id;
     currentId = id;
     if (!hintArmed) { hintArmed = true; hint(); }   /* the first stop, once the page knows it */
+    /* the watch list is a screen mode, not a panel below the meter */
+    if (id === 'watch') setScreen('list');
+    else if (screenMode !== 'reading') setScreen('reading');
     if (changed) closeEditor();
     if (!dragging) settleOn(idx);      /* while dragging, the knob is the finger's */
     markLabel(id);
@@ -4710,6 +4887,7 @@ tr.row-rule th {
     wireButtons();
     wireSkins();
     markSound();
+    renderKeys();
     if (MP.router) MP.router.onChange(onStop);
 
     fitToWindow();
@@ -4848,6 +5026,10 @@ tr.row-rule th {
     setStopLabel: setStopLabel,
     clickParams: clickParams,
     toggleSkins: toggleSkins,
+    setScreen: setScreen,
+    screen: screen,
+    keySet: keySet,
+    renderKeys: renderKeys,
     setSound: setSound,
     soundOn: soundOn,
     hint: hint,
@@ -5447,6 +5629,112 @@ tr.row-rule th {
   }
 
   MP.watch = { MAX: MAX, KEY: KEY, read: read, add: add, remove: remove, search: search, load: load, save: save };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/search.js =================================================== */
+/* ============================================================================
+ * search.js: one instrument search, used wherever the meter asks "which
+ * instrument?": the DATA key, the watch list's ADD, and anything later.
+ *
+ * Pure. It builds an index from what the page already holds (the two
+ * indexes, the live coins, the crypto universe, the Nasdaq-100 rows from the
+ * data job) and ranks a query against it. Coins the page has never heard of
+ * arrive separately from CoinGecko's own search and are merged in by the
+ * caller, so this module never fetches anything itself.
+ *
+ * route() says what selecting an entry should do, in terms of dial stops the
+ * meter already has. Nothing here renders.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var MP = (root.MP = root.MP || {});
+
+  var LIMIT = 7;   /* rows the screen can show without scrolling */
+
+  /* The fixed part of the index: the stops that are instruments in their own
+   * right. Coins and stocks are added from live data by build(). */
+  var BUILT_IN = [
+    { kind: 'index', symbol: '^IXIC', name: 'Nasdaq Composite', stop: 'nasdaq' },
+    { kind: 'index', symbol: '^GSPC', name: 'S&P 500', stop: 'spx' },
+    { kind: 'coin', symbol: 'BTC', name: 'Bitcoin', id: 'bitcoin', stop: 'btc' },
+    { kind: 'coin', symbol: 'ETH', name: 'Ether', id: 'ethereum', stop: 'eth' }
+  ];
+
+  function clean(s) { return String(s || '').trim().toLowerCase(); }
+
+  /* opts: { stocks: [rows from stocks.json], coins: [{id,symbol,name}],
+   * remote: [coin search results] }. Later entries never displace earlier
+   * ones with the same symbol, so the built-in stops always win. */
+  function build(opts) {
+    opts = opts || {};
+    var out = [], seen = {};
+    function push(e) {
+      if (!e || !e.symbol) return;
+      var key = e.kind + ':' + e.symbol.toUpperCase();
+      if (seen[key]) return;
+      seen[key] = 1;
+      out.push(e);
+    }
+    BUILT_IN.forEach(push);
+    (opts.coins || []).forEach(function (c) {
+      push({ kind: 'coin', symbol: String(c.symbol || '').toUpperCase(), name: c.name || c.symbol, id: c.id });
+    });
+    (opts.stocks || []).forEach(function (r) {
+      push({ kind: 'stock', symbol: r.symbol, name: r.name || r.symbol, close: r.close, change1d: r.change1d });
+    });
+    (opts.remote || []).forEach(function (c) {
+      push({ kind: 'coin', symbol: String(c.symbol || '').toUpperCase(), name: c.name || c.symbol, id: c.id, remote: true });
+    });
+    return out;
+  }
+
+  /* 0 is the best match. An exact ticker beats a ticker that starts with the
+   * query, which beats a name that starts with it, which beats a name that
+   * merely contains it. Anything else is not a match. */
+  function rank(entry, q) {
+    var sym = clean(entry.symbol), name = clean(entry.name);
+    if (sym === q) return 0;
+    if (sym.indexOf(q) === 0) return 1;
+    if (name.indexOf(q) === 0) return 2;
+    if (name.indexOf(q) >= 0) return 3;
+    if (sym.indexOf(q) > 0) return 4;
+    return -1;
+  }
+
+  /* An empty query gives the shortlist a student starts from: the indexes and
+   * the live coins, then whatever the caller passed as recent. */
+  function query(index, q, limit) {
+    var text = clean(q);
+    limit = limit || LIMIT;
+    if (!text) return (index || []).slice(0, limit);
+    var hits = [];
+    (index || []).forEach(function (e) {
+      var r = rank(e, text);
+      if (r >= 0) hits.push({ e: e, r: r });
+    });
+    hits.sort(function (a, b) {
+      if (a.r !== b.r) return a.r - b.r;
+      return a.e.symbol < b.e.symbol ? -1 : a.e.symbol > b.e.symbol ? 1 : 0;
+    });
+    return hits.slice(0, limit).map(function (h) { return h.e; });
+  }
+
+  /* What selecting an entry means, in stops the meter already has:
+   *   index            -> its own stop
+   *   bitcoin, ether   -> their own stops
+   *   any other coin   -> the coin stop, with the pick set
+   *   stock            -> the watch list, added if it is not on it
+   * Returns null for an entry the meter cannot show. */
+  function route(entry) {
+    if (!entry || !entry.symbol) return null;
+    if (entry.kind === 'index' || entry.stop) return { stop: entry.stop, action: 'go' };
+    if (entry.kind === 'coin') return { stop: 'probe', action: 'setCoin', coin: { id: entry.id, symbol: entry.symbol, name: entry.name } };
+    if (entry.kind === 'stock') return { stop: 'watch', action: 'watch', symbol: entry.symbol };
+    return null;
+  }
+
+  MP.search = { LIMIT: LIMIT, BUILT_IN: BUILT_IN, build: build, query: query, rank: rank, route: route };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -7406,6 +7694,169 @@ tr.row-rule th {
     if (fb) fb.addEventListener('click', openFeedback);
   }
 
+  /* ---- the screen's search ------------------------------------------------- */
+  /* One search for every "which instrument?" the meter asks: the DATA key
+   * and the watch list's ADD open the same panel, on the screen itself. The
+   * local index answers immediately; coins the page has never heard of are
+   * merged in from CoinGecko a moment later. */
+  var find = { query: '', results: [], active: 0, remote: [], timer: null };
+
+  function searchIndex() {
+    return MP.search.build({
+      stocks: state.stocks.list ? state.stocks.list.rows : [],
+      coins: MP.spotlight ? MP.spotlight.CRYPTO_UNIVERSE : [],
+      remote: find.remote
+    });
+  }
+
+  function openSearch() {
+    find = { query: '', results: [], active: 0, remote: [], timer: null };
+    var input = el('lcdSearchInput');
+    if (input) {
+      input.value = '';
+      setTimeout(function () { try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); } }, 0);
+    }
+    runSearch('');
+    if (MP.track) MP.track.event('search_opened');
+  }
+
+  function runSearch(q) {
+    find.query = String(q || '');
+    find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+    find.active = 0;
+    renderSearchResults();
+    clearTimeout(find.timer);
+    if (find.query.trim().length >= 2) {
+      find.timer = setTimeout(function () { remoteCoins(find.query.trim()); }, 350);
+    }
+  }
+
+  function remoteCoins(q) {
+    var spec = SRC.coinSearch(q);
+    fetchJson(spec.url).then(function (payload) {
+      if (find.query.trim() !== q) return;
+      find.remote = spec.normalize(payload) || [];
+      find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+      renderSearchResults();
+    }).catch(function () { /* the local index has already answered */ });
+  }
+
+  function pickRow(i, e, active) {
+    var meta = '', cls = '';
+    if (e.kind === 'stock' && S.isNum(e.close)) {
+      meta = money(e.close);
+      if (S.isNum(e.change1d)) { meta += '  ' + F.signedPctPoints(e.change1d, 1); cls = e.change1d >= 0 ? 'is-up' : 'is-down'; }
+    } else {
+      meta = e.kind === 'index' ? 'INDEX' : 'COIN';
+    }
+    return '<li><button type="button" class="lcd-pick' + (active ? ' is-active' : '') + '" role="option"' +
+      ' aria-selected="' + (active ? 'true' : 'false') + '" data-pick="' + i + '">' +
+      '<span class="sym">' + F.escapeHtml(e.symbol) + '</span>' +
+      '<span class="desc">' + F.escapeHtml(e.name || '') + '</span>' +
+      '<span class="meta ' + cls + '">' + F.escapeHtml(meta) + '</span></button></li>';
+  }
+
+  function renderSearchResults() {
+    var host = el('lcdResults');
+    if (!host) return;
+    if (!find.results.length) {
+      host.innerHTML = '<li class="lcd-empty">' +
+        (find.query ? 'Nothing matches "' + F.escapeHtml(find.query) + '"' : 'Type a ticker, a company or a coin') + '</li>';
+      return;
+    }
+    host.innerHTML = find.results.map(function (e, i) { return pickRow(i, e, i === find.active); }).join('');
+  }
+
+  function moveSearch(by) {
+    if (!find.results.length) return;
+    find.active = (find.active + by + find.results.length) % find.results.length;
+    renderSearchResults();
+  }
+
+  /* Selecting sets the instrument, closes search and leaves the meter on the
+   * stop that shows it. */
+  function selectSearch(i) {
+    var e = find.results[i];
+    var r = e ? MP.search.route(e) : null;
+    if (!r) return;
+    if (MP.track) MP.track.event('instrument_selected', e.kind);
+    if (r.action === 'setCoin') setProbe(r.coin);
+    if (r.action === 'watch') addWatch(r.symbol);
+    if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
+    if (MP.router) MP.router.go(r.stop);
+    repaint();
+  }
+
+  /* ---- the screen's watch list --------------------------------------------- */
+  function renderScreenList() {
+    var host = el('lcdListRows'), w = state.watch;
+    setText('lcdListCount', w.list.length ? (w.index + 1) + '/' + w.list.length : '');
+    if (!host) return;
+    if (!w.list.length) {
+      host.innerHTML = '<li class="lcd-empty">Press ADD to put a Nasdaq-100 stock on the list</li>';
+      return;
+    }
+    host.innerHTML = w.list.map(function (sym, i) {
+      var row = stockRow(sym);
+      var meta = row && S.isNum(row.close) ? money(row.close) : F.DASH;
+      var cls = '';
+      if (row && S.isNum(row.change1d)) {
+        meta += '  ' + F.signedPctPoints(row.change1d, 1);
+        cls = row.change1d >= 0 ? 'is-up' : 'is-down';
+      }
+      return '<li><button type="button" class="lcd-pick' + (i === w.index ? ' is-active' : '') + '" role="option"' +
+        ' aria-selected="' + (i === w.index ? 'true' : 'false') + '" data-row="' + i + '">' +
+        '<span class="sym">' + F.escapeHtml(sym) + '</span>' +
+        '<span class="desc">' + F.escapeHtml(row ? row.name : '') + '</span>' +
+        '<span class="meta ' + cls + '">' + F.escapeHtml(meta) + '</span></button></li>';
+    }).join('');
+  }
+
+  function openWatchRow(i) {
+    state.watch.index = i;
+    ensureStock(watchSymbol());
+    if (MP.meter) MP.meter.setScreen('reading');
+    renderScreenList();
+    renderWatch();
+    repaint();
+  }
+
+  function removeCurrentWatch() {
+    var sym = watchSymbol();
+    if (sym) removeWatch(sym);
+    renderScreenList();
+  }
+
+  function wireScreen() {
+    var input = el('lcdSearchInput');
+    if (input) {
+      input.addEventListener('input', function () { runSearch(input.value); });
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'ArrowDown') { moveSearch(1); ev.preventDefault(); }
+        else if (ev.key === 'ArrowUp') { moveSearch(-1); ev.preventDefault(); }
+        else if (ev.key === 'Enter') { selectSearch(find.active); ev.preventDefault(); }
+        else if (ev.key === 'Escape') {
+          if (MP.meter) MP.meter.setScreen(currentStop() === 'watch' ? 'list' : 'reading');
+          ev.preventDefault();
+        }
+      });
+    }
+    var results = el('lcdResults');
+    if (results) {
+      results.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-pick]') : null;
+        if (b) selectSearch(parseInt(b.getAttribute('data-pick'), 10));
+      });
+    }
+    var rows = el('lcdListRows');
+    if (rows) {
+      rows.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-row]') : null;
+        if (b) openWatchRow(parseInt(b.getAttribute('data-row'), 10));
+      });
+    }
+  }
+
   /* ---- WATCH --------------------------------------------------------------- */
 
   function isWatched(sym) { return state.watch.list.indexOf(String(sym || '').toUpperCase()) >= 0; }
@@ -7413,6 +7864,7 @@ tr.row-rule th {
   function afterWatchChange() {
     ensureStock(watchSymbol());
     renderWatch();
+    renderScreenList();
     if (MP.spotlight) MP.spotlight.render();
     repaint();
   }
@@ -7645,6 +8097,7 @@ tr.row-rule th {
     wireProbe();
     wireWatch();
     renderWatch();
+    wireScreen();
     wireLearn();
     if (MP.track) MP.track.start();
     if (MP.spotlight && MP.spotlight.wire) MP.spotlight.wire();
@@ -7740,6 +8193,12 @@ tr.row-rule th {
     removeWatch: removeWatch,
     isWatched: isWatched,
     renderWatch: renderWatch,
+    openSearch: openSearch,
+    runSearch: runSearch,
+    selectSearch: selectSearch,
+    renderScreenList: renderScreenList,
+    openWatchRow: openWatchRow,
+    removeCurrentWatch: removeCurrentWatch,
     stockSeries: stockSeries,
     stockRow: stockRow,
     ensureStock: ensureStock,

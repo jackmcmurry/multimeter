@@ -1032,6 +1032,82 @@ tr.row-rule th {
 }
 .dial-hint.is-on { opacity: 1; }
 
+/* ---- the screen as a workspace -------------------------------------------- */
+/* Search and the watch list take over the screen without changing its size,
+ * so the dial never moves under a finger. The reading stays in the layout
+ * and gives up its ink. */
+.lcd.is-search .lcd-chart,
+.lcd.is-search .lcd-readout,
+.lcd.is-search .lcd-ranges,
+.lcd.is-list .lcd-chart,
+.lcd.is-list .lcd-readout,
+.lcd.is-list .lcd-ranges { visibility: hidden; }
+
+.lcd-panel {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 40px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lcd-input {
+  width: 100%;
+  font-family: var(--f-lcd);
+  font-size: clamp(16px, 4.2cqw, 26px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--lcd-ink);
+  background: var(--lcd-dk);
+  border: 0;
+  border-bottom: 2px solid var(--holster);
+  padding: 8px 2px;
+  caret-color: var(--holster);
+}
+.lcd-input::placeholder { color: var(--lcd-dim); }
+.lcd-input:focus { outline: none; }
+.lcd-input::-webkit-search-cancel-button { display: none; }
+
+.lcd-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.lcd-results li { margin: 0; }
+.lcd-pick {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 6px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--lcd-dim);
+  font-family: var(--f-lcd);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.lcd-pick .sym { font-size: 15px; font-weight: 700; color: var(--lcd-ink); letter-spacing: 0.04em; }
+.lcd-pick .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lcd-pick .meta { font-variant-numeric: tabular-nums; }
+.lcd-pick .meta.is-up { color: var(--up); }
+.lcd-pick .meta.is-down { color: var(--down); }
+.lcd-pick.is-active, .lcd-pick:hover { background: var(--lcd-tab); color: var(--lcd-ink); }
+.lcd-pick:focus-visible { outline: 2px solid var(--holster); outline-offset: -2px; }
+.lcd-empty { padding: 10px 6px; color: var(--lcd-dim); font-family: var(--f-lcd); font-size: 13px; }
+
+.key[disabled] { opacity: 0.35; cursor: default; }
+.key:empty { visibility: hidden; }
+
 /* ---- what a stop is, what a figure means, where it came from --------------- */
 .drawer-note {
   margin: -6px 0 14px;

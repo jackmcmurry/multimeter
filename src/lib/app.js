@@ -1522,6 +1522,169 @@
     if (fb) fb.addEventListener('click', openFeedback);
   }
 
+  /* ---- the screen's search ------------------------------------------------- */
+  /* One search for every "which instrument?" the meter asks: the DATA key
+   * and the watch list's ADD open the same panel, on the screen itself. The
+   * local index answers immediately; coins the page has never heard of are
+   * merged in from CoinGecko a moment later. */
+  var find = { query: '', results: [], active: 0, remote: [], timer: null };
+
+  function searchIndex() {
+    return MP.search.build({
+      stocks: state.stocks.list ? state.stocks.list.rows : [],
+      coins: MP.spotlight ? MP.spotlight.CRYPTO_UNIVERSE : [],
+      remote: find.remote
+    });
+  }
+
+  function openSearch() {
+    find = { query: '', results: [], active: 0, remote: [], timer: null };
+    var input = el('lcdSearchInput');
+    if (input) {
+      input.value = '';
+      setTimeout(function () { try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); } }, 0);
+    }
+    runSearch('');
+    if (MP.track) MP.track.event('search_opened');
+  }
+
+  function runSearch(q) {
+    find.query = String(q || '');
+    find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+    find.active = 0;
+    renderSearchResults();
+    clearTimeout(find.timer);
+    if (find.query.trim().length >= 2) {
+      find.timer = setTimeout(function () { remoteCoins(find.query.trim()); }, 350);
+    }
+  }
+
+  function remoteCoins(q) {
+    var spec = SRC.coinSearch(q);
+    fetchJson(spec.url).then(function (payload) {
+      if (find.query.trim() !== q) return;
+      find.remote = spec.normalize(payload) || [];
+      find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+      renderSearchResults();
+    }).catch(function () { /* the local index has already answered */ });
+  }
+
+  function pickRow(i, e, active) {
+    var meta = '', cls = '';
+    if (e.kind === 'stock' && S.isNum(e.close)) {
+      meta = money(e.close);
+      if (S.isNum(e.change1d)) { meta += '  ' + F.signedPctPoints(e.change1d, 1); cls = e.change1d >= 0 ? 'is-up' : 'is-down'; }
+    } else {
+      meta = e.kind === 'index' ? 'INDEX' : 'COIN';
+    }
+    return '<li><button type="button" class="lcd-pick' + (active ? ' is-active' : '') + '" role="option"' +
+      ' aria-selected="' + (active ? 'true' : 'false') + '" data-pick="' + i + '">' +
+      '<span class="sym">' + F.escapeHtml(e.symbol) + '</span>' +
+      '<span class="desc">' + F.escapeHtml(e.name || '') + '</span>' +
+      '<span class="meta ' + cls + '">' + F.escapeHtml(meta) + '</span></button></li>';
+  }
+
+  function renderSearchResults() {
+    var host = el('lcdResults');
+    if (!host) return;
+    if (!find.results.length) {
+      host.innerHTML = '<li class="lcd-empty">' +
+        (find.query ? 'Nothing matches "' + F.escapeHtml(find.query) + '"' : 'Type a ticker, a company or a coin') + '</li>';
+      return;
+    }
+    host.innerHTML = find.results.map(function (e, i) { return pickRow(i, e, i === find.active); }).join('');
+  }
+
+  function moveSearch(by) {
+    if (!find.results.length) return;
+    find.active = (find.active + by + find.results.length) % find.results.length;
+    renderSearchResults();
+  }
+
+  /* Selecting sets the instrument, closes search and leaves the meter on the
+   * stop that shows it. */
+  function selectSearch(i) {
+    var e = find.results[i];
+    var r = e ? MP.search.route(e) : null;
+    if (!r) return;
+    if (MP.track) MP.track.event('instrument_selected', e.kind);
+    if (r.action === 'setCoin') setProbe(r.coin);
+    if (r.action === 'watch') addWatch(r.symbol);
+    if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
+    if (MP.router) MP.router.go(r.stop);
+    repaint();
+  }
+
+  /* ---- the screen's watch list --------------------------------------------- */
+  function renderScreenList() {
+    var host = el('lcdListRows'), w = state.watch;
+    setText('lcdListCount', w.list.length ? (w.index + 1) + '/' + w.list.length : '');
+    if (!host) return;
+    if (!w.list.length) {
+      host.innerHTML = '<li class="lcd-empty">Press ADD to put a Nasdaq-100 stock on the list</li>';
+      return;
+    }
+    host.innerHTML = w.list.map(function (sym, i) {
+      var row = stockRow(sym);
+      var meta = row && S.isNum(row.close) ? money(row.close) : F.DASH;
+      var cls = '';
+      if (row && S.isNum(row.change1d)) {
+        meta += '  ' + F.signedPctPoints(row.change1d, 1);
+        cls = row.change1d >= 0 ? 'is-up' : 'is-down';
+      }
+      return '<li><button type="button" class="lcd-pick' + (i === w.index ? ' is-active' : '') + '" role="option"' +
+        ' aria-selected="' + (i === w.index ? 'true' : 'false') + '" data-row="' + i + '">' +
+        '<span class="sym">' + F.escapeHtml(sym) + '</span>' +
+        '<span class="desc">' + F.escapeHtml(row ? row.name : '') + '</span>' +
+        '<span class="meta ' + cls + '">' + F.escapeHtml(meta) + '</span></button></li>';
+    }).join('');
+  }
+
+  function openWatchRow(i) {
+    state.watch.index = i;
+    ensureStock(watchSymbol());
+    if (MP.meter) MP.meter.setScreen('reading');
+    renderScreenList();
+    renderWatch();
+    repaint();
+  }
+
+  function removeCurrentWatch() {
+    var sym = watchSymbol();
+    if (sym) removeWatch(sym);
+    renderScreenList();
+  }
+
+  function wireScreen() {
+    var input = el('lcdSearchInput');
+    if (input) {
+      input.addEventListener('input', function () { runSearch(input.value); });
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'ArrowDown') { moveSearch(1); ev.preventDefault(); }
+        else if (ev.key === 'ArrowUp') { moveSearch(-1); ev.preventDefault(); }
+        else if (ev.key === 'Enter') { selectSearch(find.active); ev.preventDefault(); }
+        else if (ev.key === 'Escape') {
+          if (MP.meter) MP.meter.setScreen(currentStop() === 'watch' ? 'list' : 'reading');
+          ev.preventDefault();
+        }
+      });
+    }
+    var results = el('lcdResults');
+    if (results) {
+      results.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-pick]') : null;
+        if (b) selectSearch(parseInt(b.getAttribute('data-pick'), 10));
+      });
+    }
+    var rows = el('lcdListRows');
+    if (rows) {
+      rows.addEventListener('click', function (ev) {
+        var b = ev.target.closest ? ev.target.closest('[data-row]') : null;
+        if (b) openWatchRow(parseInt(b.getAttribute('data-row'), 10));
+      });
+    }
+  }
+
   /* ---- WATCH --------------------------------------------------------------- */
 
   function isWatched(sym) { return state.watch.list.indexOf(String(sym || '').toUpperCase()) >= 0; }
@@ -1529,6 +1692,7 @@
   function afterWatchChange() {
     ensureStock(watchSymbol());
     renderWatch();
+    renderScreenList();
     if (MP.spotlight) MP.spotlight.render();
     repaint();
   }
@@ -1761,6 +1925,7 @@
     wireProbe();
     wireWatch();
     renderWatch();
+    wireScreen();
     wireLearn();
     if (MP.track) MP.track.start();
     if (MP.spotlight && MP.spotlight.wire) MP.spotlight.wire();
@@ -1856,6 +2021,12 @@
     removeWatch: removeWatch,
     isWatched: isWatched,
     renderWatch: renderWatch,
+    openSearch: openSearch,
+    runSearch: runSearch,
+    selectSearch: selectSearch,
+    renderScreenList: renderScreenList,
+    openWatchRow: openWatchRow,
+    removeCurrentWatch: removeCurrentWatch,
     stockSeries: stockSeries,
     stockRow: stockRow,
     ensureStock: ensureStock,

@@ -41,6 +41,7 @@ $libOrder = @(
     'src/lib/live.js',
     'src/lib/share.js',
     'src/lib/watch.js',
+    'src/lib/search.js',
     'src/lib/spotlight.js',
     'src/lib/app.js'
 )

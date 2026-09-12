@@ -100,6 +100,23 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
               <span class="ann" id="lcdMax"></span>
             </div>
           </div>
+          <div class="lcd-panel lcd-search" id="lcdSearch" hidden>
+            <div class="lcd-row">
+              <span class="ann">Select instrument</span>
+              <span class="ann" id="lcdSearchHint">TYPE, THEN ENTER</span>
+            </div>
+            <input class="lcd-input" id="lcdSearchInput" type="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ticker, company or coin" aria-label="Search instruments" aria-controls="lcdResults" role="combobox" aria-expanded="true">
+            <ul class="lcd-results" id="lcdResults" role="listbox" aria-label="Instruments"></ul>
+          </div>
+
+          <div class="lcd-panel lcd-list" id="lcdList" hidden>
+            <div class="lcd-row">
+              <span class="ann">Watchlist</span>
+              <span class="ann" id="lcdListCount"></span>
+            </div>
+            <ul class="lcd-results" id="lcdListRows" role="listbox" aria-label="Watched stocks"></ul>
+          </div>
+
           <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range" data-kind="ranges" data-sig="ranges|1,7,30,365">
             <button type="button" class="rng is-on" data-tab="ranges" data-value="1" aria-pressed="true">24H</button>
             <button type="button" class="rng" data-tab="ranges" data-value="7" aria-pressed="false">1W</button>
@@ -108,12 +125,14 @@ try { var mmSkin = JSON.parse(localStorage.getItem('mm.skin')); if (mmSkin && mm
           </div>
         </div>
 
-        <div class="keys">
-          <button type="button" class="key" id="detailBtn" aria-expanded="false" aria-controls="drawer">DATA</button>
-          <button type="button" class="key" id="relBtn" aria-pressed="false" title="Relative: zero the reading here">REL</button>
-          <button type="button" class="key" id="minmaxBtn" aria-pressed="false" title="Capture the lowest and highest reading">MIN/MAX</button>
-          <button type="button" class="key" id="alertBtn" aria-expanded="false" aria-controls="lcdEdit" title="Beep when the reading crosses a level">ALERT</button>
-          <button type="button" class="key key-hold" id="holdBtn" aria-pressed="false">HOLD</button>
+        <!-- soft keys: the labels and the actions follow the dial and the
+             screen's mode, so the row always operates what is on screen -->
+        <div class="keys" id="keys">
+          <button type="button" class="key" data-slot="1" data-act="data">DATA</button>
+          <button type="button" class="key" data-slot="2" data-act="info">INFO</button>
+          <button type="button" class="key" data-slot="3" data-act="minmax">MIN/MAX</button>
+          <button type="button" class="key" data-slot="4" data-act="alert">ALERT</button>
+          <button type="button" class="key key-hold" data-slot="5" data-act="hold">HOLD</button>
         </div>
 
         </div>
