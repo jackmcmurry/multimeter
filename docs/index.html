@@ -1654,12 +1654,13 @@ tr.row-rule th {
 .about-link:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 
 /* Keep the wordmark and its controls inside the narrow instrument header. */
-.head { container-type: inline-size; }
+.head { container-type: inline-size; position: relative; z-index: 3; }
 @container (max-width: 400px) {
   .brand { font-size: clamp(18px, 6cqi, 24px); }
   .head-right { gap: 8px; }
   .head-right .model { display: none; }
 }
+.about-dialog .about-definitions { margin-top: 2.5em; }
 
 </style>
 </head>
@@ -2054,7 +2055,7 @@ tr.row-rule th {
   <p>I developed Multimeter with help from Claude Code and Codex.<br>My next step is student testing.</p>
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
-  <p>CORR means correlation between assets; DD means drawdown from a peak.</p>
+  <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
   <p><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View the project on GitHub</a></p>
 </dialog>
 

@@ -1609,9 +1609,10 @@ tr.row-rule th {
 .about-link:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 
 /* Keep the wordmark and its controls inside the narrow instrument header. */
-.head { container-type: inline-size; }
+.head { container-type: inline-size; position: relative; z-index: 3; }
 @container (max-width: 400px) {
   .brand { font-size: clamp(18px, 6cqi, 24px); }
   .head-right { gap: 8px; }
   .head-right .model { display: none; }
 }
+.about-dialog .about-definitions { margin-top: 2.5em; }
