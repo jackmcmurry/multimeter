@@ -197,7 +197,7 @@
   var detentTimer = null;
   var audio = null;
   var master = null;     /* every sound goes through this */
-  var noise = null;      /* 80 ms of white noise, made once, for the tick and the tock */
+  var softClick = null;  /* option 15: quiet camera-button press and release */
   var lastClickAt = 0;
   var SOUND_KEY = 'sound';
   var soundIsOn = readSound();
@@ -227,114 +227,57 @@
       limiter.release.value = 0.05;
       master.connect(limiter);
       limiter.connect(audio.destination);
-      var n = Math.floor(audio.sampleRate * 0.08);
-      noise = audio.createBuffer(1, n, audio.sampleRate);
-      var ch = noise.getChannelData(0);
-      for (var i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+      softClick = makeSoftClick(audio);
     } catch (e) { audio = null; master = null; }
   }
 
   function canPlay() {
-    return soundIsOn && !!audio && !!master && !!noise && audio.state === 'running';
+    return soundIsOn && !!audio && !!master && !!softClick && audio.state === 'running';
   }
 
-  /* The click's recipe, pure so the tests can hold it to account. Each
-   * detent sounds like a key on a mechanical keyboard: a sharp tick as the
-   * cap lands (high-passed noise), the hollow tock of the plastic (noise in
-   * a narrow band around 520 Hz), a low thump as the switch bottoms out (a
-   * sine whose pitch falls), and a softer upstroke as the key springs back.
-   * Every press varies a little, so a spin never repeats itself. Presses
-   * closer than FAST_MS apart come shorter and softer and skip the
-   * upstroke, so a fast spin purrs. The end stop is a deeper, longer
-   * bottom-out; the settle tap is a whisper.
-   * kind: 'detent' | 'stop' | 'settle'; sinceMs: time since the last click;
-   * rand: a function returning [0, 1). */
-  var FAST_MS = 45;
-  function clickParams(kind, sinceMs, rand) {
-    var r = typeof rand === 'function' ? rand : Math.random;
-    var pitch = 1 + (r() * 2 - 1) * 0.04;
-    var level = 1 + (r() * 2 - 1) * 0.08;
-    var p = {
-      tickHz: 2400 * pitch, tickDur: 0.003, tickGain: 0.14,
-      bodyHz: 520 * pitch, bodyQ: 3.5, bodyDur: 0.028, bodyGain: 2.6,
-      thockHz: 150 * pitch, thockEndHz: 95 * pitch, thockDur: 0.03, thockGain: 0.2,
-      upDelay: 0.055, upGain: 0.35
-    };
-    if (kind === 'stop') {
-      p.tickGain = 0.18;
-      p.bodyHz = 300 * pitch; p.bodyQ = 2.5; p.bodyDur = 0.045; p.bodyGain = 3.2;
-      p.thockHz = 90 * pitch; p.thockEndHz = 55 * pitch; p.thockDur = 0.06; p.thockGain = 0.32;
-      p.upGain = 0;
-    } else if (kind === 'settle') {
-      p.tickGain = 0.05;
-      p.bodyHz = 760 * pitch; p.bodyDur = 0.012; p.bodyGain = 0.8;
-      p.thockGain = 0;
-      p.upGain = 0;
-    } else if (typeof sinceMs === 'number' && sinceMs < FAST_MS) {
-      p.tickDur *= 0.6; p.bodyDur *= 0.6; p.thockDur *= 0.6;
-      p.tickGain *= 0.6; p.bodyGain *= 0.6; p.thockGain *= 0.6;
-      p.upGain = 0;
+  /* Same filtered-noise recipe and quiet peak as sample 15. Fixed 48 kHz
+   * synthesis keeps its tone consistent across devices; Web Audio resamples. */
+  function makeSoftClick(ctx) {
+    var rate = 48000, n = Math.floor(rate * 0.14);
+    var buffer = ctx.createBuffer(1, n, rate), ch = buffer.getChannelData(0);
+    var seed = 2464184175, low = 0, band = 0, smooth = 0, peak = 0;
+    var f = 2 * Math.sin(Math.PI * 1900 / rate);
+    for (var i = 0; i < n; i++) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      var t = i / rate;
+      smooth += 0.18 * (seed / 4294967296 * 2 - 1 - smooth);
+      low += f * band;
+      var high = smooth - low - 1.2 * band;
+      band += f * high;
+      var v = band * (1 - Math.exp(-t / 0.0012)) * Math.exp(-t / 0.0035);
+      var u = t - 0.048;
+      if (u > 0) v += band * 0.22 * (1 - Math.exp(-u / 0.0015)) * Math.exp(-u / 0.0035);
+      ch[i] = v;
+      peak = Math.max(peak, Math.abs(v));
     }
-    p.tickGain *= level;
-    p.bodyGain *= level;
-    p.thockGain *= level;
-    p.dur = Math.max(p.tickDur, p.bodyDur, p.thockDur);
-    p.gain = Math.max(p.tickGain, p.bodyGain, p.thockGain);
-    return p;
+    if (peak > 0) for (var j = 0; j < n; j++) ch[j] *= 0.09 / peak;
+    return buffer;
   }
 
-  function envelope(g, t, peak, attack, decay) {
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  var FAST_MS = 45;
+  function clickParams(kind, sinceMs) {
+    var fast = typeof sinceMs === 'number' && sinceMs < FAST_MS;
+    return { gain: kind === 'settle' ? 0.35 : (fast ? 0.65 : 1), dur: 0.14 };
   }
 
-  /* A burst of filtered noise: the tick and the tock. */
-  function noiseHit(t, type, freq, q, peak, attack, decay) {
-    if (!(peak > 0)) return;
-    var src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
-    src.buffer = noise;
-    f.type = type;
-    f.frequency.value = freq;
-    f.Q.value = q;
-    envelope(g, t, peak, attack, decay);
-    src.connect(f);
-    f.connect(g);
-    g.connect(master);
-    src.start(t, Math.random() * 0.02);   /* a different stretch of noise each press */
-    src.stop(t + attack + decay + 0.01);
-  }
-
-  /* A falling sine: the thump as the switch bottoms out. */
-  function sineHit(t, f0, f1, peak, attack, decay) {
-    if (!(peak > 0)) return;
-    var osc = audio.createOscillator(), g = audio.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(f0, t);
-    osc.frequency.exponentialRampToValueAtTime(f1, t + decay * 0.85);
-    envelope(g, t, peak, attack, decay);
-    osc.connect(g);
-    g.connect(master);
-    osc.start(t);
-    osc.stop(t + attack + decay + 0.01);
-  }
-
-  /* One key press, `delay` seconds from now. */
   function click(kind, delay) {
     if (!canPlay()) return;
     var now = Date.now(), since = now - lastClickAt;
     if (kind !== 'settle') lastClickAt = now;
     var p = clickParams(kind || 'detent', since);
     try {
-      var t = audio.currentTime + (delay || 0);
-      noiseHit(t, 'highpass', p.tickHz, 0.7, p.tickGain, 0.0003, p.tickDur);
-      noiseHit(t, 'bandpass', p.bodyHz, p.bodyQ, p.bodyGain, 0.0008, p.bodyDur);
-      sineHit(t, p.thockHz, p.thockEndHz, p.thockGain, 0.001, p.thockDur);
-      if (p.upGain > 0) {
-        var u = t + p.upDelay;   /* the key springs back up */
-        noiseHit(u, 'highpass', p.tickHz * 1.15, 0.7, p.tickGain * p.upGain, 0.0003, p.tickDur);
-        noiseHit(u, 'bandpass', p.bodyHz * 1.25, p.bodyQ, p.bodyGain * p.upGain, 0.0008, p.bodyDur * 0.7);
-      }
+      var src = audio.createBufferSource(), gain = audio.createGain();
+      src.buffer = softClick;
+      gain.gain.value = p.gain;
+      src.connect(gain);
+      gain.connect(master);
+      src.onended = function () { src.disconnect(); gain.disconnect(); };
+      src.start(audio.currentTime + (delay || 0));
     } catch (e) { /* no sound is fine */ }
   }
 

@@ -866,18 +866,11 @@
 
     /* ---- the click, the speaker and the first-visit hint ------------------- */
     if (M && M.clickParams) {
-      var fixed = function (v) { return function () { return v; }; };
-      var mid = M.clickParams('detent', 500, fixed(0.5));
-      var hiC = M.clickParams('detent', 500, fixed(0.999)), loC = M.clickParams('detent', 500, fixed(0));
-      ok('a detent varies its pitch by at most 4%',
-        hiC.thockHz <= mid.thockHz * 1.0401 && loC.thockHz >= mid.thockHz * 0.9599 && hiC.thockHz > loC.thockHz);
-      ok('the thock falls in pitch', mid.thockEndHz < mid.thockHz);
-      var fastC = M.clickParams('detent', 20, fixed(0.5));
-      ok('a fast click is shorter and quieter', fastC.dur < mid.dur && fastC.gain < mid.gain);
-      var stopC = M.clickParams('stop', 500, fixed(0.5));
-      ok('the end stop is lower and longer', stopC.thockHz < mid.thockHz && stopC.dur > mid.dur);
-      ok('the settle tap is quieter than a detent', M.clickParams('settle', 500, fixed(0.5)).gain < mid.gain);
-      ok('a key press springs back up, unless the spin is fast', mid.upGain > 0 && fastC.upGain === 0 && stopC.upGain === 0);
+      var mid = M.clickParams('detent', 500);
+      var fastC = M.clickParams('detent', 20);
+      ok('a fast click is quieter', fastC.gain < mid.gain);
+      ok('end stops do not amplify the soft click', M.clickParams('stop', 500).gain <= mid.gain);
+      ok('the settle tap is quieter than a detent', M.clickParams('settle', 500).gain < mid.gain);
 
       var soundBefore = M.soundOn();
       M.setSound(false);
