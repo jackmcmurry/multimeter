@@ -2176,6 +2176,8 @@
   }
 
   function wireIntro() {
+    var dialSettings = el('dialSettings');
+    if (dialSettings) dialSettings.addEventListener('click', function () { MP.meter.setScreen('config'); });
     var box = el('intro'), go = el('introGo'), how = el('howBtn');
     if (go) go.addEventListener('click', function () { hideIntro(); if (MP.meter) MP.meter.setScreen('search'); });
     var about = el('aboutDialog'), aboutBtn = el('aboutBtn');

@@ -859,7 +859,7 @@
     mover: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
     loser: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
-    off: [['data', 'DATA'], ['learn', 'LEARN'], ['customize', 'DIAL'], ['info', 'INFO'], ['hold', 'HOLD']]
+    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']]
   };
 
   function keySet(mode, stop) {
@@ -881,6 +881,7 @@
       keys[i].setAttribute('data-act', act);
       keys[i].textContent = set[i][1];
       keys[i].disabled = act === 'none';
+      keys[i].hidden = act === 'none';
       keys[i].classList.toggle('key-hold', act === 'hold');
       /* the end key names the side it would turn to, not the side shown */
       if (act === 'end' && MP.app && MP.app.moverEndLabel) keys[i].textContent = MP.app.moverEndLabel();

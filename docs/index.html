@@ -1661,6 +1661,9 @@ tr.row-rule th {
   .head-right .model { display: none; }
 }
 .about-dialog .about-definitions { margin-top: 2.5em; }
+.dial-settings { position: absolute; right: 12px; bottom: 8px; display: grid; place-items: center; width: 40px; height: 40px; padding: 4px; border: 0; background: transparent; color: var(--holster); cursor: pointer; }
+.dial-settings:hover { background: var(--shell-lt); }
+.dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 
 </style>
 </head>
@@ -1855,6 +1858,12 @@ tr.row-rule th {
           <span class="dial-hint" id="dialHint" aria-hidden="true">Turn the dial</span>
         </div>
 
+        <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
+          <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M5 9 3 7M11 4 10 2M21 4 22 2M27 9 29 7M4 19 2 20M28 19 30 20"/>
+            <circle cx="16" cy="17" r="10"/><path d="M16 17 22 11" stroke-width="3"/>
+          </svg>
+        </button>
         <!-- a status indicator, not a control: one lamp, and the word for
              what it is reading -->
         <div class="jacks">
@@ -6230,7 +6239,7 @@ tr.row-rule th {
     mover: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
     loser: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
-    off: [['data', 'DATA'], ['learn', 'LEARN'], ['customize', 'DIAL'], ['info', 'INFO'], ['hold', 'HOLD']]
+    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']]
   };
 
   function keySet(mode, stop) {
@@ -6252,6 +6261,7 @@ tr.row-rule th {
       keys[i].setAttribute('data-act', act);
       keys[i].textContent = set[i][1];
       keys[i].disabled = act === 'none';
+      keys[i].hidden = act === 'none';
       keys[i].classList.toggle('key-hold', act === 'hold');
       /* the end key names the side it would turn to, not the side shown */
       if (act === 'end' && MP.app && MP.app.moverEndLabel) keys[i].textContent = MP.app.moverEndLabel();
@@ -10145,6 +10155,8 @@ tr.row-rule th {
   }
 
   function wireIntro() {
+    var dialSettings = el('dialSettings');
+    if (dialSettings) dialSettings.addEventListener('click', function () { MP.meter.setScreen('config'); });
     var box = el('intro'), go = el('introGo'), how = el('howBtn');
     if (go) go.addEventListener('click', function () { hideIntro(); if (MP.meter) MP.meter.setScreen('search'); });
     var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
