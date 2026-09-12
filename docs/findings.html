@@ -1634,7 +1634,7 @@ tr.row-rule th {
   flex-shrink: 0;
 }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
+.brand-word { margin-left: -0.08em; text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* Asset identity stays secondary to the reading and its explanation. */
@@ -1647,6 +1647,14 @@ tr.row-rule th {
 .about-link { border: 0; padding: 6px 0; background: transparent; color: var(--dim); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .about-link:hover { color: var(--text); }
 .about-link:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
+/* Keep the wordmark and its controls inside the narrow instrument header. */
+.head { container-type: inline-size; }
+@container (max-width: 400px) {
+  .brand { font-size: clamp(18px, 6cqi, 24px); }
+  .head-right { gap: 8px; }
+  .head-right .model { display: none; }
+}
 
 </style>
 </head>

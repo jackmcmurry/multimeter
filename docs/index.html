@@ -1639,7 +1639,7 @@ tr.row-rule th {
   flex-shrink: 0;
 }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
+.brand-word { margin-left: -0.08em; text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* Asset identity stays secondary to the reading and its explanation. */
@@ -1652,6 +1652,14 @@ tr.row-rule th {
 .about-link { border: 0; padding: 6px 0; background: transparent; color: var(--dim); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .about-link:hover { color: var(--text); }
 .about-link:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
+/* Keep the wordmark and its controls inside the narrow instrument header. */
+.head { container-type: inline-size; }
+@container (max-width: 400px) {
+  .brand { font-size: clamp(18px, 6cqi, 24px); }
+  .head-right { gap: 8px; }
+  .head-right .model { display: none; }
+}
 
 </style>
 </head>
@@ -2041,14 +2049,12 @@ tr.row-rule th {
 <dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
   <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
   <h2 id="aboutTitle">About Multimeter</h2>
-  <p>I'm Jack McMurry, a student at Emory. I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument. Choose an asset, measure its movement, and understand what the numbers mean.</p>
+  <p>I'm Jack McMurry, a student at Emory.<br>I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument.</p>
   <h2>My process</h2>
-  <p>I developed Multimeter with help from Claude Code and Codex. My next step is student testing: observe where people struggle and improve the explanations.</p>
-  <h2>Try one task</h2>
-  <p>Press DATA, search NVIDIA, turn to VOL (volatility), then press LEARN. CORR means correlation between assets; DD means drawdown from a peak.</p>
+  <p>I developed Multimeter with help from Claude Code and Codex.<br>My next step is student testing.</p>
   <h2>Current limitations</h2>
-  <p>This is an educational prototype. Stock data uses published snapshots and may be delayed; crypto can update while the US stock market is closed. Rankings cover only the assets the data source can price, not the whole market. Chart history and ranking windows will be labeled separately.</p>
-  <p>Nothing here is investment advice.</p>
+  <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
+  <p>CORR means correlation between assets; DD means drawdown from a peak.</p>
   <p><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View the project on GitHub</a></p>
 </dialog>
 
