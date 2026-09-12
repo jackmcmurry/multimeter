@@ -33,7 +33,7 @@
   var CORR_CHART_POINTS = 180;
   var ANNUALIZE = S.TRADING_DAYS;
 
-  var RANGE_LABELS = { 1: '24H', 7: '1W', 30: '1M', 365: '1Y' };
+  var RANGE_LABELS = { 1: '24hr', 7: '1wk', 30: '1mo', 365: '1yr' };
 
   var INSTRUMENTS = {
     btc: { code: 'BTC / USD', desc: 'Bitcoin spot', dp: 0, color: 'var(--c-btc)' },
@@ -366,7 +366,7 @@
   /* Coins carry the screen's range tabs: the chart and the change follow the
    * chosen range, the price stays live spot. Until the range has loaded, the
    * 24-hour change from the quote stands in. */
-  var RANGE_TABS = [[1, '24H'], [7, '1W'], [30, '1M'], [365, '1Y']];
+  var RANGE_TABS = [[1, '24hr'], [7, '1wk'], [30, '1mo'], [365, '1yr']];
 
   function rangeTabs() {
     return { kind: 'ranges', label: 'Chart range', options: RANGE_TABS, value: state.hero.days };
@@ -377,7 +377,7 @@
     r.ranges = true;
     r.tabs = rangeTabs();
     r.coin = coinId;
-    r.change.label = RANGE_LABELS[state.hero.days] || '24H';
+    r.change.label = RANGE_LABELS[state.hero.days] || '24hr';
     var series = rangeSeries(coinId);
     if (series && series.length > 1 && series[0] > 0) {
       r.spark = series;
@@ -432,7 +432,7 @@
       if (S.isNum(tick.pct24h)) {
         r.change.pct = tick.pct24h;
         r.change.abs = tick.price - tick.open24h;
-        r.change.label = '24H';
+        r.change.label = '24hr';
       }
       r.live = true;
       if (r.spark && r.spark.length) r.spark = r.spark.concat([tick.price]);
@@ -442,17 +442,17 @@
 
   function probeReading() {
     if (!state.probe) {
-      var r = noReading('USD', 'PROBE', '24H');
+      var r = noReading('USD', 'PROBE', '24hr');
       r.hint = 'Press DATA to choose a coin';
       return r;
     }
-    return applyLive(withRange(quoteReading('probe', 'USD', state.probe.symbol + ' / USD', '24H'), state.probe.id), 'probe');
+    return applyLive(withRange(quoteReading('probe', 'USD', state.probe.symbol + ' / USD', '24hr'), state.probe.id), 'probe');
   }
 
   /* WATCH: one stock at a time from the viewer's list, as its last daily
    * close. The tabs row steps through the list and slices the closes. No
    * value either: a close is not a level worth an alert. */
-  var WATCH_RANGES = [[5, '1W'], [21, '1M'], [63, '3M'], [252, '1Y']];
+  var WATCH_RANGES = [[5, '1wk'], [21, '1mo'], [63, '3mo'], [252, '1yr']];
 
   function sessionsLabel(n) {
     for (var i = 0; i < WATCH_RANGES.length; i++) if (WATCH_RANGES[i][0] === n) return WATCH_RANGES[i][1];
@@ -602,7 +602,7 @@
 
   /* A stock that is the subject but not on the watch list. */
   function stockSubjectReading(sym) {
-    var r = noReading('CLOSE', sym, '1M');
+    var r = noReading('CLOSE', sym, '1mo');
     r.change.usd = true;
     r.ticker = sym;
     r.symbol = sym;
@@ -668,8 +668,8 @@
 
   function readingFor(stop) {
     switch (stop) {
-      case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), 'btc'), stop);
-      case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), 'eth'), stop);
+      case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24hr'), COINS.btc), 'btc'), stop);
+      case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24hr'), COINS.eth), 'eth'), stop);
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');

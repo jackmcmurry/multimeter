@@ -1833,10 +1833,10 @@ tr.row-rule th {
           </div>
 
           <div class="lcd-ranges is-idle" id="lcdRanges" role="group" aria-label="Chart range" data-kind="ranges" data-sig="ranges|1,7,30,365">
-            <button type="button" class="rng is-on" data-tab="ranges" data-value="1" aria-pressed="true">24H</button>
-            <button type="button" class="rng" data-tab="ranges" data-value="7" aria-pressed="false">1W</button>
-            <button type="button" class="rng" data-tab="ranges" data-value="30" aria-pressed="false">1M</button>
-            <button type="button" class="rng" data-tab="ranges" data-value="365" aria-pressed="false">1Y</button>
+            <button type="button" class="rng is-on" data-tab="ranges" data-value="1" aria-pressed="true">24hr</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="7" aria-pressed="false">1wk</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="30" aria-pressed="false">1mo</button>
+            <button type="button" class="rng" data-tab="ranges" data-value="365" aria-pressed="false">1yr</button>
           </div>
         </div>
 
@@ -1860,7 +1860,7 @@ tr.row-rule th {
 
         <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M5 9 3 7M11 4 10 2M21 4 22 2M27 9 29 7M4 19 2 20M28 19 30 20"/>
+            <path d="M3 17H1M4.742 10.5 3.01 9.5M9.5 5.742 8.5 4.01M16 4V2M22.5 5.742 23.5 4.01M27.258 10.5 28.99 9.5M29 17H31"/>
             <circle cx="16" cy="17" r="10"/><path d="M16 17 22 11" stroke-width="3"/>
           </svg>
         </button>
@@ -1901,7 +1901,7 @@ tr.row-rule th {
     <section class="view" data-panel="hero">
       <div class="hero-sub">
         <span class="chg is-flat" id="heroChange">—</span>
-        <span class="muted" id="heroRangeLabel">24H</span>
+        <span class="muted" id="heroRangeLabel">24hr</span>
       </div>
 
       <div class="chartbox" id="heroChart"></div>
@@ -8012,7 +8012,7 @@ tr.row-rule th {
   var CORR_CHART_POINTS = 180;
   var ANNUALIZE = S.TRADING_DAYS;
 
-  var RANGE_LABELS = { 1: '24H', 7: '1W', 30: '1M', 365: '1Y' };
+  var RANGE_LABELS = { 1: '24hr', 7: '1wk', 30: '1mo', 365: '1yr' };
 
   var INSTRUMENTS = {
     btc: { code: 'BTC / USD', desc: 'Bitcoin spot', dp: 0, color: 'var(--c-btc)' },
@@ -8345,7 +8345,7 @@ tr.row-rule th {
   /* Coins carry the screen's range tabs: the chart and the change follow the
    * chosen range, the price stays live spot. Until the range has loaded, the
    * 24-hour change from the quote stands in. */
-  var RANGE_TABS = [[1, '24H'], [7, '1W'], [30, '1M'], [365, '1Y']];
+  var RANGE_TABS = [[1, '24hr'], [7, '1wk'], [30, '1mo'], [365, '1yr']];
 
   function rangeTabs() {
     return { kind: 'ranges', label: 'Chart range', options: RANGE_TABS, value: state.hero.days };
@@ -8356,7 +8356,7 @@ tr.row-rule th {
     r.ranges = true;
     r.tabs = rangeTabs();
     r.coin = coinId;
-    r.change.label = RANGE_LABELS[state.hero.days] || '24H';
+    r.change.label = RANGE_LABELS[state.hero.days] || '24hr';
     var series = rangeSeries(coinId);
     if (series && series.length > 1 && series[0] > 0) {
       r.spark = series;
@@ -8411,7 +8411,7 @@ tr.row-rule th {
       if (S.isNum(tick.pct24h)) {
         r.change.pct = tick.pct24h;
         r.change.abs = tick.price - tick.open24h;
-        r.change.label = '24H';
+        r.change.label = '24hr';
       }
       r.live = true;
       if (r.spark && r.spark.length) r.spark = r.spark.concat([tick.price]);
@@ -8421,17 +8421,17 @@ tr.row-rule th {
 
   function probeReading() {
     if (!state.probe) {
-      var r = noReading('USD', 'PROBE', '24H');
+      var r = noReading('USD', 'PROBE', '24hr');
       r.hint = 'Press DATA to choose a coin';
       return r;
     }
-    return applyLive(withRange(quoteReading('probe', 'USD', state.probe.symbol + ' / USD', '24H'), state.probe.id), 'probe');
+    return applyLive(withRange(quoteReading('probe', 'USD', state.probe.symbol + ' / USD', '24hr'), state.probe.id), 'probe');
   }
 
   /* WATCH: one stock at a time from the viewer's list, as its last daily
    * close. The tabs row steps through the list and slices the closes. No
    * value either: a close is not a level worth an alert. */
-  var WATCH_RANGES = [[5, '1W'], [21, '1M'], [63, '3M'], [252, '1Y']];
+  var WATCH_RANGES = [[5, '1wk'], [21, '1mo'], [63, '3mo'], [252, '1yr']];
 
   function sessionsLabel(n) {
     for (var i = 0; i < WATCH_RANGES.length; i++) if (WATCH_RANGES[i][0] === n) return WATCH_RANGES[i][1];
@@ -8581,7 +8581,7 @@ tr.row-rule th {
 
   /* A stock that is the subject but not on the watch list. */
   function stockSubjectReading(sym) {
-    var r = noReading('CLOSE', sym, '1M');
+    var r = noReading('CLOSE', sym, '1mo');
     r.change.usd = true;
     r.ticker = sym;
     r.symbol = sym;
@@ -8647,8 +8647,8 @@ tr.row-rule th {
 
   function readingFor(stop) {
     switch (stop) {
-      case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24H'), COINS.btc), 'btc'), stop);
-      case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24H'), COINS.eth), 'eth'), stop);
+      case 'btc': return applyLive(withLastClose(withRange(quoteReading('btc', 'USD', 'BTC / USD', '24hr'), COINS.btc), 'btc'), stop);
+      case 'eth': return applyLive(withLastClose(withRange(quoteReading('eth', 'USD', 'ETH / USD', '24hr'), COINS.eth), 'eth'), stop);
       case 'nasdaq': return quoteReading('ixic', 'INDEX', 'NASDAQ COMPOSITE', '1D');
       case 'spx': return quoteReading('spx', 'INDEX', 'S&P 500', '1D');
       case 'qqq': return quoteReading('qqq', 'USD', 'QQQ', '1D');
