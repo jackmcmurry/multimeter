@@ -668,7 +668,11 @@
         if (!app) return;
         var tab = btn.getAttribute('data-tab'), value = btn.getAttribute('data-value');
         primeAudio();
-        if (tab === 'ranges' && app.setRange) {
+        if (tab === 'end' && app.toggleMoverEnd) {
+          app.toggleMoverEnd();
+          tickSound();
+          swapScreen();
+        } else if (tab === 'ranges' && app.setRange) {
           app.setRange(parseInt(value, 10));
         } else if (tab === 'switch' && app.setMoversKind) {
           app.setMoversKind(value);
@@ -744,6 +748,7 @@
       html += '<button type="button" class="rng" data-tab="' + model.kind + '" data-value="' + escapeText(o[0]) +
         '" aria-pressed="false">' + escapeText(o[1]) + '</button>';
     });
+    if (model.endLabel) html += '<button type="button" class="rng rng-end" data-tab="end"></button>';
     return html;
   }
 
@@ -754,7 +759,7 @@
     host.classList.toggle('is-idle', idle);
     host.setAttribute('aria-hidden', idle ? 'true' : 'false');
     if (model) {
-      var sig = model.kind + '|' + (model.options || []).map(function (o) { return o[0]; }).join(',');
+      var sig = model.kind + '|' + (model.options || []).map(function (o) { return o[0]; }).join(',') + (model.endLabel ? '|end' : '');
       if (host.getAttribute('data-sig') !== sig) {
         host.setAttribute('data-sig', sig);
         host.setAttribute('data-kind', model.kind);
@@ -765,6 +770,11 @@
     var btns = host.querySelectorAll('.rng');
     for (var i = 0; i < btns.length; i++) {
       btns[i].tabIndex = idle ? -1 : 0;
+      if (btns[i].getAttribute('data-tab') === 'end') {
+        btns[i].textContent = model && model.endLabel || '';
+        btns[i].setAttribute('aria-label', 'Show ' + (model && model.endLabel === 'MOVER' ? 'movers' : 'losers'));
+        continue;
+      }
       if (btns[i].getAttribute('data-tab') === 'step') {
         btns[i].disabled = !model || (model.count || 0) < 2;
         continue;
@@ -856,8 +866,8 @@
     corr: STATS_KEYS,
     vol: STATS_KEYS,
     dd: STATS_KEYS,
-    mover: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
-    loser: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
+    mover: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
+    loser: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
     off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']]
   };

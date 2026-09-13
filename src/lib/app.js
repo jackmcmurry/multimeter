@@ -422,7 +422,7 @@
     var SP = MP.spotlight;
     var which = moverEndFor(stop);
     var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
-    r.tabs = { kind: 'switch', label: 'Stocks or crypto', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks' };
+    r.tabs = { kind: 'switch', label: 'Mover controls', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks', endLabel: which === 'loser' ? 'MOVER' : 'LOSER' };
     r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') + '. ' + (r.chartDetail || '');
     if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
       (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');

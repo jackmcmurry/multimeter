@@ -1619,3 +1619,5 @@ tr.row-rule th {
 .dial-settings { position: absolute; right: 12px; bottom: 8px; display: grid; place-items: center; width: 40px; height: 40px; padding: 4px; border: 0; background: transparent; color: var(--holster); cursor: pointer; }
 .dial-settings:hover { background: var(--shell-lt); }
 .dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.lcd-ranges .rng-end { margin-left: auto; color: var(--lcd-dk); background: var(--holster); }
+.keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }

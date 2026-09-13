@@ -1664,6 +1664,8 @@ tr.row-rule th {
 .dial-settings { position: absolute; right: 12px; bottom: 8px; display: grid; place-items: center; width: 40px; height: 40px; padding: 4px; border: 0; background: transparent; color: var(--holster); cursor: pointer; }
 .dial-settings:hover { background: var(--shell-lt); }
 .dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.lcd-ranges .rng-end { margin-left: auto; color: var(--lcd-dk); background: var(--holster); }
+.keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 </style>
 </head>
@@ -6048,7 +6050,11 @@ tr.row-rule th {
         if (!app) return;
         var tab = btn.getAttribute('data-tab'), value = btn.getAttribute('data-value');
         primeAudio();
-        if (tab === 'ranges' && app.setRange) {
+        if (tab === 'end' && app.toggleMoverEnd) {
+          app.toggleMoverEnd();
+          tickSound();
+          swapScreen();
+        } else if (tab === 'ranges' && app.setRange) {
           app.setRange(parseInt(value, 10));
         } else if (tab === 'switch' && app.setMoversKind) {
           app.setMoversKind(value);
@@ -6124,6 +6130,7 @@ tr.row-rule th {
       html += '<button type="button" class="rng" data-tab="' + model.kind + '" data-value="' + escapeText(o[0]) +
         '" aria-pressed="false">' + escapeText(o[1]) + '</button>';
     });
+    if (model.endLabel) html += '<button type="button" class="rng rng-end" data-tab="end"></button>';
     return html;
   }
 
@@ -6134,7 +6141,7 @@ tr.row-rule th {
     host.classList.toggle('is-idle', idle);
     host.setAttribute('aria-hidden', idle ? 'true' : 'false');
     if (model) {
-      var sig = model.kind + '|' + (model.options || []).map(function (o) { return o[0]; }).join(',');
+      var sig = model.kind + '|' + (model.options || []).map(function (o) { return o[0]; }).join(',') + (model.endLabel ? '|end' : '');
       if (host.getAttribute('data-sig') !== sig) {
         host.setAttribute('data-sig', sig);
         host.setAttribute('data-kind', model.kind);
@@ -6145,6 +6152,11 @@ tr.row-rule th {
     var btns = host.querySelectorAll('.rng');
     for (var i = 0; i < btns.length; i++) {
       btns[i].tabIndex = idle ? -1 : 0;
+      if (btns[i].getAttribute('data-tab') === 'end') {
+        btns[i].textContent = model && model.endLabel || '';
+        btns[i].setAttribute('aria-label', 'Show ' + (model && model.endLabel === 'MOVER' ? 'movers' : 'losers'));
+        continue;
+      }
       if (btns[i].getAttribute('data-tab') === 'step') {
         btns[i].disabled = !model || (model.count || 0) < 2;
         continue;
@@ -6236,8 +6248,8 @@ tr.row-rule th {
     corr: STATS_KEYS,
     vol: STATS_KEYS,
     dd: STATS_KEYS,
-    mover: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
-    loser: [['data', 'DATA'], ['learn', 'LEARN'], ['end', 'DECLINERS'], ['probe', 'PROBE'], ['hold', 'HOLD']],
+    mover: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
+    loser: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
     off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']]
   };
@@ -8401,7 +8413,7 @@ tr.row-rule th {
     var SP = MP.spotlight;
     var which = moverEndFor(stop);
     var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
-    r.tabs = { kind: 'switch', label: 'Stocks or crypto', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks' };
+    r.tabs = { kind: 'switch', label: 'Mover controls', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks', endLabel: which === 'loser' ? 'MOVER' : 'LOSER' };
     r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') + '. ' + (r.chartDetail || '');
     if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
       (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');
