@@ -4,7 +4,18 @@
 
 ![Multimeter logo](docs/multimeter-logo.svg)
 
-![Multimeter showing Bitcoin with the updated logo](docs/multimeter-btc.png)
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="docs/screenshot-desktop.png" width="640"
+           alt="Multimeter on a desktop screen. The dial is turned to MOVER and the display reads AMD up 13.15 percent over five sessions, with its chart above and the day's move below.">
+    </td>
+    <td align="center" valign="top">
+      <img src="docs/screenshot-phone.png" width="178"
+           alt="Multimeter on a phone. The display reads bitcoin at 77,081 US dollars, down 0.44 percent over 24 hours, with the dial beneath it.">
+    </td>
+  </tr>
+</table>
 
 I'm Jack McMurry, a student at Emory. I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument.
 
