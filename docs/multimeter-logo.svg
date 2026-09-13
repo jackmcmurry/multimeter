@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" role="img" aria-labelledby="title"><title id="title">Multimeter logo</title><rect width="900" height="260" fill="#24272d"/><g transform="translate(70 60) scale(1.8) skewX(-5)"><path d="M8 70 L8 8 L34 24 L60 8 L60 39" fill="none" stroke="#22c55e" stroke-width="10.5" stroke-linecap="butt" stroke-linejoin="miter"/></g><text x="177" y="130" fill="#22c55e" font-family="Helvetica Neue,Arial,sans-serif" font-size="64" font-weight="800">ULTIMETER</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="280" viewBox="0 0 900 280" role="img" aria-labelledby="title desc">
+<title id="title">Refined sample 3</title><desc id="desc">Sample 3 with a slightly thicker stroke and a vertical final stem ending at the wordmark baseline.</desc>
+<rect width="900" height="280" fill="#22272d"/>
+<g transform="translate(36 20) scale(1.4)" fill="none" stroke="#4ade80" stroke-width="10.5" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10">
+<path d="M46 144 L65 45 L98 87 L133 37 L133 116"/>
+</g>
+<text x="236" y="182.4" fill="#4ade80" font-family="Arial,sans-serif" font-size="62" font-weight="800" letter-spacing="1">ULTIMETER</text>
+</svg>

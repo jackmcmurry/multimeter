@@ -210,8 +210,8 @@ body {
 /* Original wordmark proportions; the center join is raised in the SVG. */
 .brand {
   display: inline-flex;
-  align-items: center;
-  font-family: var(--f-body);
+  align-items: baseline;
+  font-family: Arial, sans-serif;
   font-size: 30px;
   font-weight: 800;
   letter-spacing: 0.005em;
@@ -219,18 +219,14 @@ body {
   color: var(--brand);
 }
 .brand-mark {
-  width: auto;
-  height: 2.15em;
-  margin-left: -10px;
-  margin-right: .04em;
-  margin-bottom: -20px;
-  transform: skewX(-5deg);
-  transform-origin: 62% 68%;
+  width: 1.9645em;
+  height: 1.7839em;
+  margin-right: .2226em;
   flex-shrink: 0;
   overflow: visible;
 }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { margin-left: -0.08em; text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
+.brand-word { text-shadow: none; }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* the model number is equipment labelling, not a second brand */
