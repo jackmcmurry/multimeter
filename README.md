@@ -1,8 +1,19 @@
 # Multimeter
 
-[Open Multimeter](https://www.multimtr.com/)
+[multimtr.com](https://www.multimtr.com/)
 
 ![Multimeter logo](docs/multimeter-logo.svg)
+
+A financial instrument for learning how markets move. Turn the dial to a stock or cryptocurrency, measure its volatility, correlation or drawdown, and press LEARN to understand the number on screen.
+
+> [!IMPORTANT]
+> **Multimeter is in beta and is a prototype.** Stock data comes from published snapshots and may be delayed.
+
+> [!NOTE]
+> **CORR** means correlation, how closely two things move together. **DD** means drawdown, how far something has fallen from its peak.
+
+> [!CAUTION]
+> **Nothing here is investment advice.** Multimeter explains measurements. It does not tell you what to buy, sell or hold.
 
 <table>
   <tr>
@@ -17,16 +28,6 @@
   </tr>
 </table>
 
-I'm Jack McMurry, a student at Emory. I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument.
+## About
 
-Multimeter is a financial learning tool with a rotary dial. Choose a stock or cryptocurrency to explore its price history and risk measures. LEARN explains the measurement on screen.
-
-## My process
-
-I developed Multimeter with help from Claude Code and Codex. My next step is student testing.
-
-## Current limitations
-
-This is a prototype. Stock data uses published snapshots and may be delayed. Nothing here is investment advice.
-
-CORR means correlation between assets; DD means drawdown from a peak.
+I'm Jack McMurry, a student at Emory. I built Multimeter with Claude Code and Codex to make market concepts easier to explore through something hands-on. My next step is student testing.
