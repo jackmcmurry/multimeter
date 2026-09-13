@@ -48,6 +48,10 @@ jobs:
         continue-on-error: true
         run: npm install --omit=dev --no-audit --no-fund --no-package-lock
 
+      - name: Update Nasdaq search directory
+        continue-on-error: true
+        run: node scripts/update-catalogue.js
+
       - name: Update market data
         # A data failure is reported in the run summary but never blocks
         # publishing the site.

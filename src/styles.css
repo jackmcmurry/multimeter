@@ -1589,7 +1589,7 @@ tr.row-rule th {
   margin-left: -10px;
   margin-right: .04em;
   margin-bottom: -20px;
-  transform: rotate(-6deg);
+  transform: skewX(-5deg);
   transform-origin: 62% 68%;
   flex-shrink: 0;
 }
@@ -1620,4 +1620,6 @@ tr.row-rule th {
 .dial-settings:hover { background: var(--shell-lt); }
 .dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .lcd-ranges .rng-end { margin-left: auto; color: var(--lcd-dk); background: var(--holster); }
+.lcd-ranges .rng-end[data-end="loser"] { background: #f87171; }
+.lcd-ranges .rng-end[data-end="mover"] { background: #4ade80; }
 .keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }

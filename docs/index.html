@@ -1634,7 +1634,7 @@ tr.row-rule th {
   margin-left: -10px;
   margin-right: .04em;
   margin-bottom: -20px;
-  transform: rotate(-6deg);
+  transform: skewX(-5deg);
   transform-origin: 62% 68%;
   flex-shrink: 0;
 }
@@ -1665,6 +1665,8 @@ tr.row-rule th {
 .dial-settings:hover { background: var(--shell-lt); }
 .dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .lcd-ranges .rng-end { margin-left: auto; color: var(--lcd-dk); background: var(--holster); }
+.lcd-ranges .rng-end[data-end="loser"] { background: #f87171; }
+.lcd-ranges .rng-end[data-end="mover"] { background: #4ade80; }
 .keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 </style>
@@ -1700,7 +1702,7 @@ tr.row-rule th {
           <!-- the wordmark: the first M is drawn, not typed, so the letter
                and the rising line are the same four strokes -->
           <span class="brand">
-            <svg class="brand-mark" viewBox="0 0 70 86" role="img" aria-label="Multimeter"><path d="M6 71 L20 10 L34 37 L51 4 L65 39" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
+            <svg class="brand-mark" viewBox="0 0 70 86" role="img" aria-label="Multimeter"><path d="M8 70 L8 8 L34 37 L60 8 L60 39" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
           </span>
           <span class="head-right">
             <span class="skin-picker">
@@ -6154,6 +6156,7 @@ tr.row-rule th {
       btns[i].tabIndex = idle ? -1 : 0;
       if (btns[i].getAttribute('data-tab') === 'end') {
         btns[i].textContent = model && model.endLabel || '';
+        btns[i].setAttribute('data-end', model && model.endLabel === 'MOVER' ? 'mover' : 'loser');
         btns[i].setAttribute('aria-label', 'Show ' + (model && model.endLabel === 'MOVER' ? 'movers' : 'losers'));
         continue;
       }
@@ -7314,6 +7317,7 @@ tr.row-rule th {
    * query, which beats a name that starts with it, which beats a name that
    * merely contains it. Anything else is not a match. */
   function rank(entry, q) {
+    if (entry.kind === 'stock' && clean(entry.name).split(' / ')[0] === q) return 0;
     var sym = clean(entry.symbol), name = clean(entry.name);
     if (sym === q) return 0;
     if (sym.indexOf(q) === 0) return 1;
@@ -7336,6 +7340,8 @@ tr.row-rule th {
     });
     hits.sort(function (a, b) {
       if (a.r !== b.r) return a.r - b.r;
+      if (a.e.kind === 'stock' && b.e.remote) return -1;
+      if (b.e.kind === 'stock' && a.e.remote) return 1;
       return a.e.symbol < b.e.symbol ? -1 : a.e.symbol > b.e.symbol ? 1 : 0;
     });
     return hits.slice(0, limit).map(function (h) { return h.e; });
@@ -8473,7 +8479,9 @@ tr.row-rule th {
     var series = stockSeries(sym), row = stockRow(sym);
     var last = series ? series[series.length - 1] : row && S.isNum(row.close) ? { date: row.date, price: row.close } : null;
     if (!last) {
-      r.hint = state.stocks.list && !row ? sym + ' is not in the current list' : 'Loading ' + sym;
+      r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
+      r.chartState = r.hint;
+      r.identity = row ? row.name : sym;
       return r;
     }
     r.dp = Math.abs(last.price) < 10 ? 4 : 2;
@@ -8600,7 +8608,9 @@ tr.row-rule th {
     var series = stockSeries(sym), row = stockRow(sym);
     var last = series ? series[series.length - 1] : row && S.isNum(row.close) ? { date: row.date, price: row.close } : null;
     if (!last) {
-      r.hint = state.stocks.list && !row ? sym + ' is not in the current list' : 'Loading ' + sym;
+      r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
+      r.chartState = r.hint;
+      r.identity = row ? row.name : sym;
       return r;
     }
     r.dp = Math.abs(last.price) < 10 ? 4 : 2;
@@ -9545,6 +9555,17 @@ tr.row-rule th {
   /* data/stocks.json: every member's last close and its 1-day, 5-day and
    * 1-month change. It names the WATCH search's choices; a member's closes
    * load from its own file when a screen needs them. */
+  var catalogue = { rows: [], by: {} };
+  function loadCatalogue() {
+    return fetchJson(snapshotUrl('data/catalogue.json')).then(function (data) {
+      if (!data || !Array.isArray(data.rows)) throw emptyError();
+      catalogue.rows = data.rows.filter(function (r) { return r && SRC.stockPath(r.symbol) && typeof r.name === 'string'; });
+      catalogue.by = {};
+      catalogue.rows.forEach(function (r) { catalogue.by[r.symbol] = r; });
+      if (MP.meter && MP.meter.screen() === 'search') runSearch(find.query);
+      repaint();
+    });
+  }
   function loadStocks() {
     return fetchJson(snapshotUrl(SRC.SNAPSHOT.stocks)).then(function (payload) {
       var list = SRC.normalizeStocksSnapshot(payload);
@@ -9607,7 +9628,7 @@ tr.row-rule th {
   }
 
   function stockRow(sym) {
-    return (sym && state.stocks.rowsBy[sym]) || null;
+    return (sym && (state.stocks.rowsBy[sym] || catalogue.by[sym])) || null;
   }
 
   function ensureMoverFiles() {
@@ -10417,7 +10438,7 @@ tr.row-rule th {
 
   function searchIndex() {
     return MP.search.build({
-      stocks: state.stocks.list ? state.stocks.list.rows : [],
+      stocks: (state.stocks.list ? state.stocks.list.rows : []).concat(catalogue.rows),
       coins: MP.spotlight ? MP.spotlight.CRYPTO_UNIVERSE : [],
       remote: find.remote
     });
@@ -10507,7 +10528,7 @@ tr.row-rule th {
     if (!r) return;
     if (MP.track) MP.track.event('instrument_selected', e.kind);
     if (r.action === 'setCoin') setProbe(r.coin);
-    if (r.action === 'watch') { addWatch(r.symbol); syncSubjectToWatch(); r.stop = 'subject'; }
+    if (r.action === 'watch') { addWatch(r.symbol); setStats({ coin: r.symbol }); ensureStock(r.symbol); r.stop = 'subject'; }
     if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
     if (MP.router) MP.router.go(r.stop);
     repaint();
@@ -10876,6 +10897,7 @@ tr.row-rule th {
     ensureCoinHistory();
     poll(loadSpotlight, DAILY_REFRESH_MS);
     poll(loadStocks, DAILY_REFRESH_MS);
+    poll(loadCatalogue, DAILY_REFRESH_MS);
     poll(function () {
       ensureCoinHistory();   /* a failed statistics leg gets another try */
       return loadRange(coinForStop(currentStop()), state.hero.days, true);

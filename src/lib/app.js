@@ -482,7 +482,9 @@
     var series = stockSeries(sym), row = stockRow(sym);
     var last = series ? series[series.length - 1] : row && S.isNum(row.close) ? { date: row.date, price: row.close } : null;
     if (!last) {
-      r.hint = state.stocks.list && !row ? sym + ' is not in the current list' : 'Loading ' + sym;
+      r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
+      r.chartState = r.hint;
+      r.identity = row ? row.name : sym;
       return r;
     }
     r.dp = Math.abs(last.price) < 10 ? 4 : 2;
@@ -609,7 +611,9 @@
     var series = stockSeries(sym), row = stockRow(sym);
     var last = series ? series[series.length - 1] : row && S.isNum(row.close) ? { date: row.date, price: row.close } : null;
     if (!last) {
-      r.hint = state.stocks.list && !row ? sym + ' is not in the current list' : 'Loading ' + sym;
+      r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
+      r.chartState = r.hint;
+      r.identity = row ? row.name : sym;
       return r;
     }
     r.dp = Math.abs(last.price) < 10 ? 4 : 2;
@@ -1554,6 +1558,17 @@
   /* data/stocks.json: every member's last close and its 1-day, 5-day and
    * 1-month change. It names the WATCH search's choices; a member's closes
    * load from its own file when a screen needs them. */
+  var catalogue = { rows: [], by: {} };
+  function loadCatalogue() {
+    return fetchJson(snapshotUrl('data/catalogue.json')).then(function (data) {
+      if (!data || !Array.isArray(data.rows)) throw emptyError();
+      catalogue.rows = data.rows.filter(function (r) { return r && SRC.stockPath(r.symbol) && typeof r.name === 'string'; });
+      catalogue.by = {};
+      catalogue.rows.forEach(function (r) { catalogue.by[r.symbol] = r; });
+      if (MP.meter && MP.meter.screen() === 'search') runSearch(find.query);
+      repaint();
+    });
+  }
   function loadStocks() {
     return fetchJson(snapshotUrl(SRC.SNAPSHOT.stocks)).then(function (payload) {
       var list = SRC.normalizeStocksSnapshot(payload);
@@ -1616,7 +1631,7 @@
   }
 
   function stockRow(sym) {
-    return (sym && state.stocks.rowsBy[sym]) || null;
+    return (sym && (state.stocks.rowsBy[sym] || catalogue.by[sym])) || null;
   }
 
   function ensureMoverFiles() {
@@ -2426,7 +2441,7 @@
 
   function searchIndex() {
     return MP.search.build({
-      stocks: state.stocks.list ? state.stocks.list.rows : [],
+      stocks: (state.stocks.list ? state.stocks.list.rows : []).concat(catalogue.rows),
       coins: MP.spotlight ? MP.spotlight.CRYPTO_UNIVERSE : [],
       remote: find.remote
     });
@@ -2516,7 +2531,7 @@
     if (!r) return;
     if (MP.track) MP.track.event('instrument_selected', e.kind);
     if (r.action === 'setCoin') setProbe(r.coin);
-    if (r.action === 'watch') { addWatch(r.symbol); syncSubjectToWatch(); r.stop = 'subject'; }
+    if (r.action === 'watch') { addWatch(r.symbol); setStats({ coin: r.symbol }); ensureStock(r.symbol); r.stop = 'subject'; }
     if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
     if (MP.router) MP.router.go(r.stop);
     repaint();
@@ -2885,6 +2900,7 @@
     ensureCoinHistory();
     poll(loadSpotlight, DAILY_REFRESH_MS);
     poll(loadStocks, DAILY_REFRESH_MS);
+    poll(loadCatalogue, DAILY_REFRESH_MS);
     poll(function () {
       ensureCoinHistory();   /* a failed statistics leg gets another try */
       return loadRange(coinForStop(currentStop()), state.hero.days, true);

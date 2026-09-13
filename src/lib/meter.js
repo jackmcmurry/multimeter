@@ -772,6 +772,7 @@
       btns[i].tabIndex = idle ? -1 : 0;
       if (btns[i].getAttribute('data-tab') === 'end') {
         btns[i].textContent = model && model.endLabel || '';
+        btns[i].setAttribute('data-end', model && model.endLabel === 'MOVER' ? 'mover' : 'loser');
         btns[i].setAttribute('aria-label', 'Show ' + (model && model.endLabel === 'MOVER' ? 'movers' : 'losers'));
         continue;
       }

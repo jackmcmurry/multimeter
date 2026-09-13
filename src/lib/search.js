@@ -58,6 +58,7 @@
    * query, which beats a name that starts with it, which beats a name that
    * merely contains it. Anything else is not a match. */
   function rank(entry, q) {
+    if (entry.kind === 'stock' && clean(entry.name).split(' / ')[0] === q) return 0;
     var sym = clean(entry.symbol), name = clean(entry.name);
     if (sym === q) return 0;
     if (sym.indexOf(q) === 0) return 1;
@@ -80,6 +81,8 @@
     });
     hits.sort(function (a, b) {
       if (a.r !== b.r) return a.r - b.r;
+      if (a.e.kind === 'stock' && b.e.remote) return -1;
+      if (b.e.kind === 'stock' && a.e.remote) return 1;
       return a.e.symbol < b.e.symbol ? -1 : a.e.symbol > b.e.symbol ? 1 : 0;
     });
     return hits.slice(0, limit).map(function (h) { return h.e; });
