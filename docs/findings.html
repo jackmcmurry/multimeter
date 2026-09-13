@@ -245,6 +245,7 @@ body {
 
 /* ---- display ------------------------------------------------------------- */
 .lcd {
+  --price-size: clamp(28px, 10.5cqw, 68px);   /* the readout size, and the row height reserved for it */
   display: block;
   width: 100%;
   container-type: inline-size;   /* the readout sizes with the screen, not the window */
@@ -315,10 +316,13 @@ body {
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
-.lcd-price-row { display: flex; align-items: baseline; gap: 12px; }
+/* The row holds exactly the readout's own height. Left to size itself it
+ * grew a fraction of a pixel whenever a ticker sat beside the number, which
+ * was enough to change the display's height from one stop to the next. */
+.lcd-price-row { display: flex; align-items: baseline; gap: 12px; height: var(--price-size); }
 .lcd-price {
   font-family: var(--f-ui);
-  font-size: clamp(28px, 10.5cqw, 68px);
+  font-size: var(--price-size);
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1;
@@ -1628,7 +1632,7 @@ tr.row-rule th {
  * than wrapping. Without this the display stood 20px taller on the stops
  * that do carry a name, which moved the whole page and raised a scrollbar
  * as the dial turned. */
-.lcd-identity, .mv-identity {
+.lcd-identity {
   margin: 5px 0 0;
   font-family: var(--f-ui);
   font-size: 11px;
@@ -1639,7 +1643,9 @@ tr.row-rule th {
   text-overflow: ellipsis;
   color: var(--lcd-dim);
 }
-.mv-identity { color: var(--dim); }
+/* The drawer's copy is free to wrap: it sits in a panel that scrolls, not
+ * in the fixed display. */
+.mv-identity { margin: 5px 0 0; font-family: var(--f-ui); font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; color: var(--dim); }
 
 .about-dialog { width: min(560px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; box-sizing: border-box; padding: 24px; border: 1px solid var(--dim); background: var(--shell); color: var(--text); }
 .about-dialog::backdrop { background: rgba(0, 0, 0, .72); }

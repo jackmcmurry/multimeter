@@ -250,6 +250,7 @@ body {
 
 /* ---- display ------------------------------------------------------------- */
 .lcd {
+  --price-size: clamp(28px, 10.5cqw, 68px);   /* the readout size, and the row height reserved for it */
   display: block;
   width: 100%;
   container-type: inline-size;   /* the readout sizes with the screen, not the window */
@@ -320,10 +321,13 @@ body {
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
-.lcd-price-row { display: flex; align-items: baseline; gap: 12px; }
+/* The row holds exactly the readout's own height. Left to size itself it
+ * grew a fraction of a pixel whenever a ticker sat beside the number, which
+ * was enough to change the display's height from one stop to the next. */
+.lcd-price-row { display: flex; align-items: baseline; gap: 12px; height: var(--price-size); }
 .lcd-price {
   font-family: var(--f-ui);
-  font-size: clamp(28px, 10.5cqw, 68px);
+  font-size: var(--price-size);
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1;

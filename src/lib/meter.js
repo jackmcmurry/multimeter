@@ -1050,7 +1050,9 @@
     var identityEl = el('lcdIdentity');
     if (identityEl) {
       identityEl.textContent = off ? '' : r.identity || '';
-      identityEl.hidden = off || !r.identity;
+      /* The line keeps its place even with nothing to name. Hiding it made
+       * the display twenty pixels shorter on every stop without an identity,
+       * so the page resized as the dial turned. */
     }
     setText('lcdUnit', off || (r.unit === '%' && /%$/.test(r.text)) ? '' : r.unit || '');
 
