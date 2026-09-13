@@ -48,6 +48,16 @@ jobs:
         continue-on-error: true
         run: npm install --omit=dev --no-audit --no-fund --no-package-lock
 
+      - name: Test the PROBE endpoint
+        # api/probe.js is the one file here Node can actually execute outside
+        # a browser (it is a Vercel function, not a page module), so it is
+        # the one file with its own node:test suite. Everything provider-side
+        # is mocked; a real key is never needed to run this. Reported, not
+        # blocking, matching the data steps below: a regression here should
+        # be seen, not stop the Pages publish this workflow also does.
+        continue-on-error: true
+        run: node --test test/probe-api.test.js
+
       - name: Update Nasdaq search directory
         continue-on-error: true
         run: node scripts/update-catalogue.js

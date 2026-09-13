@@ -71,7 +71,15 @@
   /* plate geometry, in viewBox units; MARGIN leaves room for the longest label
    * at three o'clock, which would otherwise clip at the plate's edge */
   var SIZE = 300, CX = 150, CY = 150, MARGIN = 34;
-  var R_FACE = 92, R_ARC = 105, R_TICK_IN = 100, R_TICK_OUT = 112, R_LABEL = 144, R_HIT = 18;
+  var R_FACE = 92, R_ARC = 105, R_TICK_IN = 100, R_TICK_OUT = 112, R_LABEL = 144;
+  /* The labels stay put, but a touch target is a wedge, not a small circle at
+   * the label: it spans the whole angular slice from one tick to the next, so
+   * a tap anywhere between two ticks lands on the stop between them, and the
+   * ring never has a dead spot between labels. The first and last stop's
+   * outer edge reaches across half the gap to OFF, matching the same split
+   * stopAt() already gives a drag that lands in that gap. */
+  var R_HIT_IN = 96, R_HIT_OUT = 176;
+  var HALF_DEAD = (360 - SWEEP_DEG) / 2;
 
   var TAP_PX = 4;   /* pointer travel below which a press is a tap, not a drag */
 
@@ -113,6 +121,17 @@
     return { x: (CX + r * Math.sin(t)).toFixed(2), y: (CY - r * Math.cos(t)).toFixed(2) };
   }
 
+  /* One stop's touch target: an annular sector (a pie slice with the middle
+   * cut out) from aStart to aEnd degrees, between R_HIT_IN and R_HIT_OUT.
+   * Every wedge on the plate stays under 180 degrees, so the arc flags below
+   * are always the simple case. */
+  function sectorPath(aStart, aEnd) {
+    var o0 = polar(R_HIT_OUT, aStart), o1 = polar(R_HIT_OUT, aEnd);
+    var i1 = polar(R_HIT_IN, aEnd), i0 = polar(R_HIT_IN, aStart);
+    return 'M' + o0.x + ',' + o0.y + 'A' + R_HIT_OUT + ',' + R_HIT_OUT + ' 0 0 1 ' + o1.x + ',' + o1.y +
+      'L' + i1.x + ',' + i1.y + 'A' + R_HIT_IN + ',' + R_HIT_IN + ' 0 0 0 ' + i0.x + ',' + i0.y + 'Z';
+  }
+
   function escapeText(s) {
     return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
   }
@@ -124,12 +143,18 @@
     s += '<circle class="dial-face" cx="' + CX + '" cy="' + CY + '" r="' + R_FACE + '"/>';
     var a0 = polar(R_ARC, angleOf(0)), a1 = polar(R_ARC, angleOf(STOPS.length - 1));
     s += '<path class="dial-arc" d="M' + a0.x + ',' + a0.y + ' A' + R_ARC + ',' + R_ARC + ' 0 1 1 ' + a1.x + ',' + a1.y + '"/>';
+    var half = STEP_DEG / 2;
     for (var i = 0; i < STOPS.length; i++) {
       var deg = angleOf(i);
       var t0 = polar(R_TICK_IN, deg), t1 = polar(R_TICK_OUT, deg), lp = polar(R_LABEL, deg);
+      /* interior edges are shared evenly with a neighbor; the two outer
+       * edges (first stop's start, last stop's end) reach into the dead
+       * zone instead, since there is no neighbor there to share with */
+      var sa = deg - (i === 0 ? HALF_DEAD : half);
+      var ea = deg + (i === STOPS.length - 1 ? HALF_DEAD : half);
       s += '<line class="dial-tick" x1="' + t0.x + '" y1="' + t0.y + '" x2="' + t1.x + '" y2="' + t1.y + '"/>';
       s += '<g class="dial-stop" data-stop="' + STOPS[i].id + '">' +
-        '<circle class="dial-hit" cx="' + lp.x + '" cy="' + lp.y + '" r="' + R_HIT + '"/>' +
+        '<path class="dial-hit" d="' + sectorPath(sa, ea) + '"/>' +
         '<text class="dial-lab" x="' + lp.x + '" y="' + lp.y + '" text-anchor="middle" dominant-baseline="central">' +
         (STOPS[i].id === 'mover' ? '<tspan x="' + lp.x + '" dy="-5">MOVER</tspan><tspan x="' + lp.x + '" dy="12">LOSER</tspan>' : escapeText(STOPS[i].label)) + '</text></g>';
     }
@@ -461,6 +486,32 @@
       else if (k === 'End') go(STOPS[STOPS.length - 1].id);
       else if (k === 'Enter' || k === ' ') step(1);
       else return;
+      ev.preventDefault();
+    });
+  }
+
+  /* Arrows move the dial from anywhere on the page, not only once the knob
+   * has focus, so this listens on the document rather than the knob alone.
+   * It steps back only for a field that gives arrows a meaning of their own:
+   * typing, a native select, or a modal that should hold focus. A plain
+   * button (a soft key, a skin swatch, a watch row) has no such meaning, so
+   * it must not be excluded here either: browsers leave focus sitting on
+   * whatever button was last clicked, and excluding buttons meant the very
+   * first soft-key press permanently silenced the dial's arrow keys for the
+   * rest of the visit. */
+  function wireGlobalKeys() {
+    document.addEventListener('keydown', function (ev) {
+      var k = ev.key;
+      if (k !== 'ArrowRight' && k !== 'ArrowUp' && k !== 'ArrowLeft' && k !== 'ArrowDown' && k !== 'Home' && k !== 'End') return;
+      if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+      var target = ev.target;
+      if (target && (target.matches('input, textarea, select, [contenteditable="true"]') || target.closest('dialog[open]'))) return;
+      primeAudio();
+      touchedDial();
+      if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
+      else if (k === 'ArrowLeft' || k === 'ArrowDown') step(-1);
+      else if (k === 'Home') go(STOPS[0].id);
+      else if (k === 'End') go(STOPS[STOPS.length - 1].id);
       ev.preventDefault();
     });
   }
@@ -1115,6 +1166,7 @@
     knob.setAttribute('aria-valuemax', String(STOPS.length - 1));
     wireDial(dial, knob);
     wireKeys(knob);
+    wireGlobalKeys();
     wireButtons();
     wireSkins();
     markSound();
