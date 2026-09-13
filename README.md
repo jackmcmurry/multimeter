@@ -2,7 +2,7 @@
 
 [multimtr.com](https://www.multimtr.com/)
 
-![Multimeter logo](docs/multimeter-logo.svg)
+<img src="docs/icons/icon.svg" width="160" height="160" alt="Multimeter app icon in Meter Mint on a dark background">
 
 A financial instrument for learning how markets move. Turn the dial to a stock or cryptocurrency, measure its volatility, correlation or drawdown, and press LEARN to understand the number on screen.
 
