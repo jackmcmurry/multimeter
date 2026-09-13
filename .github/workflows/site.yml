@@ -49,6 +49,9 @@ jobs:
         run: npm install --omit=dev --no-audit --no-fund --no-package-lock
 
       - name: Test the PROBE endpoint
+        # Skipped while the endpoint is out of the tree: the integration was
+        # removed as unfinished, and this runs again by itself if it returns.
+        if: hashFiles('test/probe-api.test.js') != ''
         # api/probe.js is the one file here Node can actually execute outside
         # a browser (it is a Vercel function, not a page module), so it is
         # the one file with its own node:test suite. Everything provider-side
