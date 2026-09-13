@@ -31,3 +31,5 @@ A financial instrument for learning how markets move. Turn the dial to a stock o
 ## About
 
 I'm Jack McMurry, a student at Emory. I built Multimeter with Claude Code and Codex to make market concepts easier to explore through something hands-on. My next step is student testing.
+
+**Fun fact:** Our signature green has a name: **Meter Mint** (#2EE59D).
