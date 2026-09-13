@@ -345,7 +345,9 @@
       eq('the chosen skin is on the page', document.documentElement.getAttribute('data-skin'), 'blue');
       eq('an unknown skin is ignored', M.setSkin('plaid'), 'blue');
       M.setSkin('gold');
-      ok('gold needs no attribute', !document.documentElement.hasAttribute('data-skin'));
+      /* Every skin is named on the page now, gold included, since green is
+       * the default and the attribute is always written. */
+      eq('gold is named like any other skin', document.documentElement.getAttribute('data-skin'), 'gold');
       M.setSkin(skinBefore);
       if (M.toggleSkins) {
         eq('the palette opens', M.toggleSkins(true), true);
@@ -948,7 +950,10 @@
       eq('a statistic offers PROBE where a measurement exists', M.keySet('reading', 'vol')[3][0], 'probe');
       /* MOVER carries both ends of the week now, so slot three turns it over
        * rather than adding the name to the watch list */
-      eq('a mover turns over to the other end', M.keySet('reading', 'mover')[2][0], 'end');
+      /* The end toggle moved out of the key row and into the tabs, so the
+       * key is free; moverEndFor and moverEndLabel above still cover the
+       * behaviour itself. */
+      eq('a mover spends no key on the end toggle', M.keySet('reading', 'mover')[2][0], 'none');
       eq('a price keeps MIN/MAX and ALERT', M.keySet('reading', 'btc')[2][0] + ',' + M.keySet('reading', 'btc')[3][0], 'minmax,alert');
       ok('every key row has five slots', ['search', 'list', 'learn'].concat(['btc', 'vol', 'dd', 'corr', 'mover', 'loser', 'watch', 'off']).every(function (k) {
         return M.keySet(k).length === 5 || M.keySet('reading', k).length === 5;

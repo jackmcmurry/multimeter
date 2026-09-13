@@ -39,6 +39,14 @@
     return typeof symbol === 'string' && SYMBOL_RE.test(symbol) ? 'data/stocks/' + symbol + '.json' : null;
   }
 
+  /* Closes for a symbol the scheduled job does not publish. The site's own
+   * endpoint asks the provider with a key the browser never sees, and answers
+   * in the same shape as data/stocks/SYM.json, so one normaliser reads both. */
+  function stockApiUrl(symbol) {
+    return typeof symbol === 'string' && SYMBOL_RE.test(symbol)
+      ? 'api/history?symbol=' + encodeURIComponent(symbol) : null;
+  }
+
   function parsePayload(payload) {
     if (typeof payload === 'string') {
       try { return JSON.parse(payload); } catch (e) { return null; }
@@ -541,6 +549,7 @@
     COINBASE_WS: COINBASE_WS,
     SNAPSHOT: SNAPSHOT,
     stockPath: stockPath,
+    stockApiUrl: stockApiUrl,
     normalizeStocksSnapshot: normalizeStocksSnapshot,
     normalizeStockFile: normalizeStockFile,
     coinbaseWs: coinbaseWs,
