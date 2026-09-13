@@ -168,27 +168,39 @@ body {
   padding: 0 4px 12px;
 }
 /* The wordmark: the instrument's name, printed like a maker's badge. The
- * first M is drawn rather than typed, as four strokes whose second peak
- * stands above the first and whose right foot lands above the left, so the
- * letter and a rising line are the same shape. The stroke is set to the
- * stem weight of the type beside it, which is what keeps it reading as an M
- * and not as a chart pasted against a word. Flat, no glow. */
+ * first M is drawn rather than typed, as four strokes forming two peaks (the
+ * second no higher than the first) and a right foot shorter than the left,
+ * so the letter and a falling/rising line read as the same shape. The
+ * wordmark itself sits in the same monospace family as the display, so the
+ * whole mark reads as an instrument's engraved badge, not a display headline.
+ * Flat, no glow. Single source of truth for the mark's shape is the inline
+ * SVG path above; do not also override it here. */
 .brand {
+  position: relative;
+  padding-left: 1.7639em;
   display: inline-flex;
-  align-items: center;
-  font-family: var(--f-body);
+  align-items: baseline;
+  font-family: var(--f-lcd);
   font-size: 30px;
-  font-weight: 800;
-  letter-spacing: 0.005em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   line-height: 1;
   color: var(--brand);
 }
 .brand-mark {
-  height: 0.98em;
-  width: auto;
+  position: absolute;
+  left: 0;
+  top: -0.375em;
+  /* The approved lockup, expressed as ratios of the type size so the two
+   * stay locked at any scale. In that drawing the mark stands 133 units
+   * beside 72pt type, its right stem ends exactly on the baseline, and the
+   * opening stroke falls 45 units past it. The baseline landing is what
+   * makes the stem and the U read as one line. */
+  height: 1.8472em;           /* 133/72 */
+  width: 1.5833em;
   overflow: visible;          /* the apex mitres past the box */
-  margin-right: 0.04em;
-  transform: translateY(0.015em);
+  margin-right: 0.1806em;     /* 13/72, from the stem's own centre line */
+  margin-bottom: -0.625em;    /* 45/72: sits the stem end on the baseline */
 }
 .brand-word { text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
 
@@ -1579,26 +1591,25 @@ tr.row-rule th {
 .chart-state { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; text-align: left; line-height: 1.5; }
 .chart-state p { margin: 0; }
 @media (max-width: 480px) { .chart-state { font-size: 11px; padding: 8px; gap: 6px; } }
-/* The rising M begins beside the display corner, outside the glass. */
-.brand { align-items: center; }
-/* The mark leans, and its first stroke drops well below the word, so the M
- * reads as a maker's mark rather than a capital letter sitting in line. */
-.brand-mark {
-  width: auto;
-  height: 2.15em;
-  margin-left: -10px;
-  margin-right: .04em;
-  margin-bottom: -20px;
-  transform: skewX(-5deg);
-  transform-origin: 62% 68%;
-  flex-shrink: 0;
-}
-.head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { margin-left: -0.08em; text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
-.head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* Asset identity stays secondary to the reading and its explanation. */
-.lcd-identity, .mv-identity { margin: 5px 0 0; font-family: var(--f-ui); font-size: 11px; line-height: 1.35; color: var(--lcd-dim); overflow-wrap: anywhere; }
+/* The identity line holds its place on every stop, whether or not the
+ * current reading has a name to print. It is one line, always: a stop
+ * without an identity still reserves it, and a long one is trimmed rather
+ * than wrapping. Without this the display stood 20px taller on the stops
+ * that do carry a name, which moved the whole page and raised a scrollbar
+ * as the dial turned. */
+.lcd-identity, .mv-identity {
+  margin: 5px 0 0;
+  font-family: var(--f-ui);
+  font-size: 11px;
+  line-height: 1.35;
+  height: 1.35em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--lcd-dim);
+}
 .mv-identity { color: var(--dim); }
 
 .about-dialog { width: min(560px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; box-sizing: border-box; padding: 24px; border: 1px solid var(--dim); background: var(--shell); color: var(--text); }

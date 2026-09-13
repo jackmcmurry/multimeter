@@ -4,7 +4,6 @@
   "installCommand": "",
   "buildCommand": "",
   "outputDirectory": "docs",
-  "functions": { "api/probe.js": { "maxDuration": 30 } },
   "redirects": [
     { "source": "/multimeter.debug.html", "destination": "/", "permanent": true }
   ],

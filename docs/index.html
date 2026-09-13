@@ -213,27 +213,39 @@ body {
   padding: 0 4px 12px;
 }
 /* The wordmark: the instrument's name, printed like a maker's badge. The
- * first M is drawn rather than typed, as four strokes whose second peak
- * stands above the first and whose right foot lands above the left, so the
- * letter and a rising line are the same shape. The stroke is set to the
- * stem weight of the type beside it, which is what keeps it reading as an M
- * and not as a chart pasted against a word. Flat, no glow. */
+ * first M is drawn rather than typed, as four strokes forming two peaks (the
+ * second no higher than the first) and a right foot shorter than the left,
+ * so the letter and a falling/rising line read as the same shape. The
+ * wordmark itself sits in the same monospace family as the display, so the
+ * whole mark reads as an instrument's engraved badge, not a display headline.
+ * Flat, no glow. Single source of truth for the mark's shape is the inline
+ * SVG path above; do not also override it here. */
 .brand {
+  position: relative;
+  padding-left: 1.7639em;
   display: inline-flex;
-  align-items: center;
-  font-family: var(--f-body);
+  align-items: baseline;
+  font-family: var(--f-lcd);
   font-size: 30px;
-  font-weight: 800;
-  letter-spacing: 0.005em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   line-height: 1;
   color: var(--brand);
 }
 .brand-mark {
-  height: 0.98em;
-  width: auto;
+  position: absolute;
+  left: 0;
+  top: -0.375em;
+  /* The approved lockup, expressed as ratios of the type size so the two
+   * stay locked at any scale. In that drawing the mark stands 133 units
+   * beside 72pt type, its right stem ends exactly on the baseline, and the
+   * opening stroke falls 45 units past it. The baseline landing is what
+   * makes the stem and the U read as one line. */
+  height: 1.8472em;           /* 133/72 */
+  width: 1.5833em;
   overflow: visible;          /* the apex mitres past the box */
-  margin-right: 0.04em;
-  transform: translateY(0.015em);
+  margin-right: 0.1806em;     /* 13/72, from the stem's own centre line */
+  margin-bottom: -0.625em;    /* 45/72: sits the stem end on the baseline */
 }
 .brand-word { text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
 
@@ -1624,26 +1636,25 @@ tr.row-rule th {
 .chart-state { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; text-align: left; line-height: 1.5; }
 .chart-state p { margin: 0; }
 @media (max-width: 480px) { .chart-state { font-size: 11px; padding: 8px; gap: 6px; } }
-/* The rising M begins beside the display corner, outside the glass. */
-.brand { align-items: center; }
-/* The mark leans, and its first stroke drops well below the word, so the M
- * reads as a maker's mark rather than a capital letter sitting in line. */
-.brand-mark {
-  width: auto;
-  height: 2.15em;
-  margin-left: -10px;
-  margin-right: .04em;
-  margin-bottom: -20px;
-  transform: skewX(-5deg);
-  transform-origin: 62% 68%;
-  flex-shrink: 0;
-}
-.head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { margin-left: -0.08em; text-shadow: none; transform: translateY(calc(-1 * var(--wordmark-rise))); }
-.head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* Asset identity stays secondary to the reading and its explanation. */
-.lcd-identity, .mv-identity { margin: 5px 0 0; font-family: var(--f-ui); font-size: 11px; line-height: 1.35; color: var(--lcd-dim); overflow-wrap: anywhere; }
+/* The identity line holds its place on every stop, whether or not the
+ * current reading has a name to print. It is one line, always: a stop
+ * without an identity still reserves it, and a long one is trimmed rather
+ * than wrapping. Without this the display stood 20px taller on the stops
+ * that do carry a name, which moved the whole page and raised a scrollbar
+ * as the dial turned. */
+.lcd-identity, .mv-identity {
+  margin: 5px 0 0;
+  font-family: var(--f-ui);
+  font-size: 11px;
+  line-height: 1.35;
+  height: 1.35em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--lcd-dim);
+}
 .mv-identity { color: var(--dim); }
 
 .about-dialog { width: min(560px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; box-sizing: border-box; padding: 24px; border: 1px solid var(--dim); background: var(--shell); color: var(--text); }
@@ -1700,9 +1711,11 @@ tr.row-rule th {
 
         <div class="head">
           <!-- the wordmark: the first M is drawn, not typed, so the letter
-               and the rising line are the same four strokes -->
+               and the rising line are the same four strokes. Approved shape:
+               two peaks, the second no higher than the first, the right foot
+               shorter than the left, matching docs/multimeter-logo.svg. -->
           <span class="brand">
-            <svg class="brand-mark" viewBox="0 0 70 86" role="img" aria-label="Multimeter"><path d="M8 70 L8 8 L34 37 L60 8 L60 39" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
+            <svg class="brand-mark" viewBox="0 0 114 133" role="img" aria-label="Multimeter"><path d="M0 133 L38 0 L76 42 L114 0 L114 88" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
           </span>
           <span class="head-right">
             <span class="skin-picker">
@@ -10285,7 +10298,7 @@ tr.row-rule th {
    * note: renderProbe and wireProbe already belong to the custom-coin picker
    * in the drawer, so the screen's functions carry their own names.
    * ------------------------------------------------------------------------ */
-  var probeView = { ctx: null, finding: null, source: false, pending: false, request: 0, notice: '' };
+  var probeView = { ctx: null, finding: null, source: false };
 
   function probeContext(question) {
     if (!MP.probe) return null;
@@ -10305,9 +10318,6 @@ tr.row-rule th {
   }
 
   function openProbe() {
-    probeView.request++;
-    probeView.pending = false;
-    probeView.notice = '';
     probeView.ctx = probeContext(null);
     probeView.finding = null;
     probeView.source = false;
@@ -10339,11 +10349,6 @@ tr.row-rule th {
   function paintProbe() {
     var ctx = probeView.ctx, f = probeView.finding;
     setText('lcdProbeSubject', probeSubjectLine(ctx));
-    if (probeView.pending) {
-      setText('lcdProbeState', 'ASKING CLAUDE');
-      setHtml('lcdProbeBody', '<p class="probe-sum" role="status">Reading your question and this measurement…</p>');
-      return;
-    }
 
     if (probeView.source) {
       setText('lcdProbeState', 'SOURCES');
@@ -10355,15 +10360,14 @@ tr.row-rule th {
       var qs = MP.probe ? MP.probe.questionsFor(ctx) : [];
       setText('lcdProbeState', qs.length ? 'PROBE READY' : 'INSUFFICIENT DATA');
       setHtml('lcdProbeBody', qs.length
-        ? '<p class="probe-sum">Ask Claude about this measurement. Your question and the displayed market figures are sent to Anthropic.</p>' + probeQuestionsHtml(qs)
+        ? '<p class="probe-sum">What are you curious about?</p>' + probeQuestionsHtml(qs)
         : '<p class="probe-sum">There is nothing measured on this stop yet for PROBE to investigate. Turn to a measurement, or ask a question below.</p>');
       return;
     }
 
     var STATE = { answered: 'EVIDENCE FOUND', insufficient: 'LIMITED EVIDENCE', refused: 'OUT OF SCOPE', unavailable: 'PROBE UNAVAILABLE' };
-    setText('lcdProbeState', f.origin === 'claude' ? 'CLAUDE / EXPLANATION' : 'LOCAL / ' + (STATE[f.status] || 'EVIDENCE FOUND'));
+    setText('lcdProbeState', STATE[f.status] || 'EVIDENCE FOUND');
     setHtml('lcdProbeBody',
-      (probeView.notice ? '<p class="probe-sum" role="status">' + F.escapeHtml(probeView.notice) + '</p>' : '') +
       '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline) + '</div>' +
       (f.answer.summary ? '<p class="probe-sum">' + F.escapeHtml(f.answer.summary) + '</p>' : '') +
       probeSection('WHAT WE SEE', f.observations, true) +
@@ -10374,10 +10378,9 @@ tr.row-rule th {
   }
 
   /* A question, answered from the instrument's own figures. */
-  async function askProbe(question, suggested) {
+  function askProbe(question, suggested) {
     if (!MP.probe) return null;
-    if (probeView.pending) return null;
-    var q = String(question || '').trim().slice(0, 200);
+    var q = String(question || '').trim();
     if (!q) return null;
     probeView.ctx = probeContext(q);
     probeView.source = false;
@@ -10386,28 +10389,7 @@ tr.row-rule th {
       MP.track.event(suggested ? 'probe_suggested_question_selected' : 'probe_custom_question_submitted',
         MP.probe.topicOf(q, probeView.ctx) || 'other');
     }
-    var request = ++probeView.request;
-    var ctx = probeView.ctx;
-    probeView.pending = true;
-    probeView.notice = '';
-    paintProbe();
-    var finding = null;
-    var controller = new AbortController();
-    var timeout = setTimeout(function () { controller.abort(); }, 25000);
-    try {
-      var response = await fetch('/api/probe', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-        body: JSON.stringify({ question: q, context: ctx })
-      });
-      var result = await response.json();
-      if (response.ok && result.origin === 'claude' && result.answer &&
-          typeof result.answer.headline === 'string' && Array.isArray(result.actions)) finding = result;
-    } catch (e) { /* The local engine remains available without a connection. */ }
-    finally { clearTimeout(timeout); }
-    if (request !== probeView.request) return null;
-    probeView.pending = false;
-    probeView.notice = finding ? '' : 'Claude is unavailable right now. This answer uses the local measurements.';
-    probeView.finding = finding || MP.probe.answer(ctx, q);
+    probeView.finding = MP.probe.answer(probeView.ctx, q);
     if (!probeView.finding) {
       probeView.finding = {
         status: 'unavailable', origin: 'local',

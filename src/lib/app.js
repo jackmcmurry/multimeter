@@ -2227,7 +2227,7 @@
    * note: renderProbe and wireProbe already belong to the custom-coin picker
    * in the drawer, so the screen's functions carry their own names.
    * ------------------------------------------------------------------------ */
-  var probeView = { ctx: null, finding: null, source: false, pending: false, request: 0, notice: '' };
+  var probeView = { ctx: null, finding: null, source: false };
 
   function probeContext(question) {
     if (!MP.probe) return null;
@@ -2247,9 +2247,6 @@
   }
 
   function openProbe() {
-    probeView.request++;
-    probeView.pending = false;
-    probeView.notice = '';
     probeView.ctx = probeContext(null);
     probeView.finding = null;
     probeView.source = false;
@@ -2281,11 +2278,6 @@
   function paintProbe() {
     var ctx = probeView.ctx, f = probeView.finding;
     setText('lcdProbeSubject', probeSubjectLine(ctx));
-    if (probeView.pending) {
-      setText('lcdProbeState', 'ASKING CLAUDE');
-      setHtml('lcdProbeBody', '<p class="probe-sum" role="status">Reading your question and this measurement…</p>');
-      return;
-    }
 
     if (probeView.source) {
       setText('lcdProbeState', 'SOURCES');
@@ -2297,15 +2289,14 @@
       var qs = MP.probe ? MP.probe.questionsFor(ctx) : [];
       setText('lcdProbeState', qs.length ? 'PROBE READY' : 'INSUFFICIENT DATA');
       setHtml('lcdProbeBody', qs.length
-        ? '<p class="probe-sum">Ask Claude about this measurement. Your question and the displayed market figures are sent to Anthropic.</p>' + probeQuestionsHtml(qs)
+        ? '<p class="probe-sum">What are you curious about?</p>' + probeQuestionsHtml(qs)
         : '<p class="probe-sum">There is nothing measured on this stop yet for PROBE to investigate. Turn to a measurement, or ask a question below.</p>');
       return;
     }
 
     var STATE = { answered: 'EVIDENCE FOUND', insufficient: 'LIMITED EVIDENCE', refused: 'OUT OF SCOPE', unavailable: 'PROBE UNAVAILABLE' };
-    setText('lcdProbeState', f.origin === 'claude' ? 'CLAUDE / EXPLANATION' : 'LOCAL / ' + (STATE[f.status] || 'EVIDENCE FOUND'));
+    setText('lcdProbeState', STATE[f.status] || 'EVIDENCE FOUND');
     setHtml('lcdProbeBody',
-      (probeView.notice ? '<p class="probe-sum" role="status">' + F.escapeHtml(probeView.notice) + '</p>' : '') +
       '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline) + '</div>' +
       (f.answer.summary ? '<p class="probe-sum">' + F.escapeHtml(f.answer.summary) + '</p>' : '') +
       probeSection('WHAT WE SEE', f.observations, true) +
@@ -2316,10 +2307,9 @@
   }
 
   /* A question, answered from the instrument's own figures. */
-  async function askProbe(question, suggested) {
+  function askProbe(question, suggested) {
     if (!MP.probe) return null;
-    if (probeView.pending) return null;
-    var q = String(question || '').trim().slice(0, 200);
+    var q = String(question || '').trim();
     if (!q) return null;
     probeView.ctx = probeContext(q);
     probeView.source = false;
@@ -2328,28 +2318,7 @@
       MP.track.event(suggested ? 'probe_suggested_question_selected' : 'probe_custom_question_submitted',
         MP.probe.topicOf(q, probeView.ctx) || 'other');
     }
-    var request = ++probeView.request;
-    var ctx = probeView.ctx;
-    probeView.pending = true;
-    probeView.notice = '';
-    paintProbe();
-    var finding = null;
-    var controller = new AbortController();
-    var timeout = setTimeout(function () { controller.abort(); }, 25000);
-    try {
-      var response = await fetch('/api/probe', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-        body: JSON.stringify({ question: q, context: ctx })
-      });
-      var result = await response.json();
-      if (response.ok && result.origin === 'claude' && result.answer &&
-          typeof result.answer.headline === 'string' && Array.isArray(result.actions)) finding = result;
-    } catch (e) { /* The local engine remains available without a connection. */ }
-    finally { clearTimeout(timeout); }
-    if (request !== probeView.request) return null;
-    probeView.pending = false;
-    probeView.notice = finding ? '' : 'Claude is unavailable right now. This answer uses the local measurements.';
-    probeView.finding = finding || MP.probe.answer(ctx, q);
+    probeView.finding = MP.probe.answer(probeView.ctx, q);
     if (!probeView.finding) {
       probeView.finding = {
         status: 'unavailable', origin: 'local',
