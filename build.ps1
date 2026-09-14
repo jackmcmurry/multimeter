@@ -45,7 +45,9 @@ $libOrder = @(
     'src/lib/watch.js',
     'src/lib/search.js',
     'src/lib/spotlight.js',
-    'src/lib/app.js'
+    'src/lib/app.js',
+    'src/lib/portfolio.js',
+    'src/lib/portfolio-ui.js'
 )
 # The write-up page: the same stylesheet, a smaller kit, and its own filler.
 $findingsOrder = @(

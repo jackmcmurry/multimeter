@@ -1607,12 +1607,13 @@
   /* One member's closes, fetched once per published session. A failure is
    * remembered for that session, so a missing file is not asked for again
    * on every screen change. */
-  function ensureStock(sym) {
+  function ensureStock(sym, retry) {
     var path = sym ? SRC.stockPath(sym) : null;
     if (!path) return;
     var st = state.stocks, have = st.files[sym];
     var session = st.list ? st.list.session : null;
-    if ((have && (have.session === session || !session)) || st.pending[sym]) return;
+    if (st.pending[sym]) return st.pending[sym];
+    if (have && (have.session === session || !session) && (have.series || !retry)) return Promise.resolve();
     st.pending[sym] = true;
     function read(payload) {
       var f = SRC.normalizeStockFile(payload);
@@ -1626,7 +1627,7 @@
       }
       return f;
     }
-    fetchJson(snapshotUrl(path)).then(read).catch(function () {
+    st.pending[sym] = fetchJson(snapshotUrl(path)).then(read).catch(function () {
       /* The scheduled job publishes a file for the Nasdaq-100 and the majors
        * only. Every other listed symbol is fetched on demand through the
        * site's own endpoint, so searching a company and charting it are the
@@ -1649,6 +1650,7 @@
       if (MP.spotlight) MP.spotlight.render();
       repaint();
     });
+    return st.pending[sym];
   }
 
   /* Why this symbol has no series, when the source said so in words. */
@@ -3042,6 +3044,8 @@
     openWatchRow: openWatchRow,
     removeCurrentWatch: removeCurrentWatch,
     stockSeries: stockSeries,
+    stockReason: stockReason,
+    stockChoices: function () { return searchIndex().filter(function (entry) { return entry.kind === 'stock'; }); },
     stockRow: stockRow,
     ensureStock: ensureStock,
     loadStocks: loadStocks,

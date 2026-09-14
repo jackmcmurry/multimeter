@@ -322,11 +322,32 @@
 
     <!-- WATCH -->
     <section class="view" data-panel="watch" hidden>
+      <p><button type="button" class="pill" id="portfolioOpen">Practice portfolio</button> <span class="foot">Try a hypothetical mix of stocks.</span></p>
       <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a stock by symbol or name" aria-label="Add a stock">
       <ul class="rows picks" id="watchResults"></ul>
       <div class="table-host" id="watchTable"></div>
       <p class="foot">Daily closes from the data job, not live prices. Up to 8 stocks. The list stays in this browser.</p>
       <div id="watchNotice"></div>
+    </section>
+
+    <section class="view practice" data-panel="portfolio" hidden aria-labelledby="portfolioTitle">
+      <button type="button" class="pill" id="portfolioBack">Back to WATCH</button>
+      <h2 id="portfolioTitle" tabindex="-1">Build a practice portfolio</h2>
+      <p>Start with a hypothetical $10,000. Choose 1–5 US stocks and give each a percentage of the starting investment.</p>
+      <div id="portfolioHoldings"></div>
+      <p id="portfolioTotal" aria-live="polite"></p>
+      <button class="pill" type="button" id="portfolioEqual">Use equal weights</button>
+      <label for="portfolioSearch">Add a stock by symbol or company name</label>
+      <input class="probe-search" id="portfolioSearch" type="search" autocomplete="off" placeholder="Search US stocks">
+      <ul class="rows picks" id="portfolioChoices"></ul>
+      <div class="practice-actions"><label for="portfolioRange">Historical range</label>
+        <select id="portfolioRange"><option value="1m">1 month</option><option value="3m">3 months</option><option value="1y" selected>1 year</option></select>
+        <button class="pill" id="portfolioRun" type="button">Run simulation</button>
+      </div>
+      <p id="portfolioNotice" role="status" aria-live="polite"></p>
+      <p class="foot" id="portfolioSave"></p>
+      <div id="portfolioResult"></div>
+      <p class="foot">A historical simulation, not actual holdings or a forecast. Fractional shares are bought at the first shared close and held without rebalancing. Uses the same closing-price histories as the stock charts. Excludes deposits, fees, taxes, dividends and actual trading.</p>
     </section>
 
     <!-- PROBE -->

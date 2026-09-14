@@ -92,7 +92,7 @@
   };
 
   /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
-  var PANEL_TITLES = { alerts: 'Alerts' };
+  var PANEL_TITLES = { alerts: 'Alerts', portfolio: 'Practice portfolio' };
 
   var DEFAULT_VIEW = 'btc';
 

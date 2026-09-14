@@ -139,6 +139,24 @@
   --f-body: "Neue Haas Grotesk Display Pro", "Neue Haas Grotesk Text Pro", "NHaasGroteskDSPro", "NHaasGroteskTXPro", "Helvetica Neue", "Inter Tight", Helvetica, Arial, sans-serif;
 }
 
+.practice { line-height: 1.55; }
+.practice label { display: block; margin: 14px 0 6px; }
+.practice-holding { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto; gap: 12px; align-items: center; margin: 12px 0; }
+.practice-holding label { margin: 0; }
+.practice-holding label span { color: var(--dim); font-size: 12px; }
+.practice input[type="number"], .practice select { min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--rule); border-radius: 4px; background: var(--cell); color: var(--text); font: inherit; }
+.practice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.practice-actions label { margin: 0; }
+.practice-actions select { width: auto; }
+.practice-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.practice-metrics dt { color: var(--dim); font-size: 13px; }
+.practice-metrics dd { margin: 4px 0; font: 600 24px var(--f-lcd); }
+.practice .chartbox svg { display: block; width: 100%; height: auto; }
+.practice-warning { color: var(--gold); }
+.practice :focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+.practice button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 480px) { .practice-holding { grid-template-columns: minmax(0,1fr) 70px; } .practice-holding button { grid-column: 1 / -1; justify-self: start; } .practice-metrics dd { font-size: 19px; } }
+
 * { box-sizing: border-box; }
 
 html { background: var(--bg); }
@@ -233,24 +251,21 @@ body {
   line-height: 1;
   color: var(--brand);
 }
-/* The mark is src/icon.svg's path, cropped to the glyph by the viewBox
- * origin. Its box is 40 x 34 units and the 6.5 stroke bleeds 3.25 outside
- * that on every side, so the ink stands about 40.5 units tall: sized here to
- * land on the cap height of the letters beside it. overflow stays visible so
- * the square caps and the miter at each peak are not clipped. */
+/* The app-icon M is deliberately larger than ULTIMETER. Preserve its shape
+ * and baseline while giving the first letter a stronger silhouette. */
 .brand-mark {
-  width: .792em;
-  height: .673em;
+  width: 1.1088em;
+  height: .9422em;
   margin-right: .16em;
   /* The square cap overshoots the box by half a stroke, so the box is lifted
      by that much to put the M's foot on the wordmark's baseline rather than
      below it. */
-  margin-bottom: .064em;
+  margin-bottom: .0896em;
   flex-shrink: 0;
   overflow: visible;
 }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; }
+.brand-word { text-shadow: none; transform: translateY(-.07em); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* the model number is equipment labelling, not a second brand */
@@ -627,7 +642,8 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 26px;
-  padding-top: 4px;
+  /* Keep the market session label and lamp clear of two-line explanations. */
+  padding-top: 24px;
 }
 /* Market status: a reading, not a control. One lamp and one word, printed
  * under a caption that says it is a status, so nothing here invites a press. */
@@ -686,6 +702,10 @@ body {
 }
 .drawer-head .muted { font-size: 12px; }
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
+@media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
+.drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
+.drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
+.drawer:has([data-panel="portfolio"]:not([hidden])) .drawer-tools { display: none; }
 .pill.share { background: var(--cell); color: var(--holster); }
 .pill.share:hover { background: var(--hover); color: var(--holster); }
 .pill.is-busy { opacity: 0.5; pointer-events: none; }
@@ -719,6 +739,18 @@ body {
 :root[data-skin="red"] { --holster: #ef4444; --holster-dk: #a91d1d; --holster-lt: #ff9a9a; --knob-mark: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.55); }
 :root[data-skin="purple"] { --holster: #a855f7; --holster-dk: #7426c7; --holster-lt: #d6b0ff; --knob-mark: #c084fc; --accent-glow: rgba(192, 132, 252, 0.55); }
 :root[data-skin="silver"] { --holster: #cbd5e1; --holster-dk: #8a97aa; --holster-lt: #f1f5f9; --knob-mark: #e2e8f0; --accent-glow: rgba(226, 232, 240, 0.45); }
+
+/* Meter Mint is a solid brand accent in the green skin, not a textured tint. */
+:root[data-skin="green"] { --holster-dk: var(--meter-mint); --holster-lt: var(--meter-mint); --accent-glow: transparent; }
+:root[data-skin="green"] .holster { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+:root[data-skin="green"] .holster::before,
+:root[data-skin="green"] .holster::after { display: none; }
+:root[data-skin="green"] .dial-stop.is-on .dial-hit { fill: none; stroke: var(--meter-mint); stroke-width: 1.5; fill-opacity: 1; }
+:root[data-skin="green"] .skin[data-skin="green"] { box-shadow: none; }
+:root[data-skin="green"] .skin[data-skin="green"][aria-pressed="true"] { box-shadow: 0 0 0 3px #fbfaf6, 0 0 0 5px #1b1f26; }
+:root[data-skin="green"] .lcd-price.is-up { text-shadow: none; }
+:root[data-skin="green"] .lcd-badge.is-up,
+:root[data-skin="green"] .status-lamp.is-open { box-shadow: none; }
 
 .head { align-items: center; }
 .head-right { display: flex; align-items: center; gap: 14px; }
@@ -834,7 +866,7 @@ body {
     padding: 22px 28px 22px;
   }
   .face-dial .dial { width: 100%; margin: 0 auto; }
-  .face-dial .jacks { padding-top: 0; }
+  .face-dial .jacks { padding-top: 24px; }
   .stage { padding-top: 16px; }
 }
 
@@ -2111,11 +2143,32 @@ tr.row-rule th {
 
     <!-- WATCH -->
     <section class="view" data-panel="watch" hidden>
+      <p><button type="button" class="pill" id="portfolioOpen">Practice portfolio</button> <span class="foot">Try a hypothetical mix of stocks.</span></p>
       <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a stock by symbol or name" aria-label="Add a stock">
       <ul class="rows picks" id="watchResults"></ul>
       <div class="table-host" id="watchTable"></div>
       <p class="foot">Daily closes from the data job, not live prices. Up to 8 stocks. The list stays in this browser.</p>
       <div id="watchNotice"></div>
+    </section>
+
+    <section class="view practice" data-panel="portfolio" hidden aria-labelledby="portfolioTitle">
+      <button type="button" class="pill" id="portfolioBack">Back to WATCH</button>
+      <h2 id="portfolioTitle" tabindex="-1">Build a practice portfolio</h2>
+      <p>Start with a hypothetical $10,000. Choose 1–5 US stocks and give each a percentage of the starting investment.</p>
+      <div id="portfolioHoldings"></div>
+      <p id="portfolioTotal" aria-live="polite"></p>
+      <button class="pill" type="button" id="portfolioEqual">Use equal weights</button>
+      <label for="portfolioSearch">Add a stock by symbol or company name</label>
+      <input class="probe-search" id="portfolioSearch" type="search" autocomplete="off" placeholder="Search US stocks">
+      <ul class="rows picks" id="portfolioChoices"></ul>
+      <div class="practice-actions"><label for="portfolioRange">Historical range</label>
+        <select id="portfolioRange"><option value="1m">1 month</option><option value="3m">3 months</option><option value="1y" selected>1 year</option></select>
+        <button class="pill" id="portfolioRun" type="button">Run simulation</button>
+      </div>
+      <p id="portfolioNotice" role="status" aria-live="polite"></p>
+      <p class="foot" id="portfolioSave"></p>
+      <div id="portfolioResult"></div>
+      <p class="foot">A historical simulation, not actual holdings or a forecast. Fractional shares are bought at the first shared close and held without rebalancing. Uses the same closing-price histories as the stock charts. Excludes deposits, fees, taxes, dividends and actual trading.</p>
     </section>
 
     <!-- PROBE -->
@@ -5352,7 +5405,7 @@ tr.row-rule th {
   };
 
   /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
-  var PANEL_TITLES = { alerts: 'Alerts' };
+  var PANEL_TITLES = { alerts: 'Alerts', portfolio: 'Practice portfolio' };
 
   var DEFAULT_VIEW = 'btc';
 
@@ -10026,12 +10079,13 @@ tr.row-rule th {
   /* One member's closes, fetched once per published session. A failure is
    * remembered for that session, so a missing file is not asked for again
    * on every screen change. */
-  function ensureStock(sym) {
+  function ensureStock(sym, retry) {
     var path = sym ? SRC.stockPath(sym) : null;
     if (!path) return;
     var st = state.stocks, have = st.files[sym];
     var session = st.list ? st.list.session : null;
-    if ((have && (have.session === session || !session)) || st.pending[sym]) return;
+    if (st.pending[sym]) return st.pending[sym];
+    if (have && (have.session === session || !session) && (have.series || !retry)) return Promise.resolve();
     st.pending[sym] = true;
     function read(payload) {
       var f = SRC.normalizeStockFile(payload);
@@ -10045,7 +10099,7 @@ tr.row-rule th {
       }
       return f;
     }
-    fetchJson(snapshotUrl(path)).then(read).catch(function () {
+    st.pending[sym] = fetchJson(snapshotUrl(path)).then(read).catch(function () {
       /* The scheduled job publishes a file for the Nasdaq-100 and the majors
        * only. Every other listed symbol is fetched on demand through the
        * site's own endpoint, so searching a company and charting it are the
@@ -10068,6 +10122,7 @@ tr.row-rule th {
       if (MP.spotlight) MP.spotlight.render();
       repaint();
     });
+    return st.pending[sym];
   }
 
   /* Why this symbol has no series, when the source said so in words. */
@@ -11461,6 +11516,8 @@ tr.row-rule th {
     openWatchRow: openWatchRow,
     removeCurrentWatch: removeCurrentWatch,
     stockSeries: stockSeries,
+    stockReason: stockReason,
+    stockChoices: function () { return searchIndex().filter(function (entry) { return entry.kind === 'stock'; }); },
     stockRow: stockRow,
     ensureStock: ensureStock,
     loadStocks: loadStocks,
@@ -11482,6 +11539,170 @@ tr.row-rule th {
   } else {
     start();
   }
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/portfolio.js ================================================ */
+/* Practice portfolio math. Pure: USD closing prices, fixed fractional shares,
+ * no rebalancing, cash flows, fees, taxes or dividend reinvestment. */
+(function (root) {
+  'use strict';
+  var MP = root.MP = root.MP || {};
+  var RANGES = { '1m': 30, '3m': 90, '1y': 365 };
+  function validate(holdings) {
+    if (!Array.isArray(holdings) || holdings.length < 1 || holdings.length > 5) throw new Error('Choose between 1 and 5 stocks.');
+    var seen = {}, total = 0;
+    holdings.forEach(function (h) {
+      if (!h || typeof h.symbol !== 'string' || !/^[A-Z][A-Z0-9.-]{0,9}$/.test(h.symbol)) throw new Error('Choose a supported US stock.');
+      if (seen[h.symbol]) throw new Error('Each stock can appear only once.');
+      seen[h.symbol] = true;
+      if (typeof h.weight !== 'number' || !isFinite(h.weight) || h.weight <= 0 || h.weight > 100) throw new Error('Give every stock a weight above 0% and at most 100%.');
+      total += h.weight;
+    });
+    if (Math.abs(total - 100) > 0.000001) throw new Error('Weights must total 100%. Your total is ' + Number(total.toFixed(2)) + '%.');
+    return true;
+  }
+  function calculate(holdings, histories, range) {
+    validate(holdings);
+    if (!RANGES[range]) throw new Error('Choose a 1-month, 3-month or 1-year range.');
+    var maps = [], freshness = [];
+    holdings.forEach(function (h) {
+      var series = histories[h.symbol];
+      if (!Array.isArray(series) || !series.length) throw new Error('Price history is unavailable for ' + h.symbol + '. No holdings have been omitted.');
+      var map = Object.create(null);
+      series.forEach(function (p) {
+        if (!p || !/^\d{4}-\d{2}-\d{2}$/.test(p.date) || !isFinite(Date.parse(p.date)) || typeof p.price !== 'number' || !isFinite(p.price) || p.price <= 0 || map[p.date] !== undefined) {
+          throw new Error('Invalid or duplicate closing prices for ' + h.symbol + '.');
+        }
+        map[p.date] = p.price;
+      });
+      var dates = Object.keys(map).sort();
+      maps.push(map); freshness.push({ symbol: h.symbol, latest: dates[dates.length - 1] });
+    });
+    var common = Object.keys(maps[0]).sort().filter(function (d) { return maps.every(function (m) { return m[d] !== undefined; }); });
+    if (common.length < 3) throw new Error('At least 3 common closing dates are needed to measure this portfolio.');
+    var end = common[common.length - 1];
+    var cutoff = new Date(Date.parse(end + 'T00:00:00Z') - RANGES[range] * 86400000).toISOString().slice(0, 10);
+    var dates = common.filter(function (d) { return d >= cutoff; });
+    if (dates.length < 3) throw new Error('Not enough shared history for this range. Try a longer range.');
+    var start = dates[0];
+    var allocation = holdings.map(function (h, i) { return {symbol:h.symbol, weight:h.weight, shares:10000 * h.weight / 100 / maps[i][start]}; });
+    var series = dates.map(function (d) {
+      return {date:d, price:allocation.reduce(function (sum, h, i) {return sum + h.shares * maps[i][d];}, 0)};
+    });
+    var peak = series[0].price, maxDrawdown = 0;
+    series.forEach(function (p) { peak = Math.max(peak, p.price); maxDrawdown = Math.min(maxDrawdown, p.price / peak - 1); });
+    var values = series.map(function (p) {return p.price;});
+    var skipped = Object.keys(maps[0]).filter(function (d) {return d >= start && d <= end && dates.indexOf(d) < 0;}).length;
+    // Missing sessions distort daily annualization; never call multi-day returns daily.
+    var mismatch = maps.some(function (m) { return Object.keys(m).some(function (d) {return d >= start && d <= end && dates.indexOf(d) < 0;}); });
+    return {series:series, allocation:allocation, start:start, end:end, freshness:freshness, sessions:dates.length,
+      shortened:Date.parse(start) - Date.parse(cutoff) > 7 * 86400000,
+      skipped:skipped, incompleteCalendar:mismatch,
+      endingValue:values[values.length - 1], returnPct:(values[values.length - 1] / 10000 - 1) * 100,
+      volatilityPct:mismatch ? null : MP.stats.annualizedVol(MP.stats.logReturns(values), 252) * 100,
+      maxDrawdownPct:maxDrawdown * 100};
+  }
+  MP.portfolio = {validate:validate, calculate:calculate, RANGES:RANGES};
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/* ==== src/lib/portfolio-ui.js ============================================= */
+/* One browser-local practice allocation, using the app's stock catalogue/cache. */
+(function (root) {
+  'use strict';
+  var MP = root.MP = root.MP || {}, KEY = 'practicePortfolio';
+  var holdings = [], range = '1y', result = null, revision = 0, saved = true;
+  function el(id) {return document.getElementById(id);}
+  function esc(s) {return MP.fmt.escapeHtml(String(s));}
+  function money(n) {return n.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2});}
+  function pct(n) {return n === null ? 'Unavailable' : n.toFixed(2) + '%';}
+  function say(text) {el('portfolioNotice').textContent = text;}
+  function persist() {
+    saved = !!(MP.store && MP.store.set(KEY,{version:1,holdings:holdings,range:range}));
+    el('portfolioSave').textContent = saved ? 'Saved in this browser only.' : 'Changes work for this session but could not be saved in this browser.';
+  }
+  function invalidate() {
+    revision++; result = null; el('portfolioResult').innerHTML = '';
+    say('Set your weights, then run the simulation.'); persist();
+  }
+  function rows() {
+    el('portfolioHoldings').innerHTML = holdings.map(function (h, i) {
+      return '<div class="practice-holding"><label for="portfolioWeight'+i+'">'+esc(h.symbol)+' <span>weight (%)</span></label>'+
+        '<input id="portfolioWeight'+i+'" type="number" min="0.01" max="100" step="0.01" value="'+h.weight+'" data-weight="'+i+'">'+
+        '<button class="pill" type="button" data-remove-holding="'+i+'" aria-label="Remove '+esc(h.symbol)+'">Remove</button></div>';
+    }).join('') || '<p>No stocks yet. Search below to add your first one.</p>';
+    el('portfolioTotal').textContent = 'Total allocation: '+Number(holdings.reduce(function (s,h) {return s+h.weight;},0).toFixed(2))+'% of 100%';
+  }
+  function search() {
+    var q = el('portfolioSearch').value;
+    var choices = MP.search.query(MP.app.stockChoices(),q,7);
+    el('portfolioChoices').innerHTML = choices.map(function (c) {
+      return '<li><button type="button" class="pick" data-add-holding="'+esc(c.symbol)+'">'+esc(c.symbol)+' — '+esc(c.name)+'</button></li>';
+    }).join('') || '<li>No matching supported stocks. Try a ticker or company name.</li>';
+  }
+  function add(symbol) {
+    if (holdings.some(function (h) {return h.symbol===symbol;})) return say(symbol+' is already in this portfolio.');
+    if (holdings.length>=5) return say('The portfolio holds up to 5 stocks. Remove one before adding another.');
+    if (!MP.app.stockChoices().some(function (c) {return c.symbol===symbol;})) return say('Choose a stock from the search results.');
+    var remainder = 100-holdings.reduce(function (s,h) {return s+h.weight;},0);
+    holdings.push({symbol:symbol,weight:holdings.length ? Math.max(0,remainder) : 100});
+    invalidate(); rows(); el('portfolioSearch').value=''; el('portfolioChoices').innerHTML='';
+    el('portfolioWeight'+(holdings.length-1)).focus();
+  }
+  function renderResult(r) {
+    var warning = r.shortened ? 'The available common history is shorter than the selected range. ' : '';
+    if(r.incompleteCalendar) warning += 'Some trading dates are missing for a holding. The chart uses shared dates; volatility is unavailable because daily returns cannot be verified. ';
+    var daysOld = Math.floor((Date.now()-Date.parse(r.end+'T00:00:00Z'))/86400000);
+    if(daysOld>4) warning += 'These closing prices are '+daysOld+' calendar days old. ';
+    el('portfolioResult').innerHTML = '<h3 tabindex="-1" id="portfolioResultTitle">Your historical simulation</h3>'+
+      '<dl class="practice-metrics"><div><dt>Ending value</dt><dd>'+money(r.endingValue)+'</dd></div><div><dt>Price return</dt><dd>'+pct(r.returnPct)+'</dd></div>'+
+      '<div><dt>Annualized volatility</dt><dd>'+pct(r.volatilityPct)+'</dd></div><div><dt>Maximum drawdown</dt><dd>'+pct(r.maxDrawdownPct)+'</dd></div></dl>'+
+      '<div class="chartbox" role="img" aria-label="Portfolio value from '+r.start+' to '+r.end+'">'+MP.geom.smoothLine({values:r.series.map(function(p){return p.price;}),color:r.returnPct<0?'var(--down)':'var(--meter-mint)',w:700,h:200})+'</div>'+
+      '<p>Actual period: '+r.start+' to '+r.end+' · '+r.sessions+' shared closes. Starting value: $10,000.</p>'+
+      '<p class="practice-warning">'+esc(warning)+'</p><h4>Allocation at the start</h4><ul>'+r.allocation.map(function(h){return '<li>'+esc(h.symbol)+': '+h.weight+'% · '+h.shares.toFixed(4)+' simulated shares</li>';}).join('')+'</ul>'+
+      '<p class="foot">Latest available close by stock: '+r.freshness.map(function(f){return esc(f.symbol)+' '+f.latest;}).join('; ')+'.</p>';
+  }
+  function simulate() {
+    try {MP.portfolio.validate(holdings);} catch(e) {say(e.message); return Promise.resolve(null);}
+    var snapshot = holdings.map(function(h){return {symbol:h.symbol,weight:h.weight};}), chosenRange=range, run=++revision;
+    el('portfolioRun').disabled=true; say('Loading closing prices for every holding…');
+    return Promise.all(snapshot.map(function(h) {return MP.app.ensureStock(h.symbol,true);})).then(function(){
+      if(run!==revision) return null;
+      var histories={}; snapshot.forEach(function(h){
+        histories[h.symbol]=MP.app.stockSeries(h.symbol);
+        if(!histories[h.symbol]) throw new Error(h.symbol+': '+(MP.app.stockReason(h.symbol)||'Price history is unavailable. Try again later.'));
+      });
+      result=MP.portfolio.calculate(snapshot,histories,chosenRange); renderResult(result); persist(); say('Simulation complete. Historical results do not predict future returns.');
+      document.dispatchEvent(new CustomEvent('practice:simulated',{detail:{holdings:snapshot,range:chosenRange,result:result}}));
+      return result;
+    }).catch(function(e){if(run===revision){result=null;el('portfolioResult').innerHTML='';say(e.message+' No holdings have been omitted.');}return null;})
+      .finally(function(){el('portfolioRun').disabled=false;});
+  }
+  function open() {
+    MP.router.overridePanel('portfolio'); MP.meter.openDrawer(true); rows(); persist();
+    el('portfolioRange').value=range;
+    el('portfolioTitle').focus();
+    if(!holdings.length) search();
+  }
+  function init() {
+    var data = MP.store.get(KEY,null);
+    if(data && data.version===1 && Array.isArray(data.holdings) && data.holdings.length<=5) {
+      holdings=data.holdings.filter(function(h){return h && /^[A-Z][A-Z0-9.-]{0,9}$/.test(h.symbol) && typeof h.weight==='number' && isFinite(h.weight) && h.weight>=0 && h.weight<=100;});
+      if(MP.portfolio.RANGES[data.range]) range=data.range;
+    }
+    el('portfolioOpen').addEventListener('click',open);
+    el('portfolioBack').addEventListener('click',function(){MP.router.overridePanel(null);el('portfolioOpen').focus();});
+    el('portfolioSearch').addEventListener('input',search);
+    el('portfolioChoices').addEventListener('click',function(e){var b=e.target.closest('[data-add-holding]');if(b)add(b.dataset.addHolding);});
+    el('portfolioHoldings').addEventListener('input',function(e){if(e.target.hasAttribute('data-weight')){holdings[Number(e.target.dataset.weight)].weight=Number(e.target.value);invalidate();el('portfolioTotal').textContent='Total allocation: '+Number(holdings.reduce(function(s,h){return s+h.weight;},0).toFixed(2))+'% of 100%';}});
+    el('portfolioHoldings').addEventListener('click',function(e){var b=e.target.closest('[data-remove-holding]');if(b){holdings.splice(Number(b.dataset.removeHolding),1);invalidate();rows();el('portfolioSearch').focus();}});
+    el('portfolioRange').addEventListener('change',function(e){range=e.target.value;invalidate();});
+    el('portfolioRun').addEventListener('click',simulate);
+    el('portfolioEqual').addEventListener('click',function(){if(!holdings.length)return;holdings.forEach(function(h,i){h.weight=i===holdings.length-1?100-Math.floor(10000/holdings.length)/100*(holdings.length-1):Math.floor(10000/holdings.length)/100;});invalidate();rows();});
+  }
+  MP.practice = {open:open,simulate:simulate,current:function(){return {holdings:holdings.map(function(h){return Object.assign({},h);}),range:range,result:result};}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 </script>

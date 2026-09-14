@@ -134,6 +134,24 @@
   --f-body: "Neue Haas Grotesk Display Pro", "Neue Haas Grotesk Text Pro", "NHaasGroteskDSPro", "NHaasGroteskTXPro", "Helvetica Neue", "Inter Tight", Helvetica, Arial, sans-serif;
 }
 
+.practice { line-height: 1.55; }
+.practice label { display: block; margin: 14px 0 6px; }
+.practice-holding { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto; gap: 12px; align-items: center; margin: 12px 0; }
+.practice-holding label { margin: 0; }
+.practice-holding label span { color: var(--dim); font-size: 12px; }
+.practice input[type="number"], .practice select { min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--rule); border-radius: 4px; background: var(--cell); color: var(--text); font: inherit; }
+.practice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.practice-actions label { margin: 0; }
+.practice-actions select { width: auto; }
+.practice-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.practice-metrics dt { color: var(--dim); font-size: 13px; }
+.practice-metrics dd { margin: 4px 0; font: 600 24px var(--f-lcd); }
+.practice .chartbox svg { display: block; width: 100%; height: auto; }
+.practice-warning { color: var(--gold); }
+.practice :focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+.practice button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 480px) { .practice-holding { grid-template-columns: minmax(0,1fr) 70px; } .practice-holding button { grid-column: 1 / -1; justify-self: start; } .practice-metrics dd { font-size: 19px; } }
+
 * { box-sizing: border-box; }
 
 html { background: var(--bg); }
@@ -228,24 +246,21 @@ body {
   line-height: 1;
   color: var(--brand);
 }
-/* The mark is src/icon.svg's path, cropped to the glyph by the viewBox
- * origin. Its box is 40 x 34 units and the 6.5 stroke bleeds 3.25 outside
- * that on every side, so the ink stands about 40.5 units tall: sized here to
- * land on the cap height of the letters beside it. overflow stays visible so
- * the square caps and the miter at each peak are not clipped. */
+/* The app-icon M is deliberately larger than ULTIMETER. Preserve its shape
+ * and baseline while giving the first letter a stronger silhouette. */
 .brand-mark {
-  width: .792em;
-  height: .673em;
+  width: 1.1088em;
+  height: .9422em;
   margin-right: .16em;
   /* The square cap overshoots the box by half a stroke, so the box is lifted
      by that much to put the M's foot on the wordmark's baseline rather than
      below it. */
-  margin-bottom: .064em;
+  margin-bottom: .0896em;
   flex-shrink: 0;
   overflow: visible;
 }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; }
+.brand-word { text-shadow: none; transform: translateY(-.07em); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* the model number is equipment labelling, not a second brand */
@@ -622,7 +637,8 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 26px;
-  padding-top: 4px;
+  /* Keep the market session label and lamp clear of two-line explanations. */
+  padding-top: 24px;
 }
 /* Market status: a reading, not a control. One lamp and one word, printed
  * under a caption that says it is a status, so nothing here invites a press. */
@@ -681,6 +697,10 @@ body {
 }
 .drawer-head .muted { font-size: 12px; }
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
+@media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
+.drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
+.drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
+.drawer:has([data-panel="portfolio"]:not([hidden])) .drawer-tools { display: none; }
 .pill.share { background: var(--cell); color: var(--holster); }
 .pill.share:hover { background: var(--hover); color: var(--holster); }
 .pill.is-busy { opacity: 0.5; pointer-events: none; }
@@ -714,6 +734,18 @@ body {
 :root[data-skin="red"] { --holster: #ef4444; --holster-dk: #a91d1d; --holster-lt: #ff9a9a; --knob-mark: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.55); }
 :root[data-skin="purple"] { --holster: #a855f7; --holster-dk: #7426c7; --holster-lt: #d6b0ff; --knob-mark: #c084fc; --accent-glow: rgba(192, 132, 252, 0.55); }
 :root[data-skin="silver"] { --holster: #cbd5e1; --holster-dk: #8a97aa; --holster-lt: #f1f5f9; --knob-mark: #e2e8f0; --accent-glow: rgba(226, 232, 240, 0.45); }
+
+/* Meter Mint is a solid brand accent in the green skin, not a textured tint. */
+:root[data-skin="green"] { --holster-dk: var(--meter-mint); --holster-lt: var(--meter-mint); --accent-glow: transparent; }
+:root[data-skin="green"] .holster { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+:root[data-skin="green"] .holster::before,
+:root[data-skin="green"] .holster::after { display: none; }
+:root[data-skin="green"] .dial-stop.is-on .dial-hit { fill: none; stroke: var(--meter-mint); stroke-width: 1.5; fill-opacity: 1; }
+:root[data-skin="green"] .skin[data-skin="green"] { box-shadow: none; }
+:root[data-skin="green"] .skin[data-skin="green"][aria-pressed="true"] { box-shadow: 0 0 0 3px #fbfaf6, 0 0 0 5px #1b1f26; }
+:root[data-skin="green"] .lcd-price.is-up { text-shadow: none; }
+:root[data-skin="green"] .lcd-badge.is-up,
+:root[data-skin="green"] .status-lamp.is-open { box-shadow: none; }
 
 .head { align-items: center; }
 .head-right { display: flex; align-items: center; gap: 14px; }
@@ -829,7 +861,7 @@ body {
     padding: 22px 28px 22px;
   }
   .face-dial .dial { width: 100%; margin: 0 auto; }
-  .face-dial .jacks { padding-top: 0; }
+  .face-dial .jacks { padding-top: 24px; }
   .stage { padding-top: 16px; }
 }
 
