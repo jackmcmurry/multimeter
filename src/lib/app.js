@@ -2090,13 +2090,14 @@
     setText('lcdLearnValue', m ? m.text : F.DASH);
     var bandEl = el('lcdLearnBand');
     if (bandEl) {
-      bandEl.textContent = b ? b.label : '';
+      bandEl.textContent = learnDeep && b ? b.label : '';
       bandEl.className = 'lcd-learn-band' + (b ? ' is-' + b.tone : '');
     }
 
     setText('lcdLearnShort', c.beginner);
     var said = learnSentence(c.id, m, b, cmp);
-    setText('lcdLearnRead', learnDeep ? c.advanced : (said || c.read));
+    setText('lcdLearnRead', learnDeep ? c.advanced : said);
+    el('lcdLearnRead').hidden = !learnDeep && !said;
 
     /* show before explain, where showing teaches something */
     var visual = '';
@@ -2113,7 +2114,9 @@
 
     var deeper = keyOf('deeper');
     if (deeper) {
-      deeper.textContent = learnDeep ? 'SIMPLER' : 'DEEPER';
+      deeper.textContent = learnDeep ? 'LESS DETAIL' : 'MORE DETAIL';
+      deeper.setAttribute('aria-expanded', String(learnDeep));
+      deeper.setAttribute('aria-controls', 'lcdLearnRead');
       deeper.classList.toggle('is-on', learnDeep);
     }
     renderLearnCard(c, m, b, cmp, said);
@@ -2152,15 +2155,18 @@
     ];
     var met = explored();
     var related = c.related.filter(function (id) { return !!MP.concepts.get(id); });
+    var previous = el('learnCard').querySelector('details[data-concept]');
+    var keepOpen = previous && previous.dataset.concept === c.id && previous.open;
     setHtml('learnCard',
       '<div class="concept concept-learn">' +
       '<h3>' + F.escapeHtml(c.name) + '</h3>' +
       (m ? '<p class="learn-figure">' + F.escapeHtml(m.text) +
-        (b ? ' <span class="band is-' + b.tone + '">' + F.escapeHtml(b.label) + '</span>' : '') +
         (m.of ? ' <span class="learn-of">' + F.escapeHtml(m.of) + '</span>' : '') + '</p>' : '') +
+      '<p class="learn-row">' + F.escapeHtml(c.beginner) + '</p>' +
       (said ? '<p class="learn-said">' + F.escapeHtml(said) + '</p>' : '') +
+      '<details class="explanation-details" data-concept="' + F.escapeHtml(c.id) + '"' + (keepOpen ? ' open' : '') + '><summary>More detail</summary>' +
       (cmp ? compareBars(cmp) : '') +
-      rows.map(function (r) {
+      rows.slice(1).map(function (r) {
         return '<p class="learn-row"><b>' + F.escapeHtml(r[0]) + '</b> ' + F.escapeHtml(r[1]) + '</p>';
       }).join('') +
       '<div class="learn-acts">' + learnQuestionHtml(c.explorations) + '</div>' +
@@ -2173,7 +2179,7 @@
         return '<button type="button" class="linkish" data-learn-concept="' + F.escapeHtml(id) + '">' +
           F.escapeHtml(MP.concepts.get(id).name.toLowerCase()) + '</button>';
       }).join(', ') + '</p>' : '') +
-      '</div>');
+      '</details></div>');
   }
 
   /* topic: a concept id, or nothing to explain whatever the dial is on.
@@ -2436,16 +2442,20 @@
       return;
     }
 
-    var STATE = { answered: 'EVIDENCE FOUND', insufficient: 'LIMITED EVIDENCE', refused: 'OUT OF SCOPE', unavailable: 'PROBE UNAVAILABLE' };
+    var STATE = { answered: 'ANSWER', insufficient: 'LIMITED DATA', refused: 'LIMITATION', unavailable: 'TRY ANOTHER QUESTION' };
     setText('lcdProbeState', STATE[f.status] || 'EVIDENCE FOUND');
     setHtml('lcdProbeBody',
-      '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline) + '</div>' +
+      '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline.charAt(0) + f.answer.headline.slice(1).toLowerCase()) + '</div>' +
       (f.answer.summary ? '<p class="probe-sum">' + F.escapeHtml(f.answer.summary) + '</p>' : '') +
-      probeSection('WHAT WE SEE', f.observations, true) +
+      (f.uncertainty && f.uncertainty.length ? '<p class="probe-limit">' + F.escapeHtml(f.uncertainty[0]) + '</p>' : '') +
+      '<details class="explanation-details"><summary>More detail</summary>' +
+      probeSection('Measurements', f.observations, true) +
       probeSection('WHAT IT COULD MEAN', f.interpretation, false) +
       probeSection('WHAT WE CANNOT TELL', f.uncertainty, false) +
       '<div class="probe-acts">' + probeActionsHtml(f.actions) + '</div>' +
-      (f.followUps && f.followUps.length ? '<p class="probe-sec">ASK NEXT</p>' + probeQuestionsHtml(f.followUps) : ''));
+      (f.followUps && f.followUps.length > 1 ? probeQuestionsHtml(f.followUps.slice(1)) : '') +
+      '</details>' +
+      (f.followUps && f.followUps.length ? '<p class="probe-sec">Explore next</p>' + probeQuestionsHtml(f.followUps.slice(0,1)) : ''));
   }
 
   /* A question, answered from the instrument's own figures. */

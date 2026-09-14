@@ -935,7 +935,7 @@
   var MODE_KEYS = {
     search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'INFO'], ['hold', 'HOLD']],
-    learn: [['back', 'BACK'], ['deeper', 'DEEPER'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
+    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
     welcome: [['data', 'DATA'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     probe: [['back', 'BACK'], ['ask', 'ASK'], ['none', ''], ['source', 'SOURCE'], ['hold', 'HOLD']],
     config: [['back', 'BACK'], ['none', ''], ['reset', 'RESET'], ['save', 'SAVE'], ['hold', 'HOLD']]

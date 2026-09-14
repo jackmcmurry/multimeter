@@ -184,7 +184,6 @@
               <span class="ann" id="lcdLearnTerm"></span>
               <span class="ann" id="lcdLearnMeta"></span>
             </div>
-            <p class="lcd-remind">What the number on the screen means, in plain words. DEEPER shows how it is worked out.</p>
             <div class="lcd-learn-head">
               <span class="lcd-learn-value" id="lcdLearnValue"></span>
               <span class="lcd-learn-band" id="lcdLearnBand"></span>
@@ -202,7 +201,7 @@
               <span class="ann" id="lcdProbeState">PROBE READY</span>
               <span class="ann" id="lcdProbeSubject"></span>
             </div>
-            <p class="probe-capability">Investigates loaded measurements. No current news or connected AI service.</p><div class="lcd-probe-body" id="lcdProbeBody"></div>
+            <div class="lcd-probe-body" id="lcdProbeBody"></div>
             <form class="lcd-probe-ask" id="lcdProbeAsk">
               <input class="lcd-input" id="lcdProbeInput" type="text" autocomplete="off" spellcheck="false"
                      placeholder="Ask about what you're seeing…" aria-label="Ask a question about this measurement" maxlength="200">
@@ -445,12 +444,13 @@
       <p><button type="button" class="pill" id="guidedLessonsOpen" aria-expanded="false" aria-controls="lessonLibrary">Guided lessons</button> <span class="foot">Learn by doing, in three short steps.</span></p>
       <div id="lessonLibrary" hidden></div>
       <div id="learnCard"></div>
-      <h3 class="learn-h">Today’s reading</h3>
+      <details class="explanation-details"><summary>Today’s market recap</summary>
       <p class="note-text" id="noteText"></p>
       <p class="foot" id="noteMeta"></p>
       <div class="table-host" id="noteInputs"></div>
-      <p class="foot">Once per session, after the US close, the data job hands Claude the figures above and asks for three plain sentences that describe them: no predictions, no advice, nothing added. A checker rejects any reply that breaks those rules, and a fixed template built from the same numbers is published instead. The prompt and the checker are in <a href="https://github.com/jackmcmurry/multimeter/blob/main/src/lib/note.js">src/lib/note.js</a>; the longer view is in <a href="findings.html">the findings</a>.</p>
+      <p class="foot">Based on the latest published daily closes. <a href="findings.html">Read the full findings and methodology.</a></p>
       <div id="noteNotice"></div>
+      </details>
     </section>
 
     <!-- ALERTS (reached from the bell on the screen) -->

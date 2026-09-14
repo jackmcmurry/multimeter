@@ -1729,7 +1729,7 @@ tr.row-rule th {
   line-height: 1.2;
   color: var(--lcd-ink);
 }
-.probe-head.is-refused, .probe-head.is-insufficient { color: var(--holster); }
+.probe-head.is-refused, .probe-head.is-insufficient { color: var(--text); }
 .probe-sum { margin: 6px 0 10px; font-family: var(--f-ui); font-size: clamp(11px, 2.6cqw, 14px); line-height: 1.45; color: var(--lcd-ink); }
 .probe-sec { margin: 0 0 3px; font-family: var(--f-lcd); font-size: 9.5px; font-weight: 700; letter-spacing: 0.13em; color: var(--lcd-dim); }
 .probe-list { margin: 0 0 9px; padding: 0; list-style: none; }
@@ -1745,6 +1745,20 @@ tr.row-rule th {
 .probe-list li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 4px; height: 4px; background: var(--lcd-dim); }
 .probe-list.is-evidence li { color: var(--lcd-ink); }
 .probe-list.is-evidence li::before { background: var(--up); }
+
+/* A quiet first answer, with the supporting explanation on request. */
+.explanation-details { margin: 12px 0; border-top: 1px solid var(--rule); }
+.explanation-details > summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--text); font-family: var(--f-ui); font-size: 13px; font-weight: 600; }
+.explanation-details > summary:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.probe-limit { margin: 8px 0; font: 12px/1.5 var(--f-ui); color: var(--dim); }
+#lcdProbe .probe-head { color: var(--text); font-family: var(--f-ui); font-size: 15px; letter-spacing: 0; }
+#lcdProbe .probe-sum, #lcdLearn .lcd-learn-line { color: var(--text); font-size: 14px; line-height: 1.5; }
+#lcdProbe .probe-sec { color: var(--dim); font-family: var(--f-ui); font-size: 12px; letter-spacing: 0; text-transform: none; margin-top: 12px; }
+#lcdProbe .probe-list li, #lcdLearn .lcd-learn-band { color: var(--dim); }
+#lcdProbe .probe-list li::before { background: var(--dim); }
+#lcdProbe .probe-q, #lcdLearn .lcd-act { color: var(--text); font-family: var(--f-ui); font-size: 12px; letter-spacing: 0; text-transform: none; min-height: 40px; }
+#lcdProbe .probe-q:hover, #lcdLearn .lcd-act:hover { color: var(--lcd-dk); }
+#learnCard .learn-row b { color: var(--text); }
 .probe-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
 /* ---- LEARN --------------------------------------------------------------- */

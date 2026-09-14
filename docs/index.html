@@ -1734,7 +1734,7 @@ tr.row-rule th {
   line-height: 1.2;
   color: var(--lcd-ink);
 }
-.probe-head.is-refused, .probe-head.is-insufficient { color: var(--holster); }
+.probe-head.is-refused, .probe-head.is-insufficient { color: var(--text); }
 .probe-sum { margin: 6px 0 10px; font-family: var(--f-ui); font-size: clamp(11px, 2.6cqw, 14px); line-height: 1.45; color: var(--lcd-ink); }
 .probe-sec { margin: 0 0 3px; font-family: var(--f-lcd); font-size: 9.5px; font-weight: 700; letter-spacing: 0.13em; color: var(--lcd-dim); }
 .probe-list { margin: 0 0 9px; padding: 0; list-style: none; }
@@ -1750,6 +1750,20 @@ tr.row-rule th {
 .probe-list li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 4px; height: 4px; background: var(--lcd-dim); }
 .probe-list.is-evidence li { color: var(--lcd-ink); }
 .probe-list.is-evidence li::before { background: var(--up); }
+
+/* A quiet first answer, with the supporting explanation on request. */
+.explanation-details { margin: 12px 0; border-top: 1px solid var(--rule); }
+.explanation-details > summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--text); font-family: var(--f-ui); font-size: 13px; font-weight: 600; }
+.explanation-details > summary:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.probe-limit { margin: 8px 0; font: 12px/1.5 var(--f-ui); color: var(--dim); }
+#lcdProbe .probe-head { color: var(--text); font-family: var(--f-ui); font-size: 15px; letter-spacing: 0; }
+#lcdProbe .probe-sum, #lcdLearn .lcd-learn-line { color: var(--text); font-size: 14px; line-height: 1.5; }
+#lcdProbe .probe-sec { color: var(--dim); font-family: var(--f-ui); font-size: 12px; letter-spacing: 0; text-transform: none; margin-top: 12px; }
+#lcdProbe .probe-list li, #lcdLearn .lcd-learn-band { color: var(--dim); }
+#lcdProbe .probe-list li::before { background: var(--dim); }
+#lcdProbe .probe-q, #lcdLearn .lcd-act { color: var(--text); font-family: var(--f-ui); font-size: 12px; letter-spacing: 0; text-transform: none; min-height: 40px; }
+#lcdProbe .probe-q:hover, #lcdLearn .lcd-act:hover { color: var(--lcd-dk); }
+#learnCard .learn-row b { color: var(--text); }
 .probe-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
 /* ---- LEARN --------------------------------------------------------------- */
@@ -2187,7 +2201,6 @@ tr.row-rule th {
               <span class="ann" id="lcdLearnTerm"></span>
               <span class="ann" id="lcdLearnMeta"></span>
             </div>
-            <p class="lcd-remind">What the number on the screen means, in plain words. DEEPER shows how it is worked out.</p>
             <div class="lcd-learn-head">
               <span class="lcd-learn-value" id="lcdLearnValue"></span>
               <span class="lcd-learn-band" id="lcdLearnBand"></span>
@@ -2205,7 +2218,7 @@ tr.row-rule th {
               <span class="ann" id="lcdProbeState">PROBE READY</span>
               <span class="ann" id="lcdProbeSubject"></span>
             </div>
-            <p class="probe-capability">Investigates loaded measurements. No current news or connected AI service.</p><div class="lcd-probe-body" id="lcdProbeBody"></div>
+            <div class="lcd-probe-body" id="lcdProbeBody"></div>
             <form class="lcd-probe-ask" id="lcdProbeAsk">
               <input class="lcd-input" id="lcdProbeInput" type="text" autocomplete="off" spellcheck="false"
                      placeholder="Ask about what you're seeing…" aria-label="Ask a question about this measurement" maxlength="200">
@@ -2448,12 +2461,13 @@ tr.row-rule th {
       <p><button type="button" class="pill" id="guidedLessonsOpen" aria-expanded="false" aria-controls="lessonLibrary">Guided lessons</button> <span class="foot">Learn by doing, in three short steps.</span></p>
       <div id="lessonLibrary" hidden></div>
       <div id="learnCard"></div>
-      <h3 class="learn-h">Today’s reading</h3>
+      <details class="explanation-details"><summary>Today’s market recap</summary>
       <p class="note-text" id="noteText"></p>
       <p class="foot" id="noteMeta"></p>
       <div class="table-host" id="noteInputs"></div>
-      <p class="foot">Once per session, after the US close, the data job hands Claude the figures above and asks for three plain sentences that describe them: no predictions, no advice, nothing added. A checker rejects any reply that breaks those rules, and a fixed template built from the same numbers is published instead. The prompt and the checker are in <a href="https://github.com/jackmcmurry/multimeter/blob/main/src/lib/note.js">src/lib/note.js</a>; the longer view is in <a href="findings.html">the findings</a>.</p>
+      <p class="foot">Based on the latest published daily closes. <a href="findings.html">Read the full findings and methodology.</a></p>
       <div id="noteNotice"></div>
+      </details>
     </section>
 
     <!-- ALERTS (reached from the bell on the screen) -->
@@ -6908,7 +6922,7 @@ tr.row-rule th {
   var MODE_KEYS = {
     search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'INFO'], ['hold', 'HOLD']],
-    learn: [['back', 'BACK'], ['deeper', 'DEEPER'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
+    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
     welcome: [['data', 'DATA'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     probe: [['back', 'BACK'], ['ask', 'ASK'], ['none', ''], ['source', 'SOURCE'], ['hold', 'HOLD']],
     config: [['back', 'BACK'], ['none', ''], ['reset', 'RESET'], ['save', 'SAVE'], ['hold', 'HOLD']]
@@ -10836,13 +10850,14 @@ tr.row-rule th {
     setText('lcdLearnValue', m ? m.text : F.DASH);
     var bandEl = el('lcdLearnBand');
     if (bandEl) {
-      bandEl.textContent = b ? b.label : '';
+      bandEl.textContent = learnDeep && b ? b.label : '';
       bandEl.className = 'lcd-learn-band' + (b ? ' is-' + b.tone : '');
     }
 
     setText('lcdLearnShort', c.beginner);
     var said = learnSentence(c.id, m, b, cmp);
-    setText('lcdLearnRead', learnDeep ? c.advanced : (said || c.read));
+    setText('lcdLearnRead', learnDeep ? c.advanced : said);
+    el('lcdLearnRead').hidden = !learnDeep && !said;
 
     /* show before explain, where showing teaches something */
     var visual = '';
@@ -10859,7 +10874,9 @@ tr.row-rule th {
 
     var deeper = keyOf('deeper');
     if (deeper) {
-      deeper.textContent = learnDeep ? 'SIMPLER' : 'DEEPER';
+      deeper.textContent = learnDeep ? 'LESS DETAIL' : 'MORE DETAIL';
+      deeper.setAttribute('aria-expanded', String(learnDeep));
+      deeper.setAttribute('aria-controls', 'lcdLearnRead');
       deeper.classList.toggle('is-on', learnDeep);
     }
     renderLearnCard(c, m, b, cmp, said);
@@ -10898,15 +10915,18 @@ tr.row-rule th {
     ];
     var met = explored();
     var related = c.related.filter(function (id) { return !!MP.concepts.get(id); });
+    var previous = el('learnCard').querySelector('details[data-concept]');
+    var keepOpen = previous && previous.dataset.concept === c.id && previous.open;
     setHtml('learnCard',
       '<div class="concept concept-learn">' +
       '<h3>' + F.escapeHtml(c.name) + '</h3>' +
       (m ? '<p class="learn-figure">' + F.escapeHtml(m.text) +
-        (b ? ' <span class="band is-' + b.tone + '">' + F.escapeHtml(b.label) + '</span>' : '') +
         (m.of ? ' <span class="learn-of">' + F.escapeHtml(m.of) + '</span>' : '') + '</p>' : '') +
+      '<p class="learn-row">' + F.escapeHtml(c.beginner) + '</p>' +
       (said ? '<p class="learn-said">' + F.escapeHtml(said) + '</p>' : '') +
+      '<details class="explanation-details" data-concept="' + F.escapeHtml(c.id) + '"' + (keepOpen ? ' open' : '') + '><summary>More detail</summary>' +
       (cmp ? compareBars(cmp) : '') +
-      rows.map(function (r) {
+      rows.slice(1).map(function (r) {
         return '<p class="learn-row"><b>' + F.escapeHtml(r[0]) + '</b> ' + F.escapeHtml(r[1]) + '</p>';
       }).join('') +
       '<div class="learn-acts">' + learnQuestionHtml(c.explorations) + '</div>' +
@@ -10919,7 +10939,7 @@ tr.row-rule th {
         return '<button type="button" class="linkish" data-learn-concept="' + F.escapeHtml(id) + '">' +
           F.escapeHtml(MP.concepts.get(id).name.toLowerCase()) + '</button>';
       }).join(', ') + '</p>' : '') +
-      '</div>');
+      '</details></div>');
   }
 
   /* topic: a concept id, or nothing to explain whatever the dial is on.
@@ -11182,16 +11202,20 @@ tr.row-rule th {
       return;
     }
 
-    var STATE = { answered: 'EVIDENCE FOUND', insufficient: 'LIMITED EVIDENCE', refused: 'OUT OF SCOPE', unavailable: 'PROBE UNAVAILABLE' };
+    var STATE = { answered: 'ANSWER', insufficient: 'LIMITED DATA', refused: 'LIMITATION', unavailable: 'TRY ANOTHER QUESTION' };
     setText('lcdProbeState', STATE[f.status] || 'EVIDENCE FOUND');
     setHtml('lcdProbeBody',
-      '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline) + '</div>' +
+      '<div class="probe-head is-' + F.escapeHtml(f.status) + '">' + F.escapeHtml(f.answer.headline.charAt(0) + f.answer.headline.slice(1).toLowerCase()) + '</div>' +
       (f.answer.summary ? '<p class="probe-sum">' + F.escapeHtml(f.answer.summary) + '</p>' : '') +
-      probeSection('WHAT WE SEE', f.observations, true) +
+      (f.uncertainty && f.uncertainty.length ? '<p class="probe-limit">' + F.escapeHtml(f.uncertainty[0]) + '</p>' : '') +
+      '<details class="explanation-details"><summary>More detail</summary>' +
+      probeSection('Measurements', f.observations, true) +
       probeSection('WHAT IT COULD MEAN', f.interpretation, false) +
       probeSection('WHAT WE CANNOT TELL', f.uncertainty, false) +
       '<div class="probe-acts">' + probeActionsHtml(f.actions) + '</div>' +
-      (f.followUps && f.followUps.length ? '<p class="probe-sec">ASK NEXT</p>' + probeQuestionsHtml(f.followUps) : ''));
+      (f.followUps && f.followUps.length > 1 ? probeQuestionsHtml(f.followUps.slice(1)) : '') +
+      '</details>' +
+      (f.followUps && f.followUps.length ? '<p class="probe-sec">Explore next</p>' + probeQuestionsHtml(f.followUps.slice(0,1)) : ''));
   }
 
   /* A question, answered from the instrument's own figures. */
