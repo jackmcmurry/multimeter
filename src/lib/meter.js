@@ -1367,6 +1367,12 @@
       }
     }
     document.documentElement.style.setProperty('--meter-w', w + 'px');
+    /* Let the sidebar use spare space without resizing the instrument.
+     * Keep a 40px gap whenever the available margin permits it. */
+    if (desktopLearning.matches) {
+      var railRoom = document.documentElement.clientWidth - meter.getBoundingClientRect().right - 12 - 40;
+      document.documentElement.style.setProperty('--learning-rail-width', Math.max(124, Math.min(220, Math.floor(railRoom))) + 'px');
+    }
   }
 
   MP.meter = {
