@@ -869,6 +869,20 @@ body {
 .drawer-head .muted { font-size: 12px; }
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
+.quick-tools {
+  width: min(100%, 960px, max(640px, var(--meter-w)));
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin: 8px auto 0;
+  padding: 0 4px;
+}
+.quick-tools .pill { min-height: 38px; }
+@media (max-width: 600px) {
+  .quick-tools { justify-content: stretch; gap: 6px; padding: 0; }
+  .quick-tools .pill { flex: 1 1 0; padding: 9px 6px; font-size: 11px; }
+}
 .drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #measureCard,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
@@ -2297,6 +2311,12 @@ tr.row-rule th {
     </div>
   </div>
 
+  <nav class="quick-tools" aria-label="Multimeter help and sharing">
+    <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
+    <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
+    <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
+  </nav>
+
   <!-- The one obvious way in for a student who has not been told anything.
        Reads "Start learning" until progress exists, then "Continue learning"
        and the step it would resume at. Sits under the instrument so the
@@ -2315,10 +2335,6 @@ tr.row-rule th {
       <h2 id="viewTitle">Bitcoin</h2>
       <span class="drawer-tools">
         <span class="muted" id="quoteStamp">—</span>
-        <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
-
-        <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
-        <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
       </span>
     </header>
 

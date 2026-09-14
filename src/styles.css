@@ -824,6 +824,20 @@ body {
 .drawer-head .muted { font-size: 12px; }
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
+.quick-tools {
+  width: min(100%, 960px, max(640px, var(--meter-w)));
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin: 8px auto 0;
+  padding: 0 4px;
+}
+.quick-tools .pill { min-height: 38px; }
+@media (max-width: 600px) {
+  .quick-tools { justify-content: stretch; gap: 6px; padding: 0; }
+  .quick-tools .pill { flex: 1 1 0; padding: 9px 6px; font-size: 11px; }
+}
 .drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #measureCard,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
