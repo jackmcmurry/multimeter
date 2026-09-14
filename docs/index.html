@@ -236,14 +236,6 @@
 .learn-entry-go:hover { background: var(--holster-lt); }
 .learn-entry-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 
-/* Reserve a compact row before the instrument in desktop browser windows.
- * Its width is independent of the meter's height-fitting calculation. */
-@media (min-width: 860px) and (min-aspect-ratio: 6/5) and (display-mode: browser) {
-  .learn-entry { width: min(100%, 960px); padding: 8px 16px; gap: 8px 16px; border-radius: 8px; }
-  .learn-entry-text { flex: 1 1 240px; }
-  .learn-entry-go { padding: 10px 18px; }
-}
-
 /* ---- the lesson dock ----------------------------------------------------- */
 .lesson-dock {
   position: fixed;
@@ -1041,6 +1033,30 @@ body {
 }
 
 /* ---- hero (the weekly-pick panels) --------------------------------------- */
+/* One compact learning rail, shared by browser and installed desktop app.
+ * Reserve its width, never its height, so the screen keeps its full height. */
+@media (min-width: 860px) and (min-aspect-ratio: 6/5) {
+  .stage { padding-right: 152px; }
+  body.has-dock .stage { padding-bottom: 48px; }
+  html:has(body.has-dock) { scroll-padding-bottom: 20px; }
+  .learn-entry, .lesson-dock {
+    position: fixed; top: max(16px, env(safe-area-inset-top)); right: 12px;
+    bottom: auto; left: auto; width: 124px; max-height: calc(100dvh - 32px);
+    overflow-y: auto; padding: 12px 10px; gap: 10px;
+    border: 1px solid var(--rule); border-left: 2px solid var(--holster);
+    border-radius: 8px; background: var(--card); box-shadow: none; z-index: 40;
+  }
+  .learn-entry-text { flex: 1 1 100%; }
+  .learn-entry-text b { font-size: 12px; }
+  .learn-entry-text span { display: block; margin-top: 6px; font-size: 11px; }
+  .learn-entry-go { width: 100%; padding: 10px 6px; font-size: 12px; letter-spacing: 0; clip-path: none; border-radius: 4px; }
+  .lesson-dock-inner { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
+  .lesson-dock-text { flex: 0 0 auto; }
+  .lesson-dock-text span { font-size: 12px; }
+  .lesson-dock-actions { flex-direction: column; gap: 8px; }
+  .lesson-dock-actions .pill { width: 100%; padding: 10px 4px; }
+}
+
 .hero { margin-bottom: 14px; }
 .hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
 .hero-asset { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -7277,7 +7293,7 @@ tr.row-rule th {
 
   /* ---- fitting the window ------------------------------------------------- */
   var FIT_MIN_W = 300;   /* narrower than this and the dial is too small to turn; scroll instead */
-  var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5) and (display-mode: browser)');
+  var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
    * window's height with no scrolling. The meter's height is (almost exactly)
@@ -7295,22 +7311,18 @@ tr.row-rule th {
      * that much on a laptop. */
     var stage = meter.parentNode;
     var entry = el('learnEntry');
-    /* Move the existing control, so keyboard and reading order follow the
-     * desktop layout. Installed and narrow layouts keep their original order. */
+    /* The right sidebar follows the instrument in keyboard/reading order.
+     * Phones use the same order with the entry below the instrument. */
     if (entry && stage) {
       var focus = document.activeElement;
       var restoreFocus = entry.contains(focus);
-      if (desktopLearning.matches && entry.nextElementSibling !== meter) stage.insertBefore(entry, meter);
-      else if (!desktopLearning.matches && meter.nextElementSibling !== entry) stage.insertBefore(entry, meter.nextSibling);
+      if (meter.nextElementSibling !== entry) stage.insertBefore(entry, meter.nextSibling);
       if (restoreFocus && document.activeElement !== focus) focus.focus({ preventScroll: true });
     }
     var cs = stage ? root.getComputedStyle(stage) : null;
     var padTop = cs ? parseFloat(cs.paddingTop) || 0 : 0;
     var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
     var avail = h - padTop - padBottom;
-    if (desktopLearning.matches && entry && !entry.hidden) {
-      avail -= entry.offsetHeight + (parseFloat(cs.rowGap) || 0);
-    }
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
     if (h1 > avail && w1 > FIT_MIN_W) {
       var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));

@@ -8,13 +8,13 @@ This is a price-history exercise, not a record of real holdings. There are no de
 
 ## Guided lessons
 
-Choose **Start learning** in the welcome screen or in the learning bar. The bar sits above the instrument in desktop browsers and below it on phones and in the installed app. Returning students can choose **Continue learning**; after all three lessons are complete, **Review lessons** opens the lesson list. You can also open **LEARN → INFO → Guided lessons**. The existing explanation of your selected measurement stays available.
+Choose **Start learning** in the welcome screen or in the learning bar. Desktop browsers and the installed desktop app show a compact learning sidebar on the right; phones keep the entry below the instrument. Returning students can choose **Continue learning**; after all three lessons are complete, **Review lessons** opens the lesson list. You can also open **LEARN → INFO → Guided lessons**. The existing explanation of your selected measurement stays available.
 
 - **Price versus return:** choose a stock, compare its 1-month and 1-year chart ranges, then answer what measures performance over a period.
 - **Volatility versus drawdown:** inspect VOL and DD for the same stock, then distinguish variability from a decline below a peak.
 - **Build a mix:** simulate two stocks, change their weights while keeping assets and dates fixed, then compare the historical measurements.
 
-Each lesson has three steps and a question with explanatory feedback. A bar at the bottom of the screen keeps the current step visible; **Show task** returns to the full instructions. **Show instrument above** takes you back to the screen. **Exit lesson** keeps your progress; **Resume** continues it. **Restart lesson** clears that lesson’s progress. Progress is saved locally and does not require an account or an AI service.
+Each lesson has three steps and a question with explanatory feedback. The right sidebar on desktop, or the bottom bar on phones, keeps the current step visible; **Show task** returns to the full instructions. **Show instrument above** takes you back to the screen. **Exit lesson** keeps your progress; **Resume** continues it. **Restart lesson** clears that lesson’s progress. Progress is saved locally and does not require an account or an AI service.
 
 PROBE offers questions supported by the loaded measurements, plus an explanation of why correlation does not establish cause. Unsupported custom questions offer supported alternatives. These explanations run locally.
 
