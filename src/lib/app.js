@@ -423,7 +423,11 @@
     var which = moverEndFor(stop);
     var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
     r.tabs = { kind: 'switch', label: 'Mover controls', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks', endLabel: which === 'loser' ? 'MOVER' : 'LOSER' };
-    r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') + '. ' + (r.chartDetail || '');
+    /* One sentence, because the line holds two lines and no more. The dates
+     * this was measured to are provenance rather than meaning, and the
+     * drawer already prints them under the ranking rule. */
+    r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') +
+      ', over ' + (r.rankPeriod || 'the week') + '.';
     if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
       (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');
     var tick = r.empty ? null : freshTick(productForStop(which));
@@ -484,6 +488,7 @@
     if (!last) {
       r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
       r.chartState = r.hint;
+      r.chartDetail = state.stocks.pending[sym] ? null : stockReason(sym);
       r.identity = row ? row.name : sym;
       return r;
     }
@@ -613,6 +618,7 @@
     if (!last) {
       r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
       r.chartState = r.hint;
+      r.chartDetail = state.stocks.pending[sym] ? null : stockReason(sym);
       r.identity = row ? row.name : sym;
       return r;
     }
@@ -1610,22 +1616,31 @@
     st.pending[sym] = true;
     function read(payload) {
       var f = SRC.normalizeStockFile(payload);
-      if (!f || f.symbol !== sym) throw emptyError();
+      /* The endpoint answers 200 with an empty series and a sentence saying
+       * which source declined and why. Carry that sentence through: a blank
+       * chart that cannot say what went wrong is the thing being fixed. */
+      if (!f || f.symbol !== sym) {
+        var err = emptyError();
+        if (payload && typeof payload.message === 'string') err.reason = payload.message;
+        throw err;
+      }
       return f;
     }
     fetchJson(snapshotUrl(path)).then(read).catch(function () {
-      /* The scheduled job publishes a file for the Nasdaq-100 only. Every
-       * other listed symbol is fetched on demand through the site's own
-       * endpoint, so searching a company and charting it are the same act. */
+      /* The scheduled job publishes a file for the Nasdaq-100 and the majors
+       * only. Every other listed symbol is fetched on demand through the
+       * site's own endpoint, so searching a company and charting it are the
+       * same act. */
       var api = SRC.stockApiUrl(sym);
       if (!api) throw emptyError();
       return fetchJson(api).then(read);
     }).then(function (f) {
       var listed = catalogue.by[sym];
-      st.files[sym] = { series: f.series, name: (listed && listed.name) || f.name, session: session };
-    }).catch(function () {
-      if (have) have.session = session;
-      else st.files[sym] = { series: null, name: null, session: session };
+      st.files[sym] = { series: f.series, name: (listed && listed.name) || f.name, session: session, reason: null };
+    }).catch(function (err) {
+      var reason = (err && err.reason) || null;
+      if (have) { have.session = session; have.reason = reason; }
+      else st.files[sym] = { series: null, name: null, session: session, reason: reason };
     }).then(function () {
       delete st.pending[sym];
       if (state.stats.coin === sym) recomputeAnalytics();
@@ -1634,6 +1649,12 @@
       if (MP.spotlight) MP.spotlight.render();
       repaint();
     });
+  }
+
+  /* Why this symbol has no series, when the source said so in words. */
+  function stockReason(sym) {
+    var f = sym ? state.stocks.files[sym] : null;
+    return (f && f.reason) || null;
   }
 
   function stockSeries(sym) {
@@ -2471,7 +2492,8 @@
 
   function runSearch(q) {
     find.query = String(q || '');
-    find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+    find.results = MP.search.query(searchIndex(), find.query,
+      find.query ? MP.search.LIMIT : MP.search.SHORTLIST);
     find.active = 0;
     renderSearchResults();
     clearTimeout(find.timer);
@@ -2485,7 +2507,8 @@
     fetchJson(spec.url).then(function (payload) {
       if (find.query.trim() !== q) return;
       find.remote = spec.normalize(payload) || [];
-      find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+      find.results = MP.search.query(searchIndex(), find.query,
+        find.query ? MP.search.LIMIT : MP.search.SHORTLIST);
       renderSearchResults();
     }).catch(function () { /* the local index has already answered */ });
   }
@@ -2713,7 +2736,7 @@
           '<span class="row-code">' + F.escapeHtml(r.symbol) + '</span>' +
           '<span class="row-desc">' + F.escapeHtml(r.name + (S.isNum(r.close) ? ' · ' + money(r.close) : '')) + '</span></button></li>';
       }).join('') + (w.query && !w.results.length && state.stocks.list
-        ? '<li class="row-desc">No Nasdaq-100 stock matches "' + F.escapeHtml(w.query) + '".</li>' : '');
+        ? '<li class="row-desc">No stock matches "' + F.escapeHtml(w.query) + '".</li>' : '');
     }
 
     var host = el('watchTable');
@@ -2734,7 +2757,7 @@
               pctCell(row ? row.change1d : NaN) + pctCell(row ? row.change5d : NaN) +
               '<td><button type="button" class="pill" data-watch-del="' + F.escapeHtml(sym) + '" aria-label="Remove ' + F.escapeHtml(sym) + '">✕</button></td></tr>';
           }).join('') + '</tbody></table>'
-        : '<p class="row-desc">Nothing on the watch list yet. Search above to add up to ' + (MP.watch ? MP.watch.MAX : 8) + ' Nasdaq-100 stocks.</p>';
+        : '<p class="row-desc">Nothing on the watch list yet. Search above to add up to ' + (MP.watch ? MP.watch.MAX : 8) + ' stocks.</p>';
     }
     setHtml('watchNotice', noticeHtml(w.notice || state.stocks.notice));
   }
@@ -2782,7 +2805,9 @@
       text: d ? F.shortDate(d.forSession) : F.DASH, value: NaN, dp: 0,
       unit: d ? 'SESSION' : '', mode: 'DAILY READING',
       change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: '', dp: 0 },
-      caption: d ? (d.source === 'claude' ? 'Written by Claude · description, not advice' : 'From the numbers · description, not advice') : '',
+      /* Short enough for one line on a phone, where the change line holds a
+       * single row on every stop so the display keeps one height. */
+      caption: d ? (d.source === 'claude' ? 'By Claude · not advice' : 'From the numbers · not advice') : '',
       note: d ? d.text : null,
       hint: d ? '' : 'Appears after the first close the job sees',
       spark: null, empty: !d, ranges: false, coin: null

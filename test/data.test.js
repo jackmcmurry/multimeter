@@ -97,6 +97,27 @@
     { symbol: 'ADBE', date: '2026-09-08', price: 257.26, volume: 5491058 }
   ];
 
+  /* Yahoo's chart endpoint, as observed for HOOD. The third bar is a null
+   * close, which Yahoo writes for a halt or a half-session. Timestamps are
+   * the session open in exchange time: 13:30 UTC is the same calendar day in
+   * New York and in UTC alike. The null sits on 2026-09-11, so the surviving
+   * rows are the 9th, the 10th and the 14th. */
+  var YAHOO_HOOD = {
+    chart: {
+      result: [{
+        meta: { symbol: 'HOOD', longName: 'Robinhood Markets, Inc.', shortName: 'Robinhood Markets, Inc' },
+        timestamp: [1788960600, 1789047000, 1789133400, 1789392600],
+        indicators: {
+          quote: [{ close: [115.28, 113.33, null, 112.57] }],
+          adjclose: [{ adjclose: [115.28, 113.33, null, 112.57] }]
+        }
+      }],
+      error: null
+    }
+  };
+
+  var YAHOO_EMPTY = { chart: { result: null, error: { code: 'Not Found', description: 'No data found, symbol may be delisted' } } };
+
   var FMP_CHANGE_ADBE = [{
     symbol: 'ADBE', '1D': -2.366, '5D': -9.34164, '1M': -8.84012, '3M': 6.6201,
     '6M': -9.55912, ytd: -28.90368, '1Y': -28.9382
@@ -268,6 +289,18 @@
     eq('EOD rows sorted ascending', eod[0].date, '2026-09-08');
     close('EOD last close', eod[2].price, 248.83);
 
+    /* Yahoo, the keyless fallback behind api/history.js and the data job */
+    var yc = SRC.normalizeYahooChart(YAHOO_HOOD);
+    eq('Yahoo drops the null close', yc.length, 3);
+    eq('Yahoo rows sorted ascending', yc[0].date, '2026-09-09');
+    eq('Yahoo keeps the row after the gap', yc[2].date, '2026-09-14');
+    close('Yahoo last close', yc[2].price, 112.57);
+    eq('Yahoo prefers the long name', SRC.yahooName(YAHOO_HOOD), 'Robinhood Markets, Inc.');
+    ok('Yahoo error body normalizes to null', SRC.normalizeYahooChart(YAHOO_EMPTY) === null);
+    ok('Yahoo url spells a class share with a dash',
+      SRC.yahooChartUrl('BRK.B').indexOf('/chart/BRK-B?') > 0);
+    ok('Yahoo url refuses a path', SRC.yahooChartUrl('../etc') === null);
+
     var ch = SRC.normalizeQuoteChange(FMP_CHANGE_ADBE);
     close('five-session change', ch.d5, -9.34164);
     close('one-month change', ch.m1, -8.84012);
@@ -320,11 +353,17 @@
     if (!U) {
       ok('universe module is loaded', false, 'MP.universe missing');
     } else {
-      var syms = U.LIST.map(function (s) { return s.symbol; });
-      ok('the list holds the whole index', syms.length >= 100);
+      var syms = U.UNIVERSE.map(function (s) { return s.symbol; });
+      ok('the universe holds the whole index', syms.length >= U.LIST.length);
+      ok('the majors are in it too', syms.indexOf('HOOD') >= 100);
       ok('the list has no duplicates', syms.every(function (s, i) { return syms.indexOf(s) === i; }));
       ok('every listed ticker makes a file name', syms.every(function (s) { return SRC.stockPath(s) !== null; }));
-      ok('the list is sorted by ticker', syms.every(function (s, i) { return i === 0 || syms[i - 1] < s; }));
+      /* The index is kept sorted so a rebalance is easy to diff. The majors
+         are ordered by how likely a newcomer is to reach for them, because
+         that is the order the untyped search screen offers them in. */
+      var idx = U.LIST.map(function (s) { return s.symbol; });
+      ok('the index is sorted by ticker', idx.every(function (s, i) { return i === 0 || idx[i - 1] < s; }));
+      ok('no major repeats an index member', U.MAJORS.every(function (m) { return idx.indexOf(m.symbol) < 0; }));
       eq('names come from the list', U.nameFor('NVDA'), 'NVIDIA Corporation');
       ok('an unlisted ticker has no name', U.nameFor('ZZZZ') === null);
 
@@ -350,8 +389,9 @@
       ok('a row without a month of closes has no 1m change', wrow.change1m === null);
 
       var byS = {};
-      syms.slice(0, 92).forEach(function (s) { byS[s] = { symbol: s, close: 1, date: '2026-09-11' }; });
-      ok('90 percent of the list priced is complete', U.summary(byS, '2026-09-11', 0, 'x').complete === true);
+      var justComplete = Math.ceil(syms.length * U.COMPLETE_SHARE);
+      syms.slice(0, justComplete).forEach(function (s) { byS[s] = { symbol: s, close: 1, date: '2026-09-11' }; });
+      ok('the complete share of the universe priced is complete', U.summary(byS, '2026-09-11', 0, 'x').complete === true);
       delete byS[syms[0]];
       ok('one fewer is not', U.summary(byS, '2026-09-11', 0, 'x').complete === false);
       ok('denials shrink what completeness asks for', U.summary(byS, '2026-09-11', 5, 'x').complete === true);

@@ -1,6 +1,6 @@
 /* ============================================================================
- * universe.js: the Nasdaq-100 list, and the rules for keeping each member's
- * daily closes.
+ * universe.js: the symbols the data job prices, and the rules for keeping
+ * each one's daily closes.
  *
  * The data job fetches one member's closes per FMP call, a slice of the list
  * per run, so a full pass over the index is spread across three runs after
@@ -138,8 +138,18 @@
     ['XEL', 'Xcel Energy Inc.']
   ].map(function (r) { return { symbol: r[0], name: r[1] }; });
 
+  /* The list the job actually fetches: the index above, plus the majors held
+   * in sources.js (the one module both the page and the job load). LIST stays
+   * the Nasdaq-100 alone, because AS_OF and the staleness warning describe
+   * that index and nothing else. */
+  var MAJORS = (MP.sources && MP.sources.MAJORS) || [];
+  var UNIVERSE = LIST.concat(MAJORS);
+
   var NAMES = {};
-  LIST.forEach(function (s) { NAMES[s.symbol] = s.name; });
+  UNIVERSE.forEach(function (s) { NAMES[s.symbol] = s.name; });
+
+  var INDEX_SET = {};
+  LIST.forEach(function (s) { INDEX_SET[s.symbol] = 1; });
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
   function isoDay(ms) { return new Date(ms).toISOString().slice(0, 10); }
@@ -147,6 +157,11 @@
 
   function nameFor(symbol) { return NAMES.hasOwnProperty(symbol) ? NAMES[symbol] : null; }
   function listed(symbol) { return NAMES.hasOwnProperty(symbol); }
+  /* Membership of the index proper, as distinct from the whole fetch
+     universe. The MOVER and LOSER stops rank the Nasdaq-100 and say so, so
+     they ask this rather than listed(). */
+  function inIndex(symbol) { return INDEX_SET.hasOwnProperty(symbol); }
+
 
   /* Days since the list was taken, and whether that is old enough to warn. */
   function listAge(now) {
@@ -171,7 +186,7 @@
     opts = opts || {};
     var limit = isNum(opts.limit) || opts.limit === Infinity ? opts.limit : PER_RUN;
     var due = [], denied = [];
-    LIST.forEach(function (s) {
+    UNIVERSE.forEach(function (s) {
       var e = ledger[s.symbol];
       if (!opts.force && e) {
         if (e.deniedAt && now - e.deniedAt < DENY_RETRY_MS) { denied.push(s.symbol); return; }
@@ -283,15 +298,15 @@
    * dropped. `complete` once COMPLETE_SHARE of the symbols that can be asked
    * for (the list less plan denials) are priced for the session. */
   function summary(rowsBySymbol, session, deniedCount, generatedAt) {
-    var rows = LIST.map(function (s) { return rowsBySymbol[s.symbol]; }).filter(Boolean);
+    var rows = UNIVERSE.map(function (s) { return rowsBySymbol[s.symbol]; }).filter(Boolean);
     var priced = rows.filter(function (r) { return r.date >= session; }).length;
-    var askable = LIST.length - (deniedCount || 0);
+    var askable = UNIVERSE.length - (deniedCount || 0);
     return {
       version: 1,
       generatedAt: generatedAt,
       session: session,
       listAsOf: AS_OF,
-      count: { listed: LIST.length, priced: priced, denied: deniedCount || 0 },
+      count: { listed: UNIVERSE.length, priced: priced, denied: deniedCount || 0 },
       complete: askable > 0 && priced >= Math.ceil(askable * COMPLETE_SHARE),
       rows: rows
     };
@@ -314,6 +329,9 @@
     AS_OF: AS_OF,
     LIST_SOURCE: LIST_SOURCE,
     LIST: LIST,
+    inIndex: inIndex,
+    MAJORS: MAJORS,
+    UNIVERSE: UNIVERSE,
     PER_RUN: PER_RUN,
     FULL_DAYS: FULL_DAYS,
     OVERLAP_DAYS: OVERLAP_DAYS,

@@ -47,6 +47,49 @@
       ? 'api/history?symbol=' + encodeURIComponent(symbol) : null;
   }
 
+
+  /* ---- the majors ---------------------------------------------------------- */
+  /* Widely held companies outside the Nasdaq-100, so the instrument has an
+   * answer for the names a newcomer actually types. Two jobs, one list:
+   * the scheduled job fetches closes for these alongside the index members,
+   * and the search screen offers them before anything is typed.
+   *
+   * It has to live here because it is the only module both the page and the
+   * data job load. It also carries the names: data/catalogue.json is built
+   * from the Nasdaq listing file, so the NYSE names below (JPM, V, XOM and
+   * the rest) are not in it and would otherwise be unsearchable. */
+  var MAJORS = [
+    ['HOOD', 'Robinhood Markets, Inc.'],
+    ['COIN', 'Coinbase Global, Inc.'],
+    ['SOFI', 'SoFi Technologies, Inc.'],
+    ['RBLX', 'Roblox Corporation'],
+    ['UBER', 'Uber Technologies, Inc.'],
+    ['LYFT', 'Lyft, Inc.'],
+    ['SNAP', 'Snap Inc.'],
+    ['PINS', 'Pinterest, Inc.'],
+    ['SPOT', 'Spotify Technology S.A.'],
+    ['RIVN', 'Rivian Automotive, Inc.'],
+    ['LCID', 'Lucid Group, Inc.'],
+    ['F', 'Ford Motor Company'],
+    ['GM', 'General Motors Company'],
+    ['DIS', 'The Walt Disney Company'],
+    ['NKE', 'NIKE, Inc.'],
+    ['BA', 'The Boeing Company'],
+    ['JPM', 'JPMorgan Chase & Co.'],
+    ['BAC', 'Bank of America Corporation'],
+    ['V', 'Visa Inc.'],
+    ['MA', 'Mastercard Incorporated'],
+    ['XOM', 'Exxon Mobil Corporation'],
+    ['CVX', 'Chevron Corporation'],
+    ['UNH', 'UnitedHealth Group Incorporated'],
+    ['JNJ', 'Johnson & Johnson'],
+    ['PG', 'The Procter & Gamble Company'],
+    ['KO', 'The Coca-Cola Company'],
+    ['HD', 'The Home Depot, Inc.'],
+    ['CRM', 'Salesforce, Inc.'],
+    ['ORCL', 'Oracle Corporation'],
+    ['IBM', 'International Business Machines Corporation']
+  ].map(function (r) { return { symbol: r[0], name: r[1] }; });
   function parsePayload(payload) {
     if (typeof payload === 'string') {
       try { return JSON.parse(payload); } catch (e) { return null; }
@@ -305,6 +348,55 @@
     return rows.length ? ascendingByDate(rows) : null;
   }
 
+  /* ---- Yahoo's chart endpoint (keyless) ----------------------------------- */
+  /* GET /v8/finance/chart/SYM?range=2y&interval=1d
+   * -> { chart: { result: [ { meta: { longName, shortName },
+   *                           timestamp: [epoch seconds],
+   *                           indicators: { quote: [ { close: [...] } ] } } ] } }
+   *
+   * The closes are split-adjusted only, which is what FMP's light endpoint
+   * returns as `price` and what the stored snapshots hold, so the two sources
+   * can be spliced onto one another. adjclose is deliberately not used: it
+   * also removes dividends, and would step every stored series.
+   *
+   * Yahoo writes null into close[] for a halt or a half-session, so the two
+   * arrays are walked together and the gaps dropped. A daily timestamp is the
+   * session's open in exchange time (13:30 or 14:30 UTC for US equities), so
+   * reading the UTC date off it gives the right session day. That holds for
+   * this universe; it would not for an exchange east of UTC. */
+  function yahooChartUrl(symbol, range) {
+    if (typeof symbol !== 'string' || !SYMBOL_RE.test(symbol.toUpperCase())) return null;
+    /* Yahoo spells a class share BRK-B where FMP spells it BRK.B. */
+    return 'https://query1.finance.yahoo.com/v8/finance/chart/' +
+      encodeURIComponent(symbol.toUpperCase().replace(/\./g, '-')) +
+      '?range=' + (range || '2y') + '&interval=1d';
+  }
+
+  function normalizeYahooChart(payload) {
+    var p = parsePayload(payload);
+    var r = p && p.chart && Array.isArray(p.chart.result) ? p.chart.result[0] : null;
+    if (!r || !Array.isArray(r.timestamp)) return null;
+    var q = r.indicators && Array.isArray(r.indicators.quote) ? r.indicators.quote[0] : null;
+    var closes = q && Array.isArray(q.close) ? q.close : null;
+    if (!closes) return null;
+    var rows = [];
+    for (var i = 0; i < r.timestamp.length && i < closes.length; i++) {
+      var t = toNum(r.timestamp[i]), v = toNum(closes[i]);
+      if (!isFinite(t) || !isFinite(v)) continue;
+      rows.push({ date: isoDay(new Date(t * 1000)), price: v });
+    }
+    return rows.length ? ascendingByDate(rows) : null;
+  }
+
+  function yahooName(payload) {
+    var p = parsePayload(payload);
+    var m = p && p.chart && Array.isArray(p.chart.result) && p.chart.result[0]
+      ? p.chart.result[0].meta : null;
+    if (!m) return null;
+    return (typeof m.longName === 'string' && m.longName) ||
+      (typeof m.shortName === 'string' && m.shortName) || null;
+  }
+
   /* /stable/stock-price-change?symbol=
    * -> [ { symbol, '1D', '5D', '1M', '3M', '6M', ytd, '1Y', ... } ]
    * All values are percentage points. '5D' is the spotlight's selection basis. */
@@ -550,6 +642,7 @@
     SNAPSHOT: SNAPSHOT,
     stockPath: stockPath,
     stockApiUrl: stockApiUrl,
+    MAJORS: MAJORS,
     normalizeStocksSnapshot: normalizeStocksSnapshot,
     normalizeStockFile: normalizeStockFile,
     coinbaseWs: coinbaseWs,
@@ -561,6 +654,9 @@
     dailySeries: dailySeries,
     normalizeFmpQuote: normalizeFmpQuote,
     normalizeEodLight: normalizeEodLight,
+    yahooChartUrl: yahooChartUrl,
+    normalizeYahooChart: normalizeYahooChart,
+    yahooName: yahooName,
     normalizeQuoteChange: normalizeQuoteChange,
     normalizeAvQuote: normalizeAvQuote,
     normalizeAvDaily: normalizeAvDaily,

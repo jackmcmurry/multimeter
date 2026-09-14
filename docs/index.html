@@ -63,13 +63,17 @@
  * ========================================================================== */
 
 :root {
+  /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
+  --meter-mint: #2EE59D;
+  --meter-mint-rgb: 46, 229, 157;
+
   /* the bench it sits on */
   --bg: #0b0d12;
 
   /* holster and body */
-  --holster: #22c55e;
-  --holster-dk: #15803d;
-  --holster-lt: #7ee8a4;
+  --holster: var(--meter-mint);
+  --holster-dk: #159361;
+  --holster-lt: #8beec7;
   --shell: #23272e;
   --shell-dk: #15181d;
   --shell-lt: #333942;
@@ -79,14 +83,20 @@
   --lcd-dk: #040709;
   --lcd-ink: #e6fff5;
   --lcd-dim: #6d8c86;
-  --up: #2ee59d;
+  /* A third step between the reading and the chrome. The screen had only two:
+   * the figure was bright and everything else was dim, which put the sentence
+   * that says what the figure means at the same weight as the unit label and
+   * the annunciators. Reading order on this screen is the number, then that
+   * sentence, then the rest. */
+  --lcd-mid: #9fbfb6;
+  --up: var(--meter-mint);
   --down: #ff6b6b;
 
   /* controls */
   --knob: #14171c;
   --knob-lt: #2c3139;
-  --knob-mark: #4ade80;
-  --accent-glow: rgba(74, 222, 128, 0.5);
+  --knob-mark: var(--meter-mint);
+  --accent-glow: rgba(var(--meter-mint-rgb), 0.5);
   --key: #333942;
   --key-dk: #0f1215;
   --key-text: #eef1f5;
@@ -94,7 +104,7 @@
   --hold-dk: #9c2323;
   --jack: #07080a;
   --jack-ring: #ef4a4a;
-  --led: #2ee59d;
+  --led: var(--meter-mint);
   --led-off: #26332e;
 
   /* the drawer card and everything printed on it */
@@ -113,7 +123,7 @@
   --c-qqq: #34d399;
   --c-probe: #c084fc;
 
-  --pos: #2ee59d;
+  --pos: var(--meter-mint);
   --neg: #ff6b6b;
 
   /* The wordmark and brand accents follow the selected palette. */
@@ -223,10 +233,19 @@ body {
   line-height: 1;
   color: var(--brand);
 }
+/* The mark is src/icon.svg's path, cropped to the glyph by the viewBox
+ * origin. Its box is 40 x 34 units and the 6.5 stroke bleeds 3.25 outside
+ * that on every side, so the ink stands about 40.5 units tall: sized here to
+ * land on the cap height of the letters beside it. overflow stays visible so
+ * the square caps and the miter at each peak are not clipped. */
 .brand-mark {
-  width: 1.9645em;
-  height: 1.7839em;
-  margin-right: .2226em;
+  width: .792em;
+  height: .673em;
+  margin-right: .16em;
+  /* The square cap overshoots the box by half a stroke, so the box is lifted
+     by that much to put the M's foot on the wordmark's baseline rather than
+     below it. */
+  margin-bottom: .064em;
   flex-shrink: 0;
   overflow: visible;
 }
@@ -329,7 +348,7 @@ body {
   line-height: 1;
   color: var(--lcd-ink);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 18px rgba(46, 229, 157, 0.12);
+  text-shadow: 0 0 18px rgba(var(--meter-mint-rgb), 0.12);
 }
 .lcd-unit {
   font-size: 13px;
@@ -391,7 +410,23 @@ body {
   50% { border-color: var(--hold); box-shadow: 0 0 0 3px var(--hold), 0 0 40px var(--down), inset 0 0 60px rgba(255, 107, 107, 0.25); }
 }
 
-.lcd-ranges { display: flex; gap: 6px; margin-top: 18px; transition: opacity 200ms ease; }
+/* Three tabs do not fit a phone's screen width. They scroll sideways rather
+ * than being cut off at the edge, and the row holds one height everywhere so
+ * the display does not move as the dial turns. The vertical padding is there
+ * to keep a focus ring from being clipped by the scroll container. */
+.lcd-ranges {
+  display: flex;
+  gap: 6px;
+  margin-top: 15px;
+  padding: 3px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  transition: opacity 200ms ease;
+}
+.lcd-ranges::-webkit-scrollbar { width: 0; height: 0; }
+.lcd-ranges .rng { flex: 0 0 auto; }
 .lcd-ranges.is-idle { opacity: 0; pointer-events: none; }
 .lcd-chg:empty::before { content: "—"; }
 .rng {
@@ -412,7 +447,12 @@ body {
 .rng.is-on { background: var(--lcd-tab); color: var(--lcd-ink); }
 .rng:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 
-.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart, .lcd.is-off .lcd-price { opacity: 0.1; }
+/* At OFF the readout has nothing to say, so the empty price and the
+ * annunciators fade out. The chart box is excluded: at this stop it holds
+ * the orientation copy, which is the whole point of the position. Opacity
+ * makes a stacking context, so a child can never be brighter than its
+ * parent and the box itself has to stay at full strength. */
+.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-price { opacity: 0.1; }
 .lcd-price:empty::before { content: "—"; }
 
 /* a change of stop refreshes the readout with a short fade */
@@ -421,6 +461,29 @@ body {
 }
 @keyframes lcd-swap {
   from { opacity: 0.15; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* A new measurement sweeps its trace in from the left, and the point that
+ * marks the latest reading arrives once the line has reached it. The path
+ * carries pathLength="1", so one unit of dash is the whole trace whatever
+ * its real geometry. Live price ticks do not carry .is-drawing, so a screen
+ * being read stays still. */
+.lcd.is-drawing .chart-smooth .chart-line {
+  animation: chart-draw 620ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
+}
+.lcd.is-drawing .chart-smooth .chart-dot,
+.lcd.is-drawing .chart-smooth .chart-dot-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-dot 280ms cubic-bezier(0.22, 1.4, 0.36, 1) 430ms both;
+}
+@keyframes chart-draw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+@keyframes chart-dot {
+  from { opacity: 0; transform: scale(0.3); }
   to { opacity: 1; transform: none; }
 }
 
@@ -540,6 +603,25 @@ body {
 .knob:focus-visible { outline: 3px solid var(--holster); outline-offset: 5px; }
 
 /* ---- jacks --------------------------------------------------------------- */
+/* What the dial is pointing at, in plain words. Two lines are reserved
+ * whatever the stop, so the face does not move as the dial turns. */
+.dial-caption {
+  margin: 8px auto 0;
+  max-width: 38ch;
+  min-height: 2.7em;
+  font-family: var(--f-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--dim);
+}
+.dial-caption b {
+  color: var(--holster);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .jacks {
   display: flex;
   flex-wrap: wrap;
@@ -633,7 +715,7 @@ body {
 :root[data-skin="gold"] { --holster: #f6b71f; --holster-dk: #c98f0c; --holster-lt: #ffd35a; --knob-mark: #f6b71f; --accent-glow: rgba(246, 183, 31, 0.5); }
 :root[data-skin="blue"] { --holster: #3b82f6; --holster-dk: #1e56c8; --holster-lt: #7fb0ff; --knob-mark: #6aa8ff; --accent-glow: rgba(106, 168, 255, 0.55); }
 :root[data-skin="pink"] { --holster: #f472b6; --holster-dk: #c7367f; --holster-lt: #ffb3da; --knob-mark: #ff8cc6; --accent-glow: rgba(255, 140, 198, 0.55); }
-:root[data-skin="green"] { --holster: #22c55e; --holster-dk: #15803d; --holster-lt: #7ee8a4; --knob-mark: #4ade80; --accent-glow: rgba(74, 222, 128, 0.5); }
+:root[data-skin="green"] { --holster: var(--meter-mint); --holster-dk: #159361; --holster-lt: #8beec7; --knob-mark: var(--meter-mint); --accent-glow: rgba(var(--meter-mint-rgb), 0.5); }
 :root[data-skin="red"] { --holster: #ef4444; --holster-dk: #a91d1d; --holster-lt: #ff9a9a; --knob-mark: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.55); }
 :root[data-skin="purple"] { --holster: #a855f7; --holster-dk: #7426c7; --holster-lt: #d6b0ff; --knob-mark: #c084fc; --accent-glow: rgba(192, 132, 252, 0.55); }
 :root[data-skin="silver"] { --holster: #cbd5e1; --holster-dk: #8a97aa; --holster-lt: #f1f5f9; --knob-mark: #e2e8f0; --accent-glow: rgba(226, 232, 240, 0.45); }
@@ -710,7 +792,7 @@ body {
 .skin[data-skin="gold"] { background: #f6b71f; }
 .skin[data-skin="blue"] { background: #3b82f6; }
 .skin[data-skin="pink"] { background: #f472b6; }
-.skin[data-skin="green"] { background: #22c55e; }
+.skin[data-skin="green"] { background: var(--meter-mint); }
 .skin[data-skin="red"] { background: #ef4444; }
 .skin[data-skin="purple"] { background: #a855f7; }
 .skin[data-skin="silver"] { background: #cbd5e1; }
@@ -958,7 +1040,7 @@ tr.row-rule th {
   letter-spacing: 0.08em;
   color: var(--lcd-dk);
 }
-.lcd-badge.is-up { background: var(--up); box-shadow: 0 0 12px rgba(46, 229, 157, 0.35); }
+.lcd-badge.is-up { background: var(--up); box-shadow: 0 0 12px rgba(var(--meter-mint-rgb), 0.35); }
 .lcd-badge.is-down { background: var(--down); box-shadow: 0 0 12px rgba(255, 107, 107, 0.35); }
 .lcd-ticker {
   font-size: 0.58em;
@@ -967,7 +1049,7 @@ tr.row-rule th {
   color: var(--lcd-ink);
   vertical-align: 0.08em;
 }
-.lcd-price.is-up { color: var(--up); text-shadow: 0 0 22px rgba(46, 229, 157, 0.28); }
+.lcd-price.is-up { color: var(--up); text-shadow: 0 0 22px rgba(var(--meter-mint-rgb), 0.28); }
 .lcd-price.is-down { color: var(--down); text-shadow: 0 0 22px rgba(255, 107, 107, 0.28); }
 .lcd-ranges[data-kind="switch"] .rng.is-on { background: var(--holster); color: var(--lcd-dk); }
 .rng-step { padding-left: 14px; padding-right: 14px; font-size: 17px; line-height: 16px; }
@@ -1241,13 +1323,13 @@ tr.row-rule th {
 .lcd-what {
   margin: 7px 0 0;
   font-family: var(--f-ui);
-  font-size: clamp(10px, 2.2cqw, 13.5px);
+  font-size: clamp(11px, 2.2cqw, 13.5px);
   line-height: 1.35;
   /* a fixed two lines, not a minimum: a sentence that wraps must not make
    * the display taller than one that does not, or the dial moves between
    * stops */
   height: 2.7em;
-  color: var(--lcd-dim);
+  color: var(--lcd-mid);   /* content, not chrome: the second thing the eye should reach */
   overflow: hidden;
 }
 
@@ -1487,7 +1569,7 @@ tr.row-rule th {
   color: var(--lcd-ink);
   overflow: hidden;
 }
-.lcd-learn-line.is-dim { color: var(--lcd-dim); }
+.lcd-learn-line.is-dim { color: var(--lcd-mid); }
 .lcd-learn-visual:empty { display: none; }
 .lcd-learn-visual { margin: 2px 0; }
 .lcd-learn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
@@ -1591,22 +1673,101 @@ tr.row-rule th {
 
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
-  .stage { padding: 10px 6px 32px; gap: 12px; }
+  /* The stacked phone layout is tall: a screen, a key row and a dial, one
+   * above the other. These margins are trimmed so the dial and the line
+   * that explains it both clear the fold on a 375x812 screen. */
+  .stage { padding: 10px 6px 14px; gap: 12px; }
   .holster { padding: 4px; }
-  .shell { padding: 18px 18px 20px; }
-  .lcd { padding: 12px 14px 12px; }
-  .lcd-chg { font-size: 16px; }
-  .rng { padding: 8px 12px; font-size: 12px; }
+  .shell { padding: 14px 16px 16px; }
+  .lcd { padding: 10px 14px 10px; }
+  .lcd-minmax { margin-top: 4px; }
+  .dial-caption { margin-top: 6px; }
+  /* the tabs are the one control a thumb uses over and over */
+  .rng { padding: 10px 12px; font-size: 12px; min-width: 44px; }
+  /* the rows inside the panels are wide enough already, just not tall. The
+   * panels float over the readout, so height here costs the meter nothing. */
+  .probe-q, .lcd-act, .lcd-input, .lcd-pick { min-height: 44px; }
   .keys { gap: 6px; }
-  .key { padding: 10px 2px; }
-  /* one line on a phone, still fixed, so the meter keeps fitting the screen */
-  .lcd-what { height: 1.35em; }
-  .lcd-edit { left: 12px; right: 12px; top: 40px; }
+  .key { padding: 10px 2px; min-height: 40px; }
+
+  /* The mode header names what is being measured. As a flex item beside the
+   * annunciators it was the first thing to be given up: 61px of the 252px
+   * that "VOLATILITY · AMD · 30 SESSIONS" needs. The annunciators float
+   * instead, so the header's first line runs beside them and the rest of it
+   * runs the full width. Two lines are reserved at every stop, whether this
+   * header needs them or not, so the display holds one height as the dial
+   * turns. The longest header in the instrument, "CORRELATION · AMD & NDQ ·
+   * 90 SESSIONS", fits those two lines at this size. */
+  .lcd > .lcd-row:first-child { flex-wrap: wrap; row-gap: 2px; height: 46px; align-items: flex-start; align-content: flex-start; }
+  .lcd > .lcd-row:first-child > .ann:first-child {
+    flex: 1 0 100%;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    line-height: 14px;
+    height: 28px;
+  }
+  .lcd > .lcd-row:first-child .ann-group { margin-left: auto; gap: 18px; line-height: 16px; }
+  /* the panels clear the header, which is one line taller than it was */
+  .lcd-panel { top: 68px; }
+
+  /* The measured change must never be trimmed: "↘ 28.1 pp" was being cut to
+   * "↘ 2…" to make room for its own label. The change keeps its full width
+   * now and the label gives way instead, at a size where both still fit the
+   * one line this row reserves. */
+  /* When the row is short of width, the shrink factors decide what gives.
+   * Prose goes first, then the period label, and the measured figure last. */
+  .lcd-chg { font-size: 15px; }
+  .lcd-foot > .lcd-chg { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .lcd-foot > .lcd-chg.is-plain { flex: 0 500 auto; }
+  .lcd-foot > .lcd-chg.is-caption { font-size: 13px; }
+  .lcd-foot > .ann { flex: 0 20 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 11px; letter-spacing: 0.06em; }
+
+  /* the panel headers stack for the same reason the mode header does */
+  .lcd-panel > .lcd-row:first-child { flex-wrap: wrap; row-gap: 2px; }
+  .lcd-panel > .lcd-row:first-child > .ann { flex: 1 1 auto; min-width: 0; }
+
+  /* The daily reading is prose, not a figure, and it cannot be shortened
+   * without changing what it says. It scrolls inside the chart box rather
+   * than stopping mid-sentence. */
+  .lcd-note { align-items: flex-start; overflow-y: auto; scrollbar-width: thin; }
+
+
+  /* The plain sentence under the reading is the most useful line on the
+   * screen for someone meeting these measurements for the first time. It
+   * keeps both of its lines here rather than losing half of itself. */
+  .lcd-what { height: 2.7em; }
+  /* the name fits, the name and the trade description do not */
+  .lcd-identity-note { display: none; }
+  .lcd-edit { left: 12px; right: 12px; top: 76px; }
   .drawer { border-radius: 14px; padding: 14px 12px 18px; }
-  .dial { width: 100%; }
+  /* a little under full width: the dial stays big enough to drag, and the
+   * line that explains it clears the fold */
+  .dial { width: 88%; }
   .dial-lab { font-size: 13.5px; }
   .rows li { grid-template-columns: minmax(0, 1fr) 84px 64px; }
   .row-spark { display: none; }
+}
+
+/* ---- touch targets -------------------------------------------------------- */
+/* The annunciators and the small head controls are drawn at the size the
+ * instrument wants them. A finger needs more than that. A transparent
+ * pseudo-element carries the reachable area out to 44px without taking any
+ * layout space, so the drawn face is unchanged and nothing moves. */
+.ann-rel, .ann-bell, .ann-sound, .about-link, .skin-toggle, .dial-settings { position: relative; }
+.ann-rel::before, .ann-bell::before, .ann-sound::before,
+.about-link::before, .skin-toggle::before, .dial-settings::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1624,7 +1785,8 @@ tr.row-rule th {
 .chart-detail { font-size: 10px; line-height: 1.35; color: var(--dim); }
 .chart-state { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; text-align: left; line-height: 1.5; }
 .chart-state p { margin: 0; }
-@media (max-width: 480px) { .chart-state { font-size: 11px; padding: 8px; gap: 6px; } }
+/* four short lines inside a 93px chart box, with nothing spare */
+@media (max-width: 480px) { .chart-state { font-size: 11px; padding: 6px; gap: 4px; } }
 
 /* Asset identity stays secondary to the reading and its explanation. */
 /* The identity line holds its place on every stop, whether or not the
@@ -1668,7 +1830,7 @@ tr.row-rule th {
 .dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .lcd-ranges .rng-end { margin-left: auto; color: var(--lcd-dk); background: var(--holster); }
 .lcd-ranges .rng-end[data-end="loser"] { background: #f87171; }
-.lcd-ranges .rng-end[data-end="mover"] { background: #4ade80; }
+.lcd-ranges .rng-end[data-end="mover"] { background: var(--knob-mark); }
 .keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 </style>
@@ -1702,15 +1864,17 @@ tr.row-rule th {
 
         <div class="head">
           <!-- the wordmark: the first M is drawn, not typed, so the letter
-               and the rising line are the same four strokes. Approved shape:
-               two peaks, the second no higher than the first, the right foot
-               shorter than the left, matching docs/multimeter-logo.svg. -->
+               and the rising line are the same four strokes. The path, its
+               stroke and its joins are src/icon.svg's, verbatim; the viewBox
+               origin crops that 64x64 icon down to the glyph. Change the mark
+               in src/icon.svg and copy it here, so the tab icon, the app icon
+               and this wordmark can never drift apart. -->
           <span class="brand">
-<svg class="brand-mark" viewBox="0 0 87 79" role="img" aria-label="Multimeter"><path d="M0 107 L19 8 L52 50 L87 0 L87 79" fill="none" stroke="currentColor" stroke-width="10.5" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="10"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
+<svg class="brand-mark" viewBox="12 15 40 34" role="img" aria-label="Multimeter"><path d="M12 49 L22 20 L32 36 L42 15 L52 38" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
           </span>
           <span class="head-right">
             <span class="skin-picker">
-              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: green. Choose a colour.">
+              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
               </button>
               <span class="skin-menu" id="skins" role="group" aria-label="Skin" hidden>
@@ -1718,7 +1882,7 @@ tr.row-rule th {
                 <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
-                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="true"></button>
+                <button type="button" class="skin" data-skin="green" aria-label="Meter Mint green skin" title="Meter Mint — #2EE59D" aria-pressed="true"></button>
                 <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
@@ -1866,6 +2030,13 @@ tr.row-rule th {
           <span class="dial-hint" id="dialHint" aria-hidden="true">Turn the dial</span>
         </div>
 
+        <!-- The plate prints a code. This prints what the code measures, so
+             VOL and CORR and DD explain themselves as the dial turns instead
+             of waiting for someone to open the customize screen. Announced
+             politely, because until now a screen reader heard the position
+             change but never what the position was for. -->
+        <p class="dial-caption" id="dialCaption" aria-live="polite"></p>
+
         <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M3 17H1M4.742 10.5 3.01 9.5M9.5 5.742 8.5 4.01M16 4V2M22.5 5.742 23.5 4.01M27.258 10.5 28.99 9.5M29 17H31"/>
@@ -1940,7 +2111,7 @@ tr.row-rule th {
 
     <!-- WATCH -->
     <section class="view" data-panel="watch" hidden>
-      <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a Nasdaq-100 stock by symbol or name" aria-label="Add a Nasdaq-100 stock">
+      <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a stock by symbol or name" aria-label="Add a stock">
       <ul class="rows picks" id="watchResults"></ul>
       <div class="table-host" id="watchTable"></div>
       <p class="foot">Daily closes from the data job, not live prices. Up to 8 stocks. The list stays in this browser.</p>
@@ -2023,7 +2194,7 @@ tr.row-rule th {
       <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
       <p><b>MOVER</b> and <b>LOSER</b>: the highest and the lowest move of the past week. For stocks, the data job keeps the daily closes of every Nasdaq-100 member it can price and ranks their five-session moves once it has them all, usually before Monday's open. For crypto, it ranks 15 large coins other than bitcoin and ether by their seven-day move. The tabs on the screen switch between the two, and the drawer shows the five highest and the five lowest together.</p>
       <p>Both ends describe the past week. Neither is a recommendation.</p>
-      <p><b>WATCH</b>: up to eight Nasdaq-100 stocks you choose. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
+      <p><b>WATCH</b>: up to eight stocks you choose, from the Nasdaq-100, a list of majors, or any other listed company. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
       <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
       <p><b>LEARN</b>: the idea behind the figure you were just looking at, explained with that figure. Turn to it, or press LEARN at any stop. It names the concept, prints the live measurement, says what size that measurement counts as, gives one line on how to read it, and offers a way back into the instrument. The drawer holds the same concept in full, with why it matters, the common misconception, and how this page measures it. Underneath sits the daily reading: after each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template.</p>
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
@@ -2051,7 +2222,7 @@ tr.row-rule th {
       <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the Nasdaq-100 members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Company logos load from Financial Modeling Prep's public image service. The market status is computed in your browser from NYSE hours and holidays; it reports the session and does not control anything.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Where that plan does not cover a company, and for any company you search that the job does not pre-fetch, the closes come from Yahoo's public chart endpoint instead, which needs no key. Company logos load from Financial Modeling Prep's public image service. The market status is computed in your browser from NYSE hours and holidays; it reports the session and does not control anything.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>
@@ -2937,11 +3108,14 @@ tr.row-rule th {
     var gid = nextId('glow');
     var lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
 
+    /* pathLength normalises the trace to one unit whatever its real length,
+     * so the stylesheet can dash it without measuring the geometry. That is
+     * what lets a change of stop sweep the line in from the left. */
     var s = open(w, h, 'chart-smooth');
-    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
+    s += '<path class="chart-line" pathLength="1" d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
       '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
-    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
-    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
+    s += '<circle class="chart-dot-halo" cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
+    s += '<circle class="chart-dot" cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
     return s + '</svg>';
   }
 
@@ -3009,6 +3183,49 @@ tr.row-rule th {
       ? 'api/history?symbol=' + encodeURIComponent(symbol) : null;
   }
 
+
+  /* ---- the majors ---------------------------------------------------------- */
+  /* Widely held companies outside the Nasdaq-100, so the instrument has an
+   * answer for the names a newcomer actually types. Two jobs, one list:
+   * the scheduled job fetches closes for these alongside the index members,
+   * and the search screen offers them before anything is typed.
+   *
+   * It has to live here because it is the only module both the page and the
+   * data job load. It also carries the names: data/catalogue.json is built
+   * from the Nasdaq listing file, so the NYSE names below (JPM, V, XOM and
+   * the rest) are not in it and would otherwise be unsearchable. */
+  var MAJORS = [
+    ['HOOD', 'Robinhood Markets, Inc.'],
+    ['COIN', 'Coinbase Global, Inc.'],
+    ['SOFI', 'SoFi Technologies, Inc.'],
+    ['RBLX', 'Roblox Corporation'],
+    ['UBER', 'Uber Technologies, Inc.'],
+    ['LYFT', 'Lyft, Inc.'],
+    ['SNAP', 'Snap Inc.'],
+    ['PINS', 'Pinterest, Inc.'],
+    ['SPOT', 'Spotify Technology S.A.'],
+    ['RIVN', 'Rivian Automotive, Inc.'],
+    ['LCID', 'Lucid Group, Inc.'],
+    ['F', 'Ford Motor Company'],
+    ['GM', 'General Motors Company'],
+    ['DIS', 'The Walt Disney Company'],
+    ['NKE', 'NIKE, Inc.'],
+    ['BA', 'The Boeing Company'],
+    ['JPM', 'JPMorgan Chase & Co.'],
+    ['BAC', 'Bank of America Corporation'],
+    ['V', 'Visa Inc.'],
+    ['MA', 'Mastercard Incorporated'],
+    ['XOM', 'Exxon Mobil Corporation'],
+    ['CVX', 'Chevron Corporation'],
+    ['UNH', 'UnitedHealth Group Incorporated'],
+    ['JNJ', 'Johnson & Johnson'],
+    ['PG', 'The Procter & Gamble Company'],
+    ['KO', 'The Coca-Cola Company'],
+    ['HD', 'The Home Depot, Inc.'],
+    ['CRM', 'Salesforce, Inc.'],
+    ['ORCL', 'Oracle Corporation'],
+    ['IBM', 'International Business Machines Corporation']
+  ].map(function (r) { return { symbol: r[0], name: r[1] }; });
   function parsePayload(payload) {
     if (typeof payload === 'string') {
       try { return JSON.parse(payload); } catch (e) { return null; }
@@ -3267,6 +3484,55 @@ tr.row-rule th {
     return rows.length ? ascendingByDate(rows) : null;
   }
 
+  /* ---- Yahoo's chart endpoint (keyless) ----------------------------------- */
+  /* GET /v8/finance/chart/SYM?range=2y&interval=1d
+   * -> { chart: { result: [ { meta: { longName, shortName },
+   *                           timestamp: [epoch seconds],
+   *                           indicators: { quote: [ { close: [...] } ] } } ] } }
+   *
+   * The closes are split-adjusted only, which is what FMP's light endpoint
+   * returns as `price` and what the stored snapshots hold, so the two sources
+   * can be spliced onto one another. adjclose is deliberately not used: it
+   * also removes dividends, and would step every stored series.
+   *
+   * Yahoo writes null into close[] for a halt or a half-session, so the two
+   * arrays are walked together and the gaps dropped. A daily timestamp is the
+   * session's open in exchange time (13:30 or 14:30 UTC for US equities), so
+   * reading the UTC date off it gives the right session day. That holds for
+   * this universe; it would not for an exchange east of UTC. */
+  function yahooChartUrl(symbol, range) {
+    if (typeof symbol !== 'string' || !SYMBOL_RE.test(symbol.toUpperCase())) return null;
+    /* Yahoo spells a class share BRK-B where FMP spells it BRK.B. */
+    return 'https://query1.finance.yahoo.com/v8/finance/chart/' +
+      encodeURIComponent(symbol.toUpperCase().replace(/\./g, '-')) +
+      '?range=' + (range || '2y') + '&interval=1d';
+  }
+
+  function normalizeYahooChart(payload) {
+    var p = parsePayload(payload);
+    var r = p && p.chart && Array.isArray(p.chart.result) ? p.chart.result[0] : null;
+    if (!r || !Array.isArray(r.timestamp)) return null;
+    var q = r.indicators && Array.isArray(r.indicators.quote) ? r.indicators.quote[0] : null;
+    var closes = q && Array.isArray(q.close) ? q.close : null;
+    if (!closes) return null;
+    var rows = [];
+    for (var i = 0; i < r.timestamp.length && i < closes.length; i++) {
+      var t = toNum(r.timestamp[i]), v = toNum(closes[i]);
+      if (!isFinite(t) || !isFinite(v)) continue;
+      rows.push({ date: isoDay(new Date(t * 1000)), price: v });
+    }
+    return rows.length ? ascendingByDate(rows) : null;
+  }
+
+  function yahooName(payload) {
+    var p = parsePayload(payload);
+    var m = p && p.chart && Array.isArray(p.chart.result) && p.chart.result[0]
+      ? p.chart.result[0].meta : null;
+    if (!m) return null;
+    return (typeof m.longName === 'string' && m.longName) ||
+      (typeof m.shortName === 'string' && m.shortName) || null;
+  }
+
   /* /stable/stock-price-change?symbol=
    * -> [ { symbol, '1D', '5D', '1M', '3M', '6M', ytd, '1Y', ... } ]
    * All values are percentage points. '5D' is the spotlight's selection basis. */
@@ -3512,6 +3778,7 @@ tr.row-rule th {
     SNAPSHOT: SNAPSHOT,
     stockPath: stockPath,
     stockApiUrl: stockApiUrl,
+    MAJORS: MAJORS,
     normalizeStocksSnapshot: normalizeStocksSnapshot,
     normalizeStockFile: normalizeStockFile,
     coinbaseWs: coinbaseWs,
@@ -3523,6 +3790,9 @@ tr.row-rule th {
     dailySeries: dailySeries,
     normalizeFmpQuote: normalizeFmpQuote,
     normalizeEodLight: normalizeEodLight,
+    yahooChartUrl: yahooChartUrl,
+    normalizeYahooChart: normalizeYahooChart,
+    yahooName: yahooName,
     normalizeQuoteChange: normalizeQuoteChange,
     normalizeAvQuote: normalizeAvQuote,
     normalizeAvDaily: normalizeAvDaily,
@@ -5464,6 +5734,7 @@ tr.row-rule th {
   STOPS.push.apply(STOPS, stopsFrom(MP.dial ? MP.dial.load() : ['off', 'subject']));
   STEP_DEG = SWEEP_DEG / Math.max(1, STOPS.length - 1);
   var DETENT_MS = 220;                              /* how long the click feedback lasts */
+  var DRAW_MS = 700;                                /* how long a new trace takes to sweep in */
   var WHEEL_MS = 110;                               /* one step per wheel notch, no faster */
 
   /* plate geometry, in viewBox units; MARGIN leaves room for the longest label
@@ -5597,6 +5868,26 @@ tr.row-rule th {
     for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) STOPS[i].label = label;
     var node = document.querySelector('.dial-stop[data-stop="' + id + '"] .dial-lab');
     if (node) node.textContent = label;
+    if (id === currentId) setCaption(id);   /* the caption names the stop, so it follows the ticker */
+  }
+
+  /* The label printed on the plate for a stop right now, which for SUBJECT
+   * and PROBE is whatever ticker they are currently wearing. */
+  function plateLabel(id) {
+    for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) return STOPS[i].label;
+    return MP.dial ? MP.dial.labelFor(id) : String(id).toUpperCase();
+  }
+
+  /* The plate can only print a code. This prints what the code measures, in
+   * the same plain words the customize screen uses, which until now was the
+   * only place they appeared. It is what lets VOL and CORR and DD stay on
+   * the dial without stranding a reader who has not met them before. */
+  function setCaption(id) {
+    var node = el('dialCaption');
+    if (!node) return;
+    var note = MP.dial && MP.dial.NOTES ? MP.dial.NOTES[id] : '';
+    if (!note) { node.textContent = ''; return; }
+    node.innerHTML = '<b>' + escapeText(plateLabel(id)) + '</b> · ' + escapeText(note);
   }
 
   function markLabel(id) {
@@ -5604,6 +5895,7 @@ tr.row-rule th {
     for (var i = 0; i < labels.length; i++) {
       labels[i].classList.toggle('is-on', labels[i].getAttribute('data-stop') === id);
     }
+    setCaption(id);
   }
 
   function go(id) {
@@ -5618,6 +5910,7 @@ tr.row-rule th {
 
   /* ---- detent feedback ---------------------------------------------------- */
   var detentTimer = null;
+  var drawTimer = null;
   var audio = null;
   var master = null;     /* every sound goes through this */
   var softClick = null;  /* option 15: quiet camera-button press and release */
@@ -5781,6 +6074,7 @@ tr.row-rule th {
     void (knob && knob.offsetWidth);
     if (knob) knob.classList.add('is-detent');
     if (lcd) lcd.classList.add('is-swap');
+    sweepChart();
     clearTimeout(detentTimer);
     detentTimer = setTimeout(function () {
       if (knob) knob.classList.remove('is-detent');
@@ -6244,6 +6538,22 @@ tr.row-rule th {
     lcd.classList.add('is-swap');
     clearTimeout(detentTimer);
     detentTimer = setTimeout(function () { lcd.classList.remove('is-swap'); }, DETENT_MS);
+    sweepChart();
+  }
+
+  /* A new measurement draws its trace in from the left, so the line reads as
+   * something the instrument is taking rather than a picture being swapped.
+   * It runs on a change of stop or of subject, and deliberately not on a
+   * live price tick: the screen stays still while it is being read. The
+   * window is longer than the detent's, so it carries its own timer. */
+  function sweepChart() {
+    var lcd = el('lcd');
+    if (!lcd) return;
+    lcd.classList.remove('is-drawing');
+    void lcd.offsetWidth;
+    lcd.classList.add('is-drawing');
+    clearTimeout(drawTimer);
+    drawTimer = setTimeout(function () { lcd.classList.remove('is-drawing'); }, DRAW_MS);
   }
 
   /* ---- the screen's modes --------------------------------------------------- */
@@ -6426,9 +6736,9 @@ tr.row-rule th {
       /* the NOTE stop shows words where the other stops draw a line */
       var graph = series.length > 1 && series.some(isNum);
       var title = r.chartTitle || 'PRICE HISTORY';
-      var detail = r.chartDetail || (graph ? 'Historical prices. The selected range is shown below.' : 'A chart appears when verified history is available. Press DATA to choose another instrument.');
+      var detail = r.chartDetail || (graph ? 'Historical prices. The selected range is shown below.' : 'A chart appears once verified history loads. Press DATA to choose another instrument.');
       chart.innerHTML = off
-        ? '<div class="chart-state"><strong>READY TO EXPLORE</strong><p>Press DATA to choose a market.</p><p>Turn the dial to measure it. LEARN explains the numbers; PROBE investigates questions.</p></div>'
+        ? '<div class="chart-state"><strong>READY TO EXPLORE</strong><p>Press DATA to choose a market.</p><p>Turn the dial to measure it.</p><p>LEARN explains any number on screen.</p></div>'
         : typeof r.note === 'string' ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
         : graph && ['vol', 'corr', 'dd', 'beta'].indexOf(currentId) < 0 ? G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
         : graph ? '<div class="measurement-chart"><span class="chart-title">' + escapeText(title) + '</span>' +
@@ -6447,10 +6757,17 @@ tr.row-rule th {
     }
     var identityEl = el('lcdIdentity');
     if (identityEl) {
-      identityEl.textContent = off ? '' : r.identity || '';
       /* The line keeps its place even with nothing to name. Hiding it made
        * the display twenty pixels shorter on every stop without an identity,
-       * so the page resized as the dial turned. */
+       * so the page resized as the dial turned.
+       *
+       * The trade description rides in its own span. On a phone the line has
+       * room for the company name and not for both, and a name cut off at
+       * "Advanced Micro Dev..." names nothing, so the span is dropped there
+       * rather than the whole line being trimmed from the right. */
+      var note = off ? '' : r.identityNote || '';
+      identityEl.innerHTML = off ? '' : escapeText(r.identity || '') +
+        (note ? '<span class="lcd-identity-note"> · ' + escapeText(note) + '</span>' : '');
     }
     setText('lcdUnit', off || (r.unit === '%' && /%$/.test(r.text)) ? '' : r.unit || '');
 
@@ -6459,7 +6776,10 @@ tr.row-rule th {
       var plain = r.caption || (r.empty && r.hint);
       var line = r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit);
       chg.textContent = off ? '' : (r.lead && !r.empty ? r.lead + '   ' + line : line);
-      chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
+      /* is-plain marks prose rather than a measurement. A narrow screen may
+       * trim a sentence; it may not trim a figure. */
+      chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') +
+        (r.caption ? ' is-caption' : '') + (plain ? ' is-plain' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
     /* one plain sentence saying what the number above it is */
@@ -6600,7 +6920,7 @@ tr.row-rule th {
       buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-skin') === cur ? 'true' : 'false');
     }
     var btn = el('skinBtn');
-    if (btn) btn.setAttribute('aria-label', 'Skin: ' + cur + '. Choose a colour.');
+    if (btn) btn.setAttribute('aria-label', 'Skin: ' + (cur === 'green' ? 'Meter Mint' : cur) + '. Choose a colour.');
   }
 
   /* The palette: a small icon in the skin's colour opens a white palette
@@ -6618,8 +6938,7 @@ tr.row-rule th {
   /* Unknown names are ignored. Returns the skin in force. */
   function setSkin(name) {
     if (SKINS.indexOf(name) < 0) return currentSkin();
-    if (name === 'green') document.documentElement.removeAttribute('data-skin');
-    else document.documentElement.setAttribute('data-skin', name);
+    document.documentElement.setAttribute('data-skin', name);
     if (MP.store) MP.store.set('skin', name);
     markSkin();
     return name;
@@ -7041,7 +7360,7 @@ tr.row-rule th {
   /* used when a token cannot be read (a detached document, a test) */
   var FALLBACK = {
     '--bg': '#0b0d12', '--lcd': '#0a1216', '--lcd-ink': '#e6fff5', '--lcd-dim': '#6d8c86',
-    '--up': '#2ee59d', '--down': '#ff6b6b', '--holster': '#f6b71f', '--lcd-tab': '#17303a'
+    '--up': '#2ee59d', '--down': '#ff6b6b', '--holster': '#2ee59d', '--lcd-tab': '#17303a'
   };
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
@@ -7245,8 +7564,8 @@ tr.row-rule th {
 
 /* ==== src/lib/watch.js ==================================================== */
 /* ============================================================================
- * watch.js: the WATCH stop's list: up to eight Nasdaq-100 stocks the viewer
- * picks from the data job's list.
+ * watch.js: the WATCH stop's list: up to eight stocks the viewer
+ * picks. Anything the catalogue lists can go on it.
  *
  * Pure helpers, plus the two calls that touch storage. The list holds
  * tickers only; names, closes and changes come from data/stocks.json and each
@@ -7342,7 +7661,8 @@ tr.row-rule th {
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  var LIMIT = 7;   /* rows the screen can show without scrolling */
+  var LIMIT = 7;        /* rows the screen can show without scrolling */
+  var SHORTLIST = 12;   /* the untyped screen scrolls, so it can offer more */
 
   /* The fixed part of the index: the stops that are instruments in their own
    * right. Coins and stocks are added from live data by build(). */
@@ -7354,6 +7674,35 @@ tr.row-rule th {
   ];
 
   function clean(s) { return String(s || '').trim().toLowerCase(); }
+
+  /* The majors, as search entries. sources.js carries the list because it is
+   * the one module both the page and the data job load. */
+  var MAJORS = (MP.sources && MP.sources.MAJORS) || [];
+
+  /* What the screen offers before anything is typed: the indexes and the two
+   * live coins, then companies a newcomer is likely to know by name. An entry
+   * the index already holds is preferred over the bare name here, so a row
+   * carries its close and day change as soon as the job has fetched one. */
+  function shortlist(index, limit) {
+    var by = {}, seen = {}, out = [];
+    (index || []).forEach(function (e) {
+      if (!e || !e.symbol) return;
+      var k = e.kind + ':' + String(e.symbol).toUpperCase();
+      if (!by[k]) by[k] = e;
+    });
+    function push(e) {
+      if (!e || !e.symbol) return;
+      var k = e.kind + ':' + String(e.symbol).toUpperCase();
+      if (seen[k]) return;
+      seen[k] = 1;
+      out.push(e);
+    }
+    BUILT_IN.forEach(function (e) { push(by[e.kind + ':' + e.symbol] || e); });
+    MAJORS.forEach(function (m) {
+      push(by['stock:' + m.symbol] || { kind: 'stock', symbol: m.symbol, name: m.name });
+    });
+    return out.slice(0, limit || SHORTLIST);
+  }
 
   /* opts: { stocks: [rows from stocks.json], coins: [{id,symbol,name}],
    * remote: [coin search results] }. Later entries never displace earlier
@@ -7395,12 +7744,12 @@ tr.row-rule th {
     return -1;
   }
 
-  /* An empty query gives the shortlist a student starts from: the indexes and
-   * the live coins, then whatever the caller passed as recent. */
+  /* An empty query gives the shortlist a student starts from; see
+   * shortlist() above. */
   function query(index, q, limit) {
     var text = clean(q);
     limit = limit || LIMIT;
-    if (!text) return (index || []).slice(0, limit);
+    if (!text) return shortlist(index, limit);
     var hits = [];
     (index || []).forEach(function (e) {
       var r = rank(e, text);
@@ -7429,7 +7778,8 @@ tr.row-rule th {
     return null;
   }
 
-  MP.search = { LIMIT: LIMIT, BUILT_IN: BUILT_IN, build: build, query: query, rank: rank, route: route };
+  MP.search = { LIMIT: LIMIT, SHORTLIST: SHORTLIST, BUILT_IN: BUILT_IN, MAJORS: MAJORS,
+    build: build, query: query, shortlist: shortlist, rank: rank, route: route };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -7831,7 +8181,10 @@ tr.row-rule th {
     r.empty = false;
     r.symbol = e.symbol;
     r.ticker = e.symbol;
-    r.identity = (e.name || e.symbol) + (identity(e, k) ? " · " + identity(e, k) : "");
+    /* The name always prints. The trade description is a second part so a
+     * narrow screen can drop it instead of trimming the name away. */
+    r.identity = e.name || e.symbol;
+    r.identityNote = identity(e, k) || "";
     r.text = F.signedPctPoints(e.change, 2);
     r.headDir = e.change < 0 ? 'down' : 'up';
     /* the switch below names the kind, so the mode line holds only the rank */
@@ -7858,6 +8211,7 @@ tr.row-rule th {
     r.universe = (S.isNum(set.scanned) ? set.scanned + ' priced ' : 'priced ') + (k === 'stocks' ? 'Nasdaq-100 stocks' : 'tracked coins (excludes BTC & ETH)');
     var chartPeriod = k === 'stocks' ? 'last ' + (r.spark ? r.spark.length : 0) + ' closes' : '7-day history';
     r.chartTitle = e.symbol + ' · ' + chartPeriod.toUpperCase();
+    r.rankPeriod = k === 'stocks' ? '5 sessions' : '7 days';
     r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. Chart: ' + chartPeriod + (history && history.length ? ' through ' + history[history.length - 1].date : '') + '.';
     r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
       e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');
@@ -8488,7 +8842,11 @@ tr.row-rule th {
     var which = moverEndFor(stop);
     var r = SP && SP.reading ? SP.reading(which) : noReading('', which === 'loser' ? 'LOSER' : 'MOVER', '');
     r.tabs = { kind: 'switch', label: 'Mover controls', options: MOVER_TABS, value: SP ? SP.kind() : 'stocks', endLabel: which === 'loser' ? 'MOVER' : 'LOSER' };
-    r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') + '. ' + (r.chartDetail || '');
+    /* One sentence, because the line holds two lines and no more. The dates
+     * this was measured to are provenance rather than meaning, and the
+     * drawer already prints them under the ranking rule. */
+    r.what = (which === 'loser' ? 'Largest fall' : 'Largest rise') + ' among ' + (r.universe || 'tracked assets') +
+      ', over ' + (r.rankPeriod || 'the week') + '.';
     if (!r.spark || r.spark.length < 2) r.chartState = r.empty ? 'RANKING UNAVAILABLE' :
       (state.stocks.pending[r.symbol] ? 'LOADING PRICE HISTORY...' : 'PRICE HISTORY UNAVAILABLE');
     var tick = r.empty ? null : freshTick(productForStop(which));
@@ -8549,6 +8907,7 @@ tr.row-rule th {
     if (!last) {
       r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
       r.chartState = r.hint;
+      r.chartDetail = state.stocks.pending[sym] ? null : stockReason(sym);
       r.identity = row ? row.name : sym;
       return r;
     }
@@ -8678,6 +9037,7 @@ tr.row-rule th {
     if (!last) {
       r.hint = state.stocks.pending[sym] ? 'Loading ' + sym : 'Price history unavailable for ' + sym;
       r.chartState = r.hint;
+      r.chartDetail = state.stocks.pending[sym] ? null : stockReason(sym);
       r.identity = row ? row.name : sym;
       return r;
     }
@@ -9675,22 +10035,31 @@ tr.row-rule th {
     st.pending[sym] = true;
     function read(payload) {
       var f = SRC.normalizeStockFile(payload);
-      if (!f || f.symbol !== sym) throw emptyError();
+      /* The endpoint answers 200 with an empty series and a sentence saying
+       * which source declined and why. Carry that sentence through: a blank
+       * chart that cannot say what went wrong is the thing being fixed. */
+      if (!f || f.symbol !== sym) {
+        var err = emptyError();
+        if (payload && typeof payload.message === 'string') err.reason = payload.message;
+        throw err;
+      }
       return f;
     }
     fetchJson(snapshotUrl(path)).then(read).catch(function () {
-      /* The scheduled job publishes a file for the Nasdaq-100 only. Every
-       * other listed symbol is fetched on demand through the site's own
-       * endpoint, so searching a company and charting it are the same act. */
+      /* The scheduled job publishes a file for the Nasdaq-100 and the majors
+       * only. Every other listed symbol is fetched on demand through the
+       * site's own endpoint, so searching a company and charting it are the
+       * same act. */
       var api = SRC.stockApiUrl(sym);
       if (!api) throw emptyError();
       return fetchJson(api).then(read);
     }).then(function (f) {
       var listed = catalogue.by[sym];
-      st.files[sym] = { series: f.series, name: (listed && listed.name) || f.name, session: session };
-    }).catch(function () {
-      if (have) have.session = session;
-      else st.files[sym] = { series: null, name: null, session: session };
+      st.files[sym] = { series: f.series, name: (listed && listed.name) || f.name, session: session, reason: null };
+    }).catch(function (err) {
+      var reason = (err && err.reason) || null;
+      if (have) { have.session = session; have.reason = reason; }
+      else st.files[sym] = { series: null, name: null, session: session, reason: reason };
     }).then(function () {
       delete st.pending[sym];
       if (state.stats.coin === sym) recomputeAnalytics();
@@ -9699,6 +10068,12 @@ tr.row-rule th {
       if (MP.spotlight) MP.spotlight.render();
       repaint();
     });
+  }
+
+  /* Why this symbol has no series, when the source said so in words. */
+  function stockReason(sym) {
+    var f = sym ? state.stocks.files[sym] : null;
+    return (f && f.reason) || null;
   }
 
   function stockSeries(sym) {
@@ -10536,7 +10911,8 @@ tr.row-rule th {
 
   function runSearch(q) {
     find.query = String(q || '');
-    find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+    find.results = MP.search.query(searchIndex(), find.query,
+      find.query ? MP.search.LIMIT : MP.search.SHORTLIST);
     find.active = 0;
     renderSearchResults();
     clearTimeout(find.timer);
@@ -10550,7 +10926,8 @@ tr.row-rule th {
     fetchJson(spec.url).then(function (payload) {
       if (find.query.trim() !== q) return;
       find.remote = spec.normalize(payload) || [];
-      find.results = MP.search.query(searchIndex(), find.query, MP.search.LIMIT);
+      find.results = MP.search.query(searchIndex(), find.query,
+        find.query ? MP.search.LIMIT : MP.search.SHORTLIST);
       renderSearchResults();
     }).catch(function () { /* the local index has already answered */ });
   }
@@ -10778,7 +11155,7 @@ tr.row-rule th {
           '<span class="row-code">' + F.escapeHtml(r.symbol) + '</span>' +
           '<span class="row-desc">' + F.escapeHtml(r.name + (S.isNum(r.close) ? ' · ' + money(r.close) : '')) + '</span></button></li>';
       }).join('') + (w.query && !w.results.length && state.stocks.list
-        ? '<li class="row-desc">No Nasdaq-100 stock matches "' + F.escapeHtml(w.query) + '".</li>' : '');
+        ? '<li class="row-desc">No stock matches "' + F.escapeHtml(w.query) + '".</li>' : '');
     }
 
     var host = el('watchTable');
@@ -10799,7 +11176,7 @@ tr.row-rule th {
               pctCell(row ? row.change1d : NaN) + pctCell(row ? row.change5d : NaN) +
               '<td><button type="button" class="pill" data-watch-del="' + F.escapeHtml(sym) + '" aria-label="Remove ' + F.escapeHtml(sym) + '">✕</button></td></tr>';
           }).join('') + '</tbody></table>'
-        : '<p class="row-desc">Nothing on the watch list yet. Search above to add up to ' + (MP.watch ? MP.watch.MAX : 8) + ' Nasdaq-100 stocks.</p>';
+        : '<p class="row-desc">Nothing on the watch list yet. Search above to add up to ' + (MP.watch ? MP.watch.MAX : 8) + ' stocks.</p>';
     }
     setHtml('watchNotice', noticeHtml(w.notice || state.stocks.notice));
   }
@@ -10847,7 +11224,9 @@ tr.row-rule th {
       text: d ? F.shortDate(d.forSession) : F.DASH, value: NaN, dp: 0,
       unit: d ? 'SESSION' : '', mode: 'DAILY READING',
       change: { pct: NaN, abs: NaN, delta: NaN, suffix: '', label: '', dp: 0 },
-      caption: d ? (d.source === 'claude' ? 'Written by Claude · description, not advice' : 'From the numbers · description, not advice') : '',
+      /* Short enough for one line on a phone, where the change line holds a
+       * single row on every stop so the display keeps one height. */
+      caption: d ? (d.source === 'claude' ? 'By Claude · not advice' : 'From the numbers · not advice') : '',
       note: d ? d.text : null,
       hint: d ? '' : 'Appears after the first close the job sees',
       spark: null, empty: !d, ranges: false, coin: null

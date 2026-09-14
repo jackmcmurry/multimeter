@@ -15,7 +15,8 @@
   'use strict';
   var MP = (root.MP = root.MP || {});
 
-  var LIMIT = 7;   /* rows the screen can show without scrolling */
+  var LIMIT = 7;        /* rows the screen can show without scrolling */
+  var SHORTLIST = 12;   /* the untyped screen scrolls, so it can offer more */
 
   /* The fixed part of the index: the stops that are instruments in their own
    * right. Coins and stocks are added from live data by build(). */
@@ -27,6 +28,35 @@
   ];
 
   function clean(s) { return String(s || '').trim().toLowerCase(); }
+
+  /* The majors, as search entries. sources.js carries the list because it is
+   * the one module both the page and the data job load. */
+  var MAJORS = (MP.sources && MP.sources.MAJORS) || [];
+
+  /* What the screen offers before anything is typed: the indexes and the two
+   * live coins, then companies a newcomer is likely to know by name. An entry
+   * the index already holds is preferred over the bare name here, so a row
+   * carries its close and day change as soon as the job has fetched one. */
+  function shortlist(index, limit) {
+    var by = {}, seen = {}, out = [];
+    (index || []).forEach(function (e) {
+      if (!e || !e.symbol) return;
+      var k = e.kind + ':' + String(e.symbol).toUpperCase();
+      if (!by[k]) by[k] = e;
+    });
+    function push(e) {
+      if (!e || !e.symbol) return;
+      var k = e.kind + ':' + String(e.symbol).toUpperCase();
+      if (seen[k]) return;
+      seen[k] = 1;
+      out.push(e);
+    }
+    BUILT_IN.forEach(function (e) { push(by[e.kind + ':' + e.symbol] || e); });
+    MAJORS.forEach(function (m) {
+      push(by['stock:' + m.symbol] || { kind: 'stock', symbol: m.symbol, name: m.name });
+    });
+    return out.slice(0, limit || SHORTLIST);
+  }
 
   /* opts: { stocks: [rows from stocks.json], coins: [{id,symbol,name}],
    * remote: [coin search results] }. Later entries never displace earlier
@@ -68,12 +98,12 @@
     return -1;
   }
 
-  /* An empty query gives the shortlist a student starts from: the indexes and
-   * the live coins, then whatever the caller passed as recent. */
+  /* An empty query gives the shortlist a student starts from; see
+   * shortlist() above. */
   function query(index, q, limit) {
     var text = clean(q);
     limit = limit || LIMIT;
-    if (!text) return (index || []).slice(0, limit);
+    if (!text) return shortlist(index, limit);
     var hits = [];
     (index || []).forEach(function (e) {
       var r = rank(e, text);
@@ -102,5 +132,6 @@
     return null;
   }
 
-  MP.search = { LIMIT: LIMIT, BUILT_IN: BUILT_IN, build: build, query: query, rank: rank, route: route };
+  MP.search = { LIMIT: LIMIT, SHORTLIST: SHORTLIST, BUILT_IN: BUILT_IN, MAJORS: MAJORS,
+    build: build, query: query, shortlist: shortlist, rank: rank, route: route };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

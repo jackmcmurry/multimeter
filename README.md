@@ -4,7 +4,7 @@
 
 <img src="docs/icons/icon.svg" width="160" height="160" alt="Multimeter app icon in Meter Mint on a dark background">
 
-Multimeter is a financial instrument for learning how markets move. Turn the dial to a stock or cryptocurrency, measure its volatility, correlation or drawdown, and press LEARN to understand the number on screen.
+A financial instrument for learning how markets move. Turn the dial to a stock or cryptocurrency, measure its volatility, correlation or drawdown, and press LEARN to understand the number on screen.
 
 > [!IMPORTANT]
 > **Multimeter is in beta and is a prototype.** Stock data comes from published snapshots and may be delayed.

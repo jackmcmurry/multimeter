@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="280" viewBox="0 0 900 280" role="img" aria-labelledby="title desc">
-<title id="title">Refined sample 3</title><desc id="desc">Sample 3 with a slightly thicker stroke and a vertical final stem ending at the wordmark baseline.</desc>
-<rect width="900" height="280" fill="#22272d"/>
-<g transform="translate(36 20) scale(1.4)" fill="none" stroke="#4ade80" stroke-width="10.5" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10">
-<path d="M46 144 L65 45 L98 87 L133 37 L133 116"/>
+<title id="title">Multimeter</title><desc id="desc">The Multimeter wordmark: the leading M drawn as four strokes of a rising line, in mint on the instrument's screen black, followed by the letters ULTIMETER.</desc>
+<rect width="900" height="280" fill="#0a1216"/>
+<!-- the mark is src/icon.svg's path, scaled so its foot sits on the wordmark's
+     baseline and its ink stands 120 units tall. -->
+<g transform="translate(34.07 45.18) scale(2.963)" fill="none" stroke="#2ee59d" stroke-width="6.5" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="6">
+<path d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
 </g>
-<text x="236" y="182.4" fill="#4ade80" font-family="Arial,sans-serif" font-size="62" font-weight="800" letter-spacing="1">ULTIMETER</text>
+<text x="236" y="200" fill="#2ee59d" font-family="Arial,sans-serif" font-size="62" font-weight="800" letter-spacing="1">ULTIMETER</text>
 </svg>

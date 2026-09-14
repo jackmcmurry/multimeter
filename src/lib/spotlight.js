@@ -395,7 +395,10 @@
     r.empty = false;
     r.symbol = e.symbol;
     r.ticker = e.symbol;
-    r.identity = (e.name || e.symbol) + (identity(e, k) ? " · " + identity(e, k) : "");
+    /* The name always prints. The trade description is a second part so a
+     * narrow screen can drop it instead of trimming the name away. */
+    r.identity = e.name || e.symbol;
+    r.identityNote = identity(e, k) || "";
     r.text = F.signedPctPoints(e.change, 2);
     r.headDir = e.change < 0 ? 'down' : 'up';
     /* the switch below names the kind, so the mode line holds only the rank */
@@ -422,6 +425,7 @@
     r.universe = (S.isNum(set.scanned) ? set.scanned + ' priced ' : 'priced ') + (k === 'stocks' ? 'Nasdaq-100 stocks' : 'tracked coins (excludes BTC & ETH)');
     var chartPeriod = k === 'stocks' ? 'last ' + (r.spark ? r.spark.length : 0) + ' closes' : '7-day history';
     r.chartTitle = e.symbol + ' · ' + chartPeriod.toUpperCase();
+    r.rankPeriod = k === 'stocks' ? '5 sessions' : '7 days';
     r.chartDetail = 'Ranking: ' + (k === 'stocks' ? '5 sessions' : '7 days') + (set.measuredTo ? ' through ' + set.measuredTo : '') + '. Chart: ' + chartPeriod + (history && history.length ? ' through ' + history[history.length - 1].date : '') + '.';
     r.say = (which === 'loser' ? 'lowest ' : 'highest ') + (k === 'crypto' ? 'seven-day' : 'five-session') + ' move, ' +
       e.symbol + ' ' + F.signedPctPoints(e.change, 2) + (r.lead ? ', price ' + r.lead : '');

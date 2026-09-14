@@ -1,6 +1,6 @@
 /* ============================================================================
- * watch.js: the WATCH stop's list: up to eight Nasdaq-100 stocks the viewer
- * picks from the data job's list.
+ * watch.js: the WATCH stop's list: up to eight stocks the viewer
+ * picks. Anything the catalogue lists can go on it.
  *
  * Pure helpers, plus the two calls that touch storage. The list holds
  * tickers only; names, closes and changes come from data/stocks.json and each

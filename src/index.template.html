@@ -75,15 +75,17 @@
 
         <div class="head">
           <!-- the wordmark: the first M is drawn, not typed, so the letter
-               and the rising line are the same four strokes. Approved shape:
-               two peaks, the second no higher than the first, the right foot
-               shorter than the left, matching docs/multimeter-logo.svg. -->
+               and the rising line are the same four strokes. The path, its
+               stroke and its joins are src/icon.svg's, verbatim; the viewBox
+               origin crops that 64x64 icon down to the glyph. Change the mark
+               in src/icon.svg and copy it here, so the tab icon, the app icon
+               and this wordmark can never drift apart. -->
           <span class="brand">
-<svg class="brand-mark" viewBox="0 0 87 79" role="img" aria-label="Multimeter"><path d="M0 107 L19 8 L52 50 L87 0 L87 79" fill="none" stroke="currentColor" stroke-width="10.5" stroke-linejoin="miter" stroke-linecap="butt" stroke-miterlimit="10"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
+<svg class="brand-mark" viewBox="12 15 40 34" role="img" aria-label="Multimeter"><path d="M12 49 L22 20 L32 36 L42 15 L52 38" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
           </span>
           <span class="head-right">
             <span class="skin-picker">
-              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: green. Choose a colour.">
+              <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
               </button>
               <span class="skin-menu" id="skins" role="group" aria-label="Skin" hidden>
@@ -91,7 +93,7 @@
                 <button type="button" class="skin" data-skin="gold" aria-label="Gold skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="blue" aria-label="Blue skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="pink" aria-label="Pink skin" aria-pressed="false"></button>
-                <button type="button" class="skin" data-skin="green" aria-label="Green skin" aria-pressed="true"></button>
+                <button type="button" class="skin" data-skin="green" aria-label="Meter Mint green skin" title="Meter Mint — #2EE59D" aria-pressed="true"></button>
                 <button type="button" class="skin" data-skin="red" aria-label="Red skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="purple" aria-label="Purple skin" aria-pressed="false"></button>
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
@@ -239,6 +241,13 @@
           <span class="dial-hint" id="dialHint" aria-hidden="true">Turn the dial</span>
         </div>
 
+        <!-- The plate prints a code. This prints what the code measures, so
+             VOL and CORR and DD explain themselves as the dial turns instead
+             of waiting for someone to open the customize screen. Announced
+             politely, because until now a screen reader heard the position
+             change but never what the position was for. -->
+        <p class="dial-caption" id="dialCaption" aria-live="polite"></p>
+
         <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M3 17H1M4.742 10.5 3.01 9.5M9.5 5.742 8.5 4.01M16 4V2M22.5 5.742 23.5 4.01M27.258 10.5 28.99 9.5M29 17H31"/>
@@ -313,7 +322,7 @@
 
     <!-- WATCH -->
     <section class="view" data-panel="watch" hidden>
-      <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a Nasdaq-100 stock by symbol or name" aria-label="Add a Nasdaq-100 stock">
+      <input class="probe-search" id="watchSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Add a stock by symbol or name" aria-label="Add a stock">
       <ul class="rows picks" id="watchResults"></ul>
       <div class="table-host" id="watchTable"></div>
       <p class="foot">Daily closes from the data job, not live prices. Up to 8 stocks. The list stays in this browser.</p>
@@ -396,7 +405,7 @@
       <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
       <p><b>MOVER</b> and <b>LOSER</b>: the highest and the lowest move of the past week. For stocks, the data job keeps the daily closes of every Nasdaq-100 member it can price and ranks their five-session moves once it has them all, usually before Monday's open. For crypto, it ranks 15 large coins other than bitcoin and ether by their seven-day move. The tabs on the screen switch between the two, and the drawer shows the five highest and the five lowest together.</p>
       <p>Both ends describe the past week. Neither is a recommendation.</p>
-      <p><b>WATCH</b>: up to eight Nasdaq-100 stocks you choose. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
+      <p><b>WATCH</b>: up to eight stocks you choose, from the Nasdaq-100, a list of majors, or any other listed company. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
       <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
       <p><b>LEARN</b>: the idea behind the figure you were just looking at, explained with that figure. Turn to it, or press LEARN at any stop. It names the concept, prints the live measurement, says what size that measurement counts as, gives one line on how to read it, and offers a way back into the instrument. The drawer holds the same concept in full, with why it matters, the common misconception, and how this page measures it. Underneath sits the daily reading: after each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template.</p>
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
@@ -424,7 +433,7 @@
       <p>The same statistics feed a write-up, <a href="findings.html">Is bitcoin a tech stock?</a>, on how often bitcoin and the Nasdaq move together and when that stops. Every number on it comes from the daily history the meter uses.</p>
 
       <h2>Sources</h2>
-      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the Nasdaq-100 members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Company logos load from Financial Modeling Prep's public image service. The market status is computed in your browser from NYSE hours and holidays; it reports the session and does not control anything.</p>
+      <p>CoinGecko's public API for the coins, called directly from your browser, and for the weekly crypto scan. Financial Modeling Prep for the ^IXIC and ^GSPC quotes and daily closes, BTCUSD daily closes, the members' daily closes and the stock movers' quotes; Alpha Vantage for QQQ where a key is configured. Those two need API keys, which cannot ship in a public page, so a scheduled GitHub Action calls them with keys kept as repository secrets and publishes only the results. Where that plan does not cover a company, and for any company you search that the job does not pre-fetch, the closes come from Yahoo's public chart endpoint instead, which needs no key. Company logos load from Financial Modeling Prep's public image service. The market status is computed in your browser from NYSE hours and holidays; it reports the session and does not control anything.</p>
 
       <h2>Built by</h2>
       <p>Jack McMurry, with Claude Code.</p>

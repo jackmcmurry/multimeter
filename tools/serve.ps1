@@ -1,4 +1,4 @@
-<#
+﻿<#
     serve.ps1: minimal loopback file server for build verification.
 
     Uses a raw TcpListener rather than HttpListener so it needs no URL ACL
@@ -32,6 +32,43 @@ $types = @{
     '.ico'  = 'image/x-icon'
 }
 
+
+# The site's own history endpoint, enough of it to verify the page locally.
+# Vercel runs api/history.js in production; this stands in for it so the
+# on-demand path can be exercised without deploying. Keyless source only:
+# api/history.js prefers FMP when a key is present, and this does not.
+function Get-HistoryJson([string]$symbol) {
+    if ($symbol -notmatch '^[A-Za-z0-9]{1,6}([.\-][A-Za-z0-9]{1,4})?$') {
+        return '{"error":"bad_symbol","message":"Ask for one ticker, such as NVDA."}'
+    }
+    $sym = $symbol.ToUpperInvariant()
+    $url = "https://query1.finance.yahoo.com/v8/finance/chart/$($sym -replace '\.', '-')?range=2y&interval=1d"
+    try {
+        $r = Invoke-RestMethod -Uri $url -Headers @{ 'User-Agent' = 'Mozilla/5.0' } -TimeoutSec 15
+    } catch {
+        return '{"error":"no_history","symbol":"' + $sym + '","closes":[],"message":"No daily closes for ' + $sym + ': the public source did not answer."}'
+    }
+    $res = $r.chart.result[0]
+    $ts = @($res.timestamp)
+    $closes = @($res.indicators.quote[0].close)
+    $inv = [System.Globalization.CultureInfo]::InvariantCulture
+    $rows = New-Object System.Collections.Generic.List[string]
+    $n = [Math]::Min($ts.Count, $closes.Count)
+    for ($i = 0; $i -lt $n; $i++) {
+        if ($null -eq $closes[$i]) { continue }
+        $d = [System.DateTimeOffset]::FromUnixTimeSeconds([long]$ts[$i]).UtcDateTime.ToString('yyyy-MM-dd')
+        $rows.Add('["' + $d + '",' + ([double]$closes[$i]).ToString($inv) + ']')
+    }
+    if ($rows.Count -eq 0) {
+        return '{"error":"no_history","symbol":"' + $sym + '","closes":[],"message":"No daily closes for ' + $sym + ': the public source returned none."}'
+    }
+    if ($rows.Count -gt 300) { $rows = $rows.GetRange($rows.Count - 300, 300) }
+    $name = $res.meta.longName
+    if (-not $name) { $name = $res.meta.shortName }
+    if (-not $name) { $name = $sym }
+    $name = $name.Replace('\', '\\').Replace('"', '\"')
+    return '{"symbol":"' + $sym + '","name":"' + $name + '","closes":[' + ($rows -join ',') + ']}'
+}
 $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $Port)
 $listener.Start()
 Write-Output "serving $rootPath on http://127.0.0.1:$Port/ (ctrl-c to stop)"
@@ -50,8 +87,10 @@ try {
             $request = [System.Text.Encoding]::ASCII.GetString($buffer, 0, $read)
             $requestLine = ($request -split "`r`n")[0]
             $parts = $requestLine -split ' '
-            $target = if ($parts.Count -ge 2) { $parts[1] } else { '/' }
-            $target = ($target -split '\?')[0]
+            $rawTarget = if ($parts.Count -ge 2) { $parts[1] } else { '/' }
+            # keep the query: /api/history needs its symbol
+            $query = if ($rawTarget -match '\?(.*)$') { $Matches[1] } else { '' }
+            $target = ($rawTarget -split '\?')[0]
             if ($target -eq '/') { $target = $defaultDoc }
 
             $relative = [System.Uri]::UnescapeDataString($target.TrimStart('/')) -replace '/', '\'
@@ -61,7 +100,16 @@ try {
             $bodyBytes = $null
             $contentType = 'application/octet-stream'
 
-            if (-not $full.StartsWith($rootPath)) {
+            if ($target -eq '/api/history') {
+                $symbol = ''
+                foreach ($pair in ($query -split '&')) {
+                    $kv = $pair -split '=', 2
+                    if ($kv[0] -eq 'symbol' -and $kv.Count -eq 2) { $symbol = [System.Uri]::UnescapeDataString($kv[1]) }
+                }
+                $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes((Get-HistoryJson $symbol))
+                $contentType = 'application/json; charset=utf-8'
+            }
+            elseif (-not $full.StartsWith($rootPath)) {
                 $status = '403 Forbidden'
                 $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes('forbidden')
                 $contentType = 'text/plain; charset=utf-8'

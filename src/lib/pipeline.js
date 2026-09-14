@@ -198,8 +198,8 @@
     var nowIso = new Date(now).toISOString();
     var today = SRC.isoDay(new Date(now));
 
-    var calls = { fmp: 0, av: 0, cg: 0, claude: 0 };
-    var failed = { fmp: 0, av: 0, cg: 0, claude: 0 };
+    var calls = { fmp: 0, av: 0, cg: 0, yahoo: 0, claude: 0 };
+    var failed = { fmp: 0, av: 0, cg: 0, yahoo: 0, claude: 0 };
     var warnings = [];
     var log = [];   /* plain progress lines for the run's output */
     var out = {};
@@ -334,19 +334,38 @@
       var plan = U.planUniverse(ledger, eodSession, now, { limit: budget, force: forceUniverse });
 
       if (plan.due.length) {
-        var spent = 0, fetched = 0, deniedNow = [], failedNow = [], rebased = [], stopped = null;
+        var spent = 0, fetched = 0, deniedNow = [], failedNow = [], rebased = [], viaYahoo = [], stopped = null;
         var rowsBy = {};
         ((prev.stocks && prev.stocks.rows) || []).forEach(function (r) { if (r && r.symbol) rowsBy[r.symbol] = r; });
 
+        /* The licensed plan covers only part of the list, and refuses the
+         * rest by name. A refusal is no longer the end: the keyless source is
+         * asked instead, so the snapshot still ships and the reader sees the
+         * same chart either way. A daily limit is different, and still stops
+         * the step, because the next symbol would be refused too. */
+        var yahooCloses = async function (s) {
+          var url = SRC.yahooChartUrl(s, '2y');
+          if (!url) return null;
+          try {
+            return SRC.normalizeYahooChart(await get('yahoo', url));
+          } catch (err) {
+            return null;
+          }
+        };
         var closesFor = async function (s, fromDate) {
           spent += 1;
+          var refused;
           try {
             var rows = SRC.normalizeEodLight(await get('fmp', fmpUrl('historical-price-eod/light',
               { symbol: s, from: fromDate, to: today }, fmpKey)));
-            return rows ? { series: rows } : { error: new Error('no closes in the response'), kind: 'failed' };
+            if (rows) return { series: rows };
+            refused = { error: new Error('no closes in the response'), kind: 'failed' };
           } catch (err) {
-            return { error: err, kind: U.classify(err) };
+            refused = { error: err, kind: U.classify(err) };
           }
+          if (refused.kind === 'limit') return refused;
+          var fallback = await yahooCloses(s);
+          return fallback ? { series: fallback, via: 'yahoo' } : refused;
         };
         var why = function (res) { return redact(res.error && res.error.message ? res.error.message : res.error).slice(0, 160); };
 
@@ -385,7 +404,8 @@
 
           out['stocks/' + s] = U.stockFile(s, merged.series, nowIso);
           rowsBy[s] = U.row(s, merged.series);
-          ledger[s] = { checkedFor: eodSession, last: lastDate(merged.series), at: now };
+          ledger[s] = { checkedFor: eodSession, last: lastDate(merged.series), at: now, via: res.via || 'fmp' };
+          if (res.via === 'yahoo') viaYahoo.push(s);
           fetched += 1;
         }
 
@@ -407,7 +427,8 @@
         var cnt = out.stocks.count;
         log.push('universe: ' + fetched + ' fetched this run; ' + cnt.priced + ' of ' + cnt.listed + ' priced for ' +
           eodSession + ', ' + cnt.denied + ' not on this plan' + (out.stocks.complete ? ', complete' : ''));
-        if (deniedNow.length) warnings.push('universe: not on this FMP plan, asked again in 35 days: ' + deniedNow.join(', '));
+        if (viaYahoo.length) log.push('universe: ' + viaYahoo.length + ' not on the FMP plan, taken from the keyless source instead: ' + viaYahoo.join(', '));
+        if (deniedNow.length) warnings.push('universe: neither source had these, asked again in 35 days: ' + deniedNow.join(', '));
         if (failedNow.length) warnings.push('universe: failed, retried later: ' + failedNow.join(', '));
         if (rebased.length) warnings.push('universe: stored closes disagreed with FMP (a split?), refetched in full: ' + rebased.join(', '));
         if (stopped) warnings.push('universe: FMP answered with its daily limit, so the step stopped for this run (' + stopped + ')');
@@ -430,14 +451,18 @@
       stocksNow.session >= SES.sessionBefore(week);
     if (stocksReady && (forceSpot || !movers.stocks || movers.stocks.weekOf !== week)) {
       var measured = stocksNow.session;
-      var pickS = SP.selectMovers((stocksNow.rows || []).map(function (r) {
+      /* The majors are fetched alongside the index so they can be searched and
+       * charted, but MOVER and LOSER are stated as a ranking of the Nasdaq-100
+       * and stay one. */
+      var indexRows = (stocksNow.rows || []).filter(function (r) { return r && U.inIndex(r.symbol); });
+      var pickS = SP.selectMovers(indexRows.map(function (r) {
         return { symbol: r.symbol, name: r.name, change5d: r.date === measured ? r.change5d : NaN };
       }), 'change5d');
       if (pickS && pickS.scanned >= MIN_USABLE_SCAN) {
         movers.stocks = Object.assign({
           weekOf: week,
           measuredTo: measured,
-          listed: stocksNow.count ? stocksNow.count.listed : null
+          listed: U.LIST.length
         }, pickS, { rule: SP.STOCK_RULE, source: 'FMP daily closes', computedAt: nowIso });
         movers.history = addHistory(movers.history, week, 'stocks', movers.stocks);
         spotDue = true;

@@ -18,13 +18,17 @@
  * ========================================================================== */
 
 :root {
+  /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
+  --meter-mint: #2EE59D;
+  --meter-mint-rgb: 46, 229, 157;
+
   /* the bench it sits on */
   --bg: #0b0d12;
 
   /* holster and body */
-  --holster: #22c55e;
-  --holster-dk: #15803d;
-  --holster-lt: #7ee8a4;
+  --holster: var(--meter-mint);
+  --holster-dk: #159361;
+  --holster-lt: #8beec7;
   --shell: #23272e;
   --shell-dk: #15181d;
   --shell-lt: #333942;
@@ -34,14 +38,20 @@
   --lcd-dk: #040709;
   --lcd-ink: #e6fff5;
   --lcd-dim: #6d8c86;
-  --up: #2ee59d;
+  /* A third step between the reading and the chrome. The screen had only two:
+   * the figure was bright and everything else was dim, which put the sentence
+   * that says what the figure means at the same weight as the unit label and
+   * the annunciators. Reading order on this screen is the number, then that
+   * sentence, then the rest. */
+  --lcd-mid: #9fbfb6;
+  --up: var(--meter-mint);
   --down: #ff6b6b;
 
   /* controls */
   --knob: #14171c;
   --knob-lt: #2c3139;
-  --knob-mark: #4ade80;
-  --accent-glow: rgba(74, 222, 128, 0.5);
+  --knob-mark: var(--meter-mint);
+  --accent-glow: rgba(var(--meter-mint-rgb), 0.5);
   --key: #333942;
   --key-dk: #0f1215;
   --key-text: #eef1f5;
@@ -49,7 +59,7 @@
   --hold-dk: #9c2323;
   --jack: #07080a;
   --jack-ring: #ef4a4a;
-  --led: #2ee59d;
+  --led: var(--meter-mint);
   --led-off: #26332e;
 
   /* the drawer card and everything printed on it */
@@ -68,7 +78,7 @@
   --c-qqq: #34d399;
   --c-probe: #c084fc;
 
-  --pos: #2ee59d;
+  --pos: var(--meter-mint);
   --neg: #ff6b6b;
 
   /* The wordmark and brand accents follow the selected palette. */
@@ -178,10 +188,19 @@ body {
   line-height: 1;
   color: var(--brand);
 }
+/* The mark is src/icon.svg's path, cropped to the glyph by the viewBox
+ * origin. Its box is 40 x 34 units and the 6.5 stroke bleeds 3.25 outside
+ * that on every side, so the ink stands about 40.5 units tall: sized here to
+ * land on the cap height of the letters beside it. overflow stays visible so
+ * the square caps and the miter at each peak are not clipped. */
 .brand-mark {
-  width: 1.9645em;
-  height: 1.7839em;
-  margin-right: .2226em;
+  width: .792em;
+  height: .673em;
+  margin-right: .16em;
+  /* The square cap overshoots the box by half a stroke, so the box is lifted
+     by that much to put the M's foot on the wordmark's baseline rather than
+     below it. */
+  margin-bottom: .064em;
   flex-shrink: 0;
   overflow: visible;
 }
@@ -284,7 +303,7 @@ body {
   line-height: 1;
   color: var(--lcd-ink);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 18px rgba(46, 229, 157, 0.12);
+  text-shadow: 0 0 18px rgba(var(--meter-mint-rgb), 0.12);
 }
 .lcd-unit {
   font-size: 13px;
@@ -346,7 +365,23 @@ body {
   50% { border-color: var(--hold); box-shadow: 0 0 0 3px var(--hold), 0 0 40px var(--down), inset 0 0 60px rgba(255, 107, 107, 0.25); }
 }
 
-.lcd-ranges { display: flex; gap: 6px; margin-top: 18px; transition: opacity 200ms ease; }
+/* Three tabs do not fit a phone's screen width. They scroll sideways rather
+ * than being cut off at the edge, and the row holds one height everywhere so
+ * the display does not move as the dial turns. The vertical padding is there
+ * to keep a focus ring from being clipped by the scroll container. */
+.lcd-ranges {
+  display: flex;
+  gap: 6px;
+  margin-top: 15px;
+  padding: 3px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  transition: opacity 200ms ease;
+}
+.lcd-ranges::-webkit-scrollbar { width: 0; height: 0; }
+.lcd-ranges .rng { flex: 0 0 auto; }
 .lcd-ranges.is-idle { opacity: 0; pointer-events: none; }
 .lcd-chg:empty::before { content: "—"; }
 .rng {
@@ -367,7 +402,12 @@ body {
 .rng.is-on { background: var(--lcd-tab); color: var(--lcd-ink); }
 .rng:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 
-.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-chart, .lcd.is-off .lcd-price { opacity: 0.1; }
+/* At OFF the readout has nothing to say, so the empty price and the
+ * annunciators fade out. The chart box is excluded: at this stop it holds
+ * the orientation copy, which is the whole point of the position. Opacity
+ * makes a stacking context, so a child can never be brighter than its
+ * parent and the box itself has to stay at full strength. */
+.lcd.is-off .ann, .lcd.is-off .lcd-chg, .lcd.is-off .lcd-unit, .lcd.is-off .lcd-price { opacity: 0.1; }
 .lcd-price:empty::before { content: "—"; }
 
 /* a change of stop refreshes the readout with a short fade */
@@ -376,6 +416,29 @@ body {
 }
 @keyframes lcd-swap {
   from { opacity: 0.15; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* A new measurement sweeps its trace in from the left, and the point that
+ * marks the latest reading arrives once the line has reached it. The path
+ * carries pathLength="1", so one unit of dash is the whole trace whatever
+ * its real geometry. Live price ticks do not carry .is-drawing, so a screen
+ * being read stays still. */
+.lcd.is-drawing .chart-smooth .chart-line {
+  animation: chart-draw 620ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
+}
+.lcd.is-drawing .chart-smooth .chart-dot,
+.lcd.is-drawing .chart-smooth .chart-dot-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-dot 280ms cubic-bezier(0.22, 1.4, 0.36, 1) 430ms both;
+}
+@keyframes chart-draw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+@keyframes chart-dot {
+  from { opacity: 0; transform: scale(0.3); }
   to { opacity: 1; transform: none; }
 }
 
@@ -495,6 +558,25 @@ body {
 .knob:focus-visible { outline: 3px solid var(--holster); outline-offset: 5px; }
 
 /* ---- jacks --------------------------------------------------------------- */
+/* What the dial is pointing at, in plain words. Two lines are reserved
+ * whatever the stop, so the face does not move as the dial turns. */
+.dial-caption {
+  margin: 8px auto 0;
+  max-width: 38ch;
+  min-height: 2.7em;
+  font-family: var(--f-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--dim);
+}
+.dial-caption b {
+  color: var(--holster);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .jacks {
   display: flex;
   flex-wrap: wrap;
@@ -588,7 +670,7 @@ body {
 :root[data-skin="gold"] { --holster: #f6b71f; --holster-dk: #c98f0c; --holster-lt: #ffd35a; --knob-mark: #f6b71f; --accent-glow: rgba(246, 183, 31, 0.5); }
 :root[data-skin="blue"] { --holster: #3b82f6; --holster-dk: #1e56c8; --holster-lt: #7fb0ff; --knob-mark: #6aa8ff; --accent-glow: rgba(106, 168, 255, 0.55); }
 :root[data-skin="pink"] { --holster: #f472b6; --holster-dk: #c7367f; --holster-lt: #ffb3da; --knob-mark: #ff8cc6; --accent-glow: rgba(255, 140, 198, 0.55); }
-:root[data-skin="green"] { --holster: #22c55e; --holster-dk: #15803d; --holster-lt: #7ee8a4; --knob-mark: #4ade80; --accent-glow: rgba(74, 222, 128, 0.5); }
+:root[data-skin="green"] { --holster: var(--meter-mint); --holster-dk: #159361; --holster-lt: #8beec7; --knob-mark: var(--meter-mint); --accent-glow: rgba(var(--meter-mint-rgb), 0.5); }
 :root[data-skin="red"] { --holster: #ef4444; --holster-dk: #a91d1d; --holster-lt: #ff9a9a; --knob-mark: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.55); }
 :root[data-skin="purple"] { --holster: #a855f7; --holster-dk: #7426c7; --holster-lt: #d6b0ff; --knob-mark: #c084fc; --accent-glow: rgba(192, 132, 252, 0.55); }
 :root[data-skin="silver"] { --holster: #cbd5e1; --holster-dk: #8a97aa; --holster-lt: #f1f5f9; --knob-mark: #e2e8f0; --accent-glow: rgba(226, 232, 240, 0.45); }
@@ -665,7 +747,7 @@ body {
 .skin[data-skin="gold"] { background: #f6b71f; }
 .skin[data-skin="blue"] { background: #3b82f6; }
 .skin[data-skin="pink"] { background: #f472b6; }
-.skin[data-skin="green"] { background: #22c55e; }
+.skin[data-skin="green"] { background: var(--meter-mint); }
 .skin[data-skin="red"] { background: #ef4444; }
 .skin[data-skin="purple"] { background: #a855f7; }
 .skin[data-skin="silver"] { background: #cbd5e1; }
@@ -913,7 +995,7 @@ tr.row-rule th {
   letter-spacing: 0.08em;
   color: var(--lcd-dk);
 }
-.lcd-badge.is-up { background: var(--up); box-shadow: 0 0 12px rgba(46, 229, 157, 0.35); }
+.lcd-badge.is-up { background: var(--up); box-shadow: 0 0 12px rgba(var(--meter-mint-rgb), 0.35); }
 .lcd-badge.is-down { background: var(--down); box-shadow: 0 0 12px rgba(255, 107, 107, 0.35); }
 .lcd-ticker {
   font-size: 0.58em;
@@ -922,7 +1004,7 @@ tr.row-rule th {
   color: var(--lcd-ink);
   vertical-align: 0.08em;
 }
-.lcd-price.is-up { color: var(--up); text-shadow: 0 0 22px rgba(46, 229, 157, 0.28); }
+.lcd-price.is-up { color: var(--up); text-shadow: 0 0 22px rgba(var(--meter-mint-rgb), 0.28); }
 .lcd-price.is-down { color: var(--down); text-shadow: 0 0 22px rgba(255, 107, 107, 0.28); }
 .lcd-ranges[data-kind="switch"] .rng.is-on { background: var(--holster); color: var(--lcd-dk); }
 .rng-step { padding-left: 14px; padding-right: 14px; font-size: 17px; line-height: 16px; }
@@ -1196,13 +1278,13 @@ tr.row-rule th {
 .lcd-what {
   margin: 7px 0 0;
   font-family: var(--f-ui);
-  font-size: clamp(10px, 2.2cqw, 13.5px);
+  font-size: clamp(11px, 2.2cqw, 13.5px);
   line-height: 1.35;
   /* a fixed two lines, not a minimum: a sentence that wraps must not make
    * the display taller than one that does not, or the dial moves between
    * stops */
   height: 2.7em;
-  color: var(--lcd-dim);
+  color: var(--lcd-mid);   /* content, not chrome: the second thing the eye should reach */
   overflow: hidden;
 }
 
@@ -1442,7 +1524,7 @@ tr.row-rule th {
   color: var(--lcd-ink);
   overflow: hidden;
 }
-.lcd-learn-line.is-dim { color: var(--lcd-dim); }
+.lcd-learn-line.is-dim { color: var(--lcd-mid); }
 .lcd-learn-visual:empty { display: none; }
 .lcd-learn-visual { margin: 2px 0; }
 .lcd-learn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
@@ -1546,22 +1628,101 @@ tr.row-rule th {
 
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 480px) {
-  .stage { padding: 10px 6px 32px; gap: 12px; }
+  /* The stacked phone layout is tall: a screen, a key row and a dial, one
+   * above the other. These margins are trimmed so the dial and the line
+   * that explains it both clear the fold on a 375x812 screen. */
+  .stage { padding: 10px 6px 14px; gap: 12px; }
   .holster { padding: 4px; }
-  .shell { padding: 18px 18px 20px; }
-  .lcd { padding: 12px 14px 12px; }
-  .lcd-chg { font-size: 16px; }
-  .rng { padding: 8px 12px; font-size: 12px; }
+  .shell { padding: 14px 16px 16px; }
+  .lcd { padding: 10px 14px 10px; }
+  .lcd-minmax { margin-top: 4px; }
+  .dial-caption { margin-top: 6px; }
+  /* the tabs are the one control a thumb uses over and over */
+  .rng { padding: 10px 12px; font-size: 12px; min-width: 44px; }
+  /* the rows inside the panels are wide enough already, just not tall. The
+   * panels float over the readout, so height here costs the meter nothing. */
+  .probe-q, .lcd-act, .lcd-input, .lcd-pick { min-height: 44px; }
   .keys { gap: 6px; }
-  .key { padding: 10px 2px; }
-  /* one line on a phone, still fixed, so the meter keeps fitting the screen */
-  .lcd-what { height: 1.35em; }
-  .lcd-edit { left: 12px; right: 12px; top: 40px; }
+  .key { padding: 10px 2px; min-height: 40px; }
+
+  /* The mode header names what is being measured. As a flex item beside the
+   * annunciators it was the first thing to be given up: 61px of the 252px
+   * that "VOLATILITY · AMD · 30 SESSIONS" needs. The annunciators float
+   * instead, so the header's first line runs beside them and the rest of it
+   * runs the full width. Two lines are reserved at every stop, whether this
+   * header needs them or not, so the display holds one height as the dial
+   * turns. The longest header in the instrument, "CORRELATION · AMD & NDQ ·
+   * 90 SESSIONS", fits those two lines at this size. */
+  .lcd > .lcd-row:first-child { flex-wrap: wrap; row-gap: 2px; height: 46px; align-items: flex-start; align-content: flex-start; }
+  .lcd > .lcd-row:first-child > .ann:first-child {
+    flex: 1 0 100%;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    line-height: 14px;
+    height: 28px;
+  }
+  .lcd > .lcd-row:first-child .ann-group { margin-left: auto; gap: 18px; line-height: 16px; }
+  /* the panels clear the header, which is one line taller than it was */
+  .lcd-panel { top: 68px; }
+
+  /* The measured change must never be trimmed: "↘ 28.1 pp" was being cut to
+   * "↘ 2…" to make room for its own label. The change keeps its full width
+   * now and the label gives way instead, at a size where both still fit the
+   * one line this row reserves. */
+  /* When the row is short of width, the shrink factors decide what gives.
+   * Prose goes first, then the period label, and the measured figure last. */
+  .lcd-chg { font-size: 15px; }
+  .lcd-foot > .lcd-chg { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .lcd-foot > .lcd-chg.is-plain { flex: 0 500 auto; }
+  .lcd-foot > .lcd-chg.is-caption { font-size: 13px; }
+  .lcd-foot > .ann { flex: 0 20 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 11px; letter-spacing: 0.06em; }
+
+  /* the panel headers stack for the same reason the mode header does */
+  .lcd-panel > .lcd-row:first-child { flex-wrap: wrap; row-gap: 2px; }
+  .lcd-panel > .lcd-row:first-child > .ann { flex: 1 1 auto; min-width: 0; }
+
+  /* The daily reading is prose, not a figure, and it cannot be shortened
+   * without changing what it says. It scrolls inside the chart box rather
+   * than stopping mid-sentence. */
+  .lcd-note { align-items: flex-start; overflow-y: auto; scrollbar-width: thin; }
+
+
+  /* The plain sentence under the reading is the most useful line on the
+   * screen for someone meeting these measurements for the first time. It
+   * keeps both of its lines here rather than losing half of itself. */
+  .lcd-what { height: 2.7em; }
+  /* the name fits, the name and the trade description do not */
+  .lcd-identity-note { display: none; }
+  .lcd-edit { left: 12px; right: 12px; top: 76px; }
   .drawer { border-radius: 14px; padding: 14px 12px 18px; }
-  .dial { width: 100%; }
+  /* a little under full width: the dial stays big enough to drag, and the
+   * line that explains it clears the fold */
+  .dial { width: 88%; }
   .dial-lab { font-size: 13.5px; }
   .rows li { grid-template-columns: minmax(0, 1fr) 84px 64px; }
   .row-spark { display: none; }
+}
+
+/* ---- touch targets -------------------------------------------------------- */
+/* The annunciators and the small head controls are drawn at the size the
+ * instrument wants them. A finger needs more than that. A transparent
+ * pseudo-element carries the reachable area out to 44px without taking any
+ * layout space, so the drawn face is unchanged and nothing moves. */
+.ann-rel, .ann-bell, .ann-sound, .about-link, .skin-toggle, .dial-settings { position: relative; }
+.ann-rel::before, .ann-bell::before, .ann-sound::before,
+.about-link::before, .skin-toggle::before, .dial-settings::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1579,7 +1740,8 @@ tr.row-rule th {
 .chart-detail { font-size: 10px; line-height: 1.35; color: var(--dim); }
 .chart-state { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; text-align: left; line-height: 1.5; }
 .chart-state p { margin: 0; }
-@media (max-width: 480px) { .chart-state { font-size: 11px; padding: 8px; gap: 6px; } }
+/* four short lines inside a 93px chart box, with nothing spare */
+@media (max-width: 480px) { .chart-state { font-size: 11px; padding: 6px; gap: 4px; } }
 
 /* Asset identity stays secondary to the reading and its explanation. */
 /* The identity line holds its place on every stop, whether or not the
@@ -1623,5 +1785,5 @@ tr.row-rule th {
 .dial-settings:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
 .lcd-ranges .rng-end { margin-left: auto; color: var(--lcd-dk); background: var(--holster); }
 .lcd-ranges .rng-end[data-end="loser"] { background: #f87171; }
-.lcd-ranges .rng-end[data-end="mover"] { background: #4ade80; }
+.lcd-ranges .rng-end[data-end="mover"] { background: var(--knob-mark); }
 .keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }

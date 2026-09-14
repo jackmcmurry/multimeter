@@ -17,7 +17,7 @@
   /* used when a token cannot be read (a detached document, a test) */
   var FALLBACK = {
     '--bg': '#0b0d12', '--lcd': '#0a1216', '--lcd-ink': '#e6fff5', '--lcd-dim': '#6d8c86',
-    '--up': '#2ee59d', '--down': '#ff6b6b', '--holster': '#f6b71f', '--lcd-tab': '#17303a'
+    '--up': '#2ee59d', '--down': '#ff6b6b', '--holster': '#2ee59d', '--lcd-tab': '#17303a'
   };
 
   function isNum(x) { return typeof x === 'number' && isFinite(x); }

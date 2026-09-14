@@ -66,6 +66,7 @@
   STOPS.push.apply(STOPS, stopsFrom(MP.dial ? MP.dial.load() : ['off', 'subject']));
   STEP_DEG = SWEEP_DEG / Math.max(1, STOPS.length - 1);
   var DETENT_MS = 220;                              /* how long the click feedback lasts */
+  var DRAW_MS = 700;                                /* how long a new trace takes to sweep in */
   var WHEEL_MS = 110;                               /* one step per wheel notch, no faster */
 
   /* plate geometry, in viewBox units; MARGIN leaves room for the longest label
@@ -199,6 +200,26 @@
     for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) STOPS[i].label = label;
     var node = document.querySelector('.dial-stop[data-stop="' + id + '"] .dial-lab');
     if (node) node.textContent = label;
+    if (id === currentId) setCaption(id);   /* the caption names the stop, so it follows the ticker */
+  }
+
+  /* The label printed on the plate for a stop right now, which for SUBJECT
+   * and PROBE is whatever ticker they are currently wearing. */
+  function plateLabel(id) {
+    for (var i = 0; i < STOPS.length; i++) if (STOPS[i].id === id) return STOPS[i].label;
+    return MP.dial ? MP.dial.labelFor(id) : String(id).toUpperCase();
+  }
+
+  /* The plate can only print a code. This prints what the code measures, in
+   * the same plain words the customize screen uses, which until now was the
+   * only place they appeared. It is what lets VOL and CORR and DD stay on
+   * the dial without stranding a reader who has not met them before. */
+  function setCaption(id) {
+    var node = el('dialCaption');
+    if (!node) return;
+    var note = MP.dial && MP.dial.NOTES ? MP.dial.NOTES[id] : '';
+    if (!note) { node.textContent = ''; return; }
+    node.innerHTML = '<b>' + escapeText(plateLabel(id)) + '</b> · ' + escapeText(note);
   }
 
   function markLabel(id) {
@@ -206,6 +227,7 @@
     for (var i = 0; i < labels.length; i++) {
       labels[i].classList.toggle('is-on', labels[i].getAttribute('data-stop') === id);
     }
+    setCaption(id);
   }
 
   function go(id) {
@@ -220,6 +242,7 @@
 
   /* ---- detent feedback ---------------------------------------------------- */
   var detentTimer = null;
+  var drawTimer = null;
   var audio = null;
   var master = null;     /* every sound goes through this */
   var softClick = null;  /* option 15: quiet camera-button press and release */
@@ -383,6 +406,7 @@
     void (knob && knob.offsetWidth);
     if (knob) knob.classList.add('is-detent');
     if (lcd) lcd.classList.add('is-swap');
+    sweepChart();
     clearTimeout(detentTimer);
     detentTimer = setTimeout(function () {
       if (knob) knob.classList.remove('is-detent');
@@ -846,6 +870,22 @@
     lcd.classList.add('is-swap');
     clearTimeout(detentTimer);
     detentTimer = setTimeout(function () { lcd.classList.remove('is-swap'); }, DETENT_MS);
+    sweepChart();
+  }
+
+  /* A new measurement draws its trace in from the left, so the line reads as
+   * something the instrument is taking rather than a picture being swapped.
+   * It runs on a change of stop or of subject, and deliberately not on a
+   * live price tick: the screen stays still while it is being read. The
+   * window is longer than the detent's, so it carries its own timer. */
+  function sweepChart() {
+    var lcd = el('lcd');
+    if (!lcd) return;
+    lcd.classList.remove('is-drawing');
+    void lcd.offsetWidth;
+    lcd.classList.add('is-drawing');
+    clearTimeout(drawTimer);
+    drawTimer = setTimeout(function () { lcd.classList.remove('is-drawing'); }, DRAW_MS);
   }
 
   /* ---- the screen's modes --------------------------------------------------- */
@@ -1028,9 +1068,9 @@
       /* the NOTE stop shows words where the other stops draw a line */
       var graph = series.length > 1 && series.some(isNum);
       var title = r.chartTitle || 'PRICE HISTORY';
-      var detail = r.chartDetail || (graph ? 'Historical prices. The selected range is shown below.' : 'A chart appears when verified history is available. Press DATA to choose another instrument.');
+      var detail = r.chartDetail || (graph ? 'Historical prices. The selected range is shown below.' : 'A chart appears once verified history loads. Press DATA to choose another instrument.');
       chart.innerHTML = off
-        ? '<div class="chart-state"><strong>READY TO EXPLORE</strong><p>Press DATA to choose a market.</p><p>Turn the dial to measure it. LEARN explains the numbers; PROBE investigates questions.</p></div>'
+        ? '<div class="chart-state"><strong>READY TO EXPLORE</strong><p>Press DATA to choose a market.</p><p>Turn the dial to measure it.</p><p>LEARN explains any number on screen.</p></div>'
         : typeof r.note === 'string' ? '<div class="lcd-note">' + escapeText(r.note) + '</div>'
         : graph && ['vol', 'corr', 'dd', 'beta'].indexOf(currentId) < 0 ? G.smoothLine({ values: series, w: 600, h: 250, color: (r.headDir || dir) === 'down' ? 'var(--down)' : 'var(--up)', strokeWidth: 2.4 })
         : graph ? '<div class="measurement-chart"><span class="chart-title">' + escapeText(title) + '</span>' +
@@ -1049,10 +1089,17 @@
     }
     var identityEl = el('lcdIdentity');
     if (identityEl) {
-      identityEl.textContent = off ? '' : r.identity || '';
       /* The line keeps its place even with nothing to name. Hiding it made
        * the display twenty pixels shorter on every stop without an identity,
-       * so the page resized as the dial turned. */
+       * so the page resized as the dial turned.
+       *
+       * The trade description rides in its own span. On a phone the line has
+       * room for the company name and not for both, and a name cut off at
+       * "Advanced Micro Dev..." names nothing, so the span is dropped there
+       * rather than the whole line being trimmed from the right. */
+      var note = off ? '' : r.identityNote || '';
+      identityEl.innerHTML = off ? '' : escapeText(r.identity || '') +
+        (note ? '<span class="lcd-identity-note"> · ' + escapeText(note) + '</span>' : '');
     }
     setText('lcdUnit', off || (r.unit === '%' && /%$/.test(r.text)) ? '' : r.unit || '');
 
@@ -1061,7 +1108,10 @@
       var plain = r.caption || (r.empty && r.hint);
       var line = r.caption ? r.caption : r.empty && r.hint ? r.hint : changeText(r.change, r.unit);
       chg.textContent = off ? '' : (r.lead && !r.empty ? r.lead + '   ' + line : line);
-      chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') + (r.caption ? ' is-caption' : '');
+      /* is-plain marks prose rather than a measurement. A narrow screen may
+       * trim a sentence; it may not trim a figure. */
+      chg.className = 'lcd-chg' + (dir && !off && !plain ? ' is-' + dir : '') +
+        (r.caption ? ' is-caption' : '') + (plain ? ' is-plain' : '');
     }
     setText('lcdChangeLabel', off ? '' : (r.change && r.change.label) || '');
     /* one plain sentence saying what the number above it is */
@@ -1202,7 +1252,7 @@
       buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-skin') === cur ? 'true' : 'false');
     }
     var btn = el('skinBtn');
-    if (btn) btn.setAttribute('aria-label', 'Skin: ' + cur + '. Choose a colour.');
+    if (btn) btn.setAttribute('aria-label', 'Skin: ' + (cur === 'green' ? 'Meter Mint' : cur) + '. Choose a colour.');
   }
 
   /* The palette: a small icon in the skin's colour opens a white palette
@@ -1220,8 +1270,7 @@
   /* Unknown names are ignored. Returns the skin in force. */
   function setSkin(name) {
     if (SKINS.indexOf(name) < 0) return currentSkin();
-    if (name === 'green') document.documentElement.removeAttribute('data-skin');
-    else document.documentElement.setAttribute('data-skin', name);
+    document.documentElement.setAttribute('data-skin', name);
     if (MP.store) MP.store.set('skin', name);
     markSkin();
     return name;

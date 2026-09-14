@@ -435,11 +435,14 @@
     var gid = nextId('glow');
     var lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
 
+    /* pathLength normalises the trace to one unit whatever its real length,
+     * so the stylesheet can dash it without measuring the geometry. That is
+     * what lets a change of stop sweep the line in from the left. */
     var s = open(w, h, 'chart-smooth');
-    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
+    s += '<path class="chart-line" pathLength="1" d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + (opts.strokeWidth || 2.4) +
       '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
-    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
-    s += '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
+    s += '<circle class="chart-dot-halo" cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="8" fill="' + color + '" fill-opacity="0.22"/>';
+    s += '<circle class="chart-dot" cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="3.4" fill="' + color + '"/>';
     return s + '</svg>';
   }
 
