@@ -137,6 +137,16 @@
      * reader down the page. Both act on the lesson they would resume. */
     var entryGo=el('learnEntryGo');
     if(entryGo)entryGo.addEventListener('click',function(){startResume();});
+    el('learnBelowBtn').addEventListener('click',function(){
+      MP.meter.openDrawer(true);
+      if(state.active){showTask();return;}
+      MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);
+      el('lessonLibrary').hidden=false;
+      var heading=el('guidedLessonsOpen');
+      heading.setAttribute('aria-expanded','true');
+      heading.scrollIntoView({block:'start',behavior:'instant'});
+      heading.focus({preventScroll:true});
+    });
     var taskBtn=el('lessonDockTaskBtn');
     if(taskBtn)taskBtn.addEventListener('click',function(){
       MP.meter.openDrawer(true);

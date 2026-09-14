@@ -879,6 +879,7 @@ body {
   padding: 0 4px;
 }
 .quick-tools .pill { min-height: 38px; }
+.quick-tools .learn-jump { margin-right: auto; color: var(--meter-mint); }
 @media (max-width: 600px) {
   .quick-tools { justify-content: stretch; gap: 6px; padding: 0; }
   .quick-tools .pill { flex: 1 1 0; padding: 9px 6px; font-size: 11px; }
@@ -2312,6 +2313,7 @@ tr.row-rule th {
   </div>
 
   <nav class="quick-tools" aria-label="Multimeter help and sharing">
+    <button type="button" class="pill learn-jump" id="learnBelowBtn" aria-label="Go to learning below" aria-controls="drawer">LEARN ↓</button>
     <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
     <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
     <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
@@ -12349,6 +12351,16 @@ tr.row-rule th {
      * reader down the page. Both act on the lesson they would resume. */
     var entryGo=el('learnEntryGo');
     if(entryGo)entryGo.addEventListener('click',function(){startResume();});
+    el('learnBelowBtn').addEventListener('click',function(){
+      MP.meter.openDrawer(true);
+      if(state.active){showTask();return;}
+      MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);
+      el('lessonLibrary').hidden=false;
+      var heading=el('guidedLessonsOpen');
+      heading.setAttribute('aria-expanded','true');
+      heading.scrollIntoView({block:'start',behavior:'instant'});
+      heading.focus({preventScroll:true});
+    });
     var taskBtn=el('lessonDockTaskBtn');
     if(taskBtn)taskBtn.addEventListener('click',function(){
       MP.meter.openDrawer(true);
