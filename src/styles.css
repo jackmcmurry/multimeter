@@ -126,6 +126,15 @@
 .lesson-guide legend { margin-bottom: 12px; font-weight: 600; }
 .lesson-answer { display: flex; gap: 10px; align-items: baseline; padding: 10px 4px; cursor: pointer; }
 .lesson-answer input { accent-color: var(--holster); flex-shrink: 0; }
+.lesson-answer { border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 8px; padding: 12px; color: var(--text); }
+.lesson-comparison dl { margin: 0; }
+.lesson-comparison dl > div { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.lesson-comparison dt { color: var(--dim); font-size: 13px; }
+.lesson-comparison dd { margin: 4px 0 0; font-size: 18px; color: var(--text); }
+/* Keep the guided task separate from the general concept explanation. */
+body.has-dock [data-panel="learn"] #learnCard,
+body.has-dock [data-panel="learn"] > .explanation-details,
+body.has-dock #measureCard { display: none; }
 .lesson-guide button:disabled { opacity: .5; cursor: not-allowed; }
 .lesson-guide :focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 .lesson-complete { color: var(--holster); font-size: 13px; }

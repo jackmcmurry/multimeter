@@ -3,21 +3,21 @@
   'use strict';
   var MP=root.MP=root.MP||{};
   var lessons={
-    returns:{title:'Price versus return',goal:'Find out why a stock’s price and its percentage return answer different questions.',
+    returns:{title:'Price versus return',goal:'See how much a stock gained or lost.',
       steps:['Choose a stock','Compare two chart ranges','Check your understanding'],
-      question:'What tells you how this stock performed over a period?',
-      answers:['Its dollar price alone.','Its percentage change between the beginning and end of that period.','Whether one share costs more than another company’s share.'],correct:1,
-      explanation:'Return compares the ending price with the starting price. The same stock can have different returns over one month and one year. A share price alone does not tell you how well it performed.'},
-    risk:{title:'Volatility versus drawdown',goal:'Use the same stock to distinguish movement along the way from a fall below a peak.',
+      question:'Which number tells you how the stock performed?',
+      answers:['Its price today.','Its percentage gain or loss over the period.','Its price compared with another stock.'],correct:1,
+      explanation:'Return is the percentage gain or loss over a period. Price alone does not tell you that.'},
+    risk:{title:'Volatility versus drawdown',goal:'Compare price swings with a fall from a peak.',
       steps:['Choose a stock and inspect VOL','Inspect DD for the same stock','Check your understanding'],
-      question:'Which description matches the two measurements you inspected?',
-      answers:['Volatility describes variation in returns; drawdown describes the fall from a prior peak.','Volatility and drawdown are two names for the same loss.','Volatility predicts tomorrow’s return; drawdown predicts a recovery date.'],correct:0,
-      explanation:'Volatility measures how much returns vary, including upward and downward moves. Drawdown measures a decline from a running peak. Neither predicts what happens next.'},
-    mix:{title:'Build a mix',goal:'See how changing starting weights changes a hypothetical portfolio’s historical behavior.',
+      question:'What is the difference?',
+      answers:['Volatility measures swings; drawdown measures a fall from a peak.','Both measure the same loss.','Both predict the next price.'],correct:0,
+      explanation:'Volatility measures swings up and down. Drawdown measures a fall from a peak. Neither predicts the future.'},
+    mix:{title:'Build a mix',goal:'See what changes when you change the mix.',
       steps:['Simulate a two-stock portfolio','Change its weights and compare','Check your understanding'],
-      question:'What determines whether a mix reduces historical volatility?',
-      answers:['Any two stocks always reduce risk by the same amount.','How their returns move together, their individual variability, and the weights you choose.','A larger dollar price guarantees a steadier mix.'],correct:1,
-      explanation:'A mix’s behavior depends on its weights and on how the assets’ returns move together. Diversification can reduce some risk, but adding a second stock does not guarantee lower volatility or prevent losses.'}
+      question:'What affects how much your mix moves?',
+      answers:['Two stocks always make it safer.','Each stock’s swings, how they move together, and your weights.','The stock with the highest price.'],correct:1,
+      explanation:'The weights and how the stocks move together matter. Adding a stock does not guarantee less risk.'}
   };
   function fresh(){return {step:0,done:false,complete:false,stock:null,observations:{},feedback:null};}
   function blank(){return {version:1,active:null,progress:{returns:fresh(),risk:fresh(),mix:fresh()}};}

@@ -48,7 +48,7 @@
     el('portfolioResult').innerHTML = '<h3 tabindex="-1" id="portfolioResultTitle">Your historical simulation</h3>'+
       '<dl class="practice-metrics"><div><dt>Ending value</dt><dd>'+money(r.endingValue)+'</dd></div><div><dt>Price return</dt><dd>'+pct(r.returnPct)+'</dd></div>'+
       '<div><dt>Annualized volatility</dt><dd>'+pct(r.volatilityPct)+'</dd></div><div><dt>Maximum drawdown</dt><dd>'+pct(r.maxDrawdownPct)+'</dd></div></dl>'+
-      '<div class="chartbox" role="img" aria-label="Portfolio value from '+r.start+' to '+r.end+'">'+MP.geom.smoothLine({values:r.series.map(function(p){return p.price;}),color:r.returnPct<0?'var(--down)':'var(--meter-mint)',w:700,h:200})+'</div>'+
+      '<details class="explanation-details"><summary>View historical chart</summary><div class="chartbox" role="img" aria-label="Portfolio value from '+r.start+' to '+r.end+'">'+MP.geom.smoothLine({values:r.series.map(function(p){return p.price;}),color:r.returnPct<0?'var(--down)':'var(--meter-mint)',w:700,h:200})+'</div></details>'+
       '<p>Actual period: '+r.start+' to '+r.end+' · '+r.sessions+' shared closes. Starting value: $10,000.</p>'+
       '<p class="practice-warning">'+esc(warning)+'</p><h4>Allocation at the start</h4><ul>'+r.allocation.map(function(h){return '<li>'+esc(h.symbol)+': '+h.weight+'% · '+h.shares.toFixed(4)+' simulated shares</li>';}).join('')+'</ul>'+
       '<p class="foot">Latest available close by stock: '+r.freshness.map(function(f){return esc(f.symbol)+' '+f.latest;}).join('; ')+'.</p>';

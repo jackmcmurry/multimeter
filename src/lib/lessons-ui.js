@@ -5,7 +5,7 @@
   function el(id){return document.getElementById(id);}
   function esc(s){return MP.fmt.escapeHtml(String(s));}
   function percent(n){return typeof n==='number'&&isFinite(n)?n.toFixed(2)+'%':'Unavailable';}
-  function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Progress saved in this browser.':'Progress works for this session but could not be saved in this browser.';}
+  function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Saved on this device.':'Progress could not be saved. You can still finish this session.';}
   function note(text){el('lessonNotice').textContent=text;}
   function current(){return state.active?state.progress[state.active]:null;}
   function library(){
@@ -15,9 +15,7 @@
   }
   function pairComparison(p){
     var a=p.observations.first,b=p.observations.second;if(!a||!b)return '';
-    return '<div class="table-scroll"><table class="lesson-comparison"><caption>Same stocks and dates · '+esc(a.start)+' to '+esc(a.end)+'</caption><thead><tr><th>Measurement</th><th>First mix</th><th>New mix</th></tr></thead><tbody>'+
-      '<tr><th>Weights</th><td>'+a.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join('<br>')+'</td><td>'+b.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join('<br>')+'</td></tr>'+
-      ['returnPct','volatilityPct','maxDrawdownPct'].map(function(k,i){return '<tr><th>'+['Price return','Annualized volatility','Maximum drawdown'][i]+'</th><td>'+percent(a[k])+'</td><td>'+percent(b[k])+'</td></tr>';}).join('')+'</tbody></table></div>';
+    return '<div class="lesson-comparison"><p>First mix → New mix</p><dl>'+['returnPct','volatilityPct','maxDrawdownPct'].map(function(k,i){return '<div><dt>'+['Gain or loss (return)','Swings (annualized volatility)','Biggest fall (drawdown)'][i]+'</dt><dd>'+percent(a[k])+' → '+percent(b[k])+'</dd></div>';}).join('')+'</dl><details class="explanation-details"><summary>Dates and weights</summary><p>'+esc(a.start)+' to '+esc(a.end)+'</p><p>First mix: '+a.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join(', ')+'</p><p>New mix: '+b.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join(', ')+'</p></details></div>';
   }
   function observations(p){
     if(state.active==='mix')return pairComparison(p);
@@ -76,17 +74,17 @@
     var l=MP.lessons.definitions[state.active],body='';
     el('lessonTitle').textContent=l.title;
     el('lessonStep').textContent=p.complete?'Completed':'Step '+(p.step+1)+' of 3 · '+l.steps[p.step];
-    el('lessonGoal').textContent=l.goal;
-    if(p.complete){body='<h4>You finished this lesson.</h4><p>'+esc(l.explanation)+'</p>'+(state.active==='mix'?observations(p):'<ul>'+observations(p)+'</ul>')+'<button class="pill" type="button" data-lesson-action="library">Back to guided lessons</button>';}
+    el('lessonGoal').textContent=l.goal;el('lessonGoal').hidden=true;
+    if(p.complete){body='<h4>You finished this lesson.</h4><p>'+esc(l.explanation)+'</p><details class="explanation-details"><summary>Your measurements</summary>'+(state.active==='mix'?observations(p):'<ul>'+observations(p)+'</ul>')+'</details><button class="pill" type="button" data-lesson-action="library">Back to guided lessons</button>';}
     else if(p.step===2){body='<fieldset><legend>'+esc(l.question)+'</legend>'+l.answers.map(function(a,i){return '<label class="lesson-answer"><input type="radio" name="lessonAnswer" value="'+i+'"> '+esc(a)+'</label>';}).join('')+'</fieldset><button class="pill" type="button" data-lesson-action="answer">Check answer</button>'+(p.feedback?'<p role="status">Try again. '+esc(l.explanation)+'</p>':'');}
     else if(state.active==='mix'){
-      body='<p>'+(p.step===0?'Open the practice portfolio. Choose exactly two stocks, set weights totaling 100%, and run a simulation.':'Keep the same two stocks and historical range. Change the weights and run it again to compare the measurements.')+'</p><button class="pill" type="button" data-lesson-action="portfolio">Open practice portfolio</button>'+pairComparison(p);
+      body='<p>'+(p.step===0?'Choose two stocks. Start with 50% each and run your mix.':'Change the weights and run again. Keep the same stocks and dates.')+'</p><button class="pill" type="button" data-lesson-action="portfolio">Open practice portfolio</button>'+pairComparison(p);
       if(p.step===0&&p.done)body+='<p>First simulation recorded. Continue before changing the weights.</p>';
     } else if(p.step===0){
-      body='<p>Choose a supported stock. It will also appear in WATCH.'+(state.active==='risk'?' Then inspect its volatility on VOL.':' Look at its closing price on the screen.')+'</p><label for="lessonStockSearch">Stock name or symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a stock"><ul class="rows picks" id="lessonStockResults"></ul>'+(p.stock?'<p>Selected stock: '+esc(p.stock)+'</p>':'')+'<ul>'+observations(p)+'</ul>';
+      body='<p>'+(state.active==='risk'?'Choose a stock to see its swings (VOL).':'Choose a stock to see its price.')+'</p><label for="lessonStockSearch">Stock name or symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a stock"><ul class="rows picks" id="lessonStockResults"></ul><ul>'+observations(p)+'</ul>';
     } else if(state.active==='returns'){
-      body='<p>Compare '+esc(p.stock)+' over one month and one year. Use the buttons below to change the instrument’s chart.</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
-    } else {body='<p>Now inspect DD for '+esc(p.stock)+'. Compare its fall from its peak with the volatility reading you just saw.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
+      body='<p>Tap both periods. How did '+esc(p.stock)+'’s return change?</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
+    } else {body='<p>See how far '+esc(p.stock)+' fell from its peak.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
     el('lessonBody').innerHTML=body;
     el('lessonNext').hidden=p.complete||p.step===2;el('lessonNext').disabled=!p.done;
     save();

@@ -171,6 +171,15 @@
 .lesson-guide legend { margin-bottom: 12px; font-weight: 600; }
 .lesson-answer { display: flex; gap: 10px; align-items: baseline; padding: 10px 4px; cursor: pointer; }
 .lesson-answer input { accent-color: var(--holster); flex-shrink: 0; }
+.lesson-answer { border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 8px; padding: 12px; color: var(--text); }
+.lesson-comparison dl { margin: 0; }
+.lesson-comparison dl > div { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.lesson-comparison dt { color: var(--dim); font-size: 13px; }
+.lesson-comparison dd { margin: 4px 0 0; font-size: 18px; color: var(--text); }
+/* Keep the guided task separate from the general concept explanation. */
+body.has-dock [data-panel="learn"] #learnCard,
+body.has-dock [data-panel="learn"] > .explanation-details,
+body.has-dock #measureCard { display: none; }
 .lesson-guide button:disabled { opacity: .5; cursor: not-allowed; }
 .lesson-guide :focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 .lesson-complete { color: var(--holster); font-size: 13px; }
@@ -12076,7 +12085,7 @@ tr.row-rule th {
     el('portfolioResult').innerHTML = '<h3 tabindex="-1" id="portfolioResultTitle">Your historical simulation</h3>'+
       '<dl class="practice-metrics"><div><dt>Ending value</dt><dd>'+money(r.endingValue)+'</dd></div><div><dt>Price return</dt><dd>'+pct(r.returnPct)+'</dd></div>'+
       '<div><dt>Annualized volatility</dt><dd>'+pct(r.volatilityPct)+'</dd></div><div><dt>Maximum drawdown</dt><dd>'+pct(r.maxDrawdownPct)+'</dd></div></dl>'+
-      '<div class="chartbox" role="img" aria-label="Portfolio value from '+r.start+' to '+r.end+'">'+MP.geom.smoothLine({values:r.series.map(function(p){return p.price;}),color:r.returnPct<0?'var(--down)':'var(--meter-mint)',w:700,h:200})+'</div>'+
+      '<details class="explanation-details"><summary>View historical chart</summary><div class="chartbox" role="img" aria-label="Portfolio value from '+r.start+' to '+r.end+'">'+MP.geom.smoothLine({values:r.series.map(function(p){return p.price;}),color:r.returnPct<0?'var(--down)':'var(--meter-mint)',w:700,h:200})+'</div></details>'+
       '<p>Actual period: '+r.start+' to '+r.end+' · '+r.sessions+' shared closes. Starting value: $10,000.</p>'+
       '<p class="practice-warning">'+esc(warning)+'</p><h4>Allocation at the start</h4><ul>'+r.allocation.map(function(h){return '<li>'+esc(h.symbol)+': '+h.weight+'% · '+h.shares.toFixed(4)+' simulated shares</li>';}).join('')+'</ul>'+
       '<p class="foot">Latest available close by stock: '+r.freshness.map(function(f){return esc(f.symbol)+' '+f.latest;}).join('; ')+'.</p>';
@@ -12130,21 +12139,21 @@ tr.row-rule th {
   'use strict';
   var MP=root.MP=root.MP||{};
   var lessons={
-    returns:{title:'Price versus return',goal:'Find out why a stock’s price and its percentage return answer different questions.',
+    returns:{title:'Price versus return',goal:'See how much a stock gained or lost.',
       steps:['Choose a stock','Compare two chart ranges','Check your understanding'],
-      question:'What tells you how this stock performed over a period?',
-      answers:['Its dollar price alone.','Its percentage change between the beginning and end of that period.','Whether one share costs more than another company’s share.'],correct:1,
-      explanation:'Return compares the ending price with the starting price. The same stock can have different returns over one month and one year. A share price alone does not tell you how well it performed.'},
-    risk:{title:'Volatility versus drawdown',goal:'Use the same stock to distinguish movement along the way from a fall below a peak.',
+      question:'Which number tells you how the stock performed?',
+      answers:['Its price today.','Its percentage gain or loss over the period.','Its price compared with another stock.'],correct:1,
+      explanation:'Return is the percentage gain or loss over a period. Price alone does not tell you that.'},
+    risk:{title:'Volatility versus drawdown',goal:'Compare price swings with a fall from a peak.',
       steps:['Choose a stock and inspect VOL','Inspect DD for the same stock','Check your understanding'],
-      question:'Which description matches the two measurements you inspected?',
-      answers:['Volatility describes variation in returns; drawdown describes the fall from a prior peak.','Volatility and drawdown are two names for the same loss.','Volatility predicts tomorrow’s return; drawdown predicts a recovery date.'],correct:0,
-      explanation:'Volatility measures how much returns vary, including upward and downward moves. Drawdown measures a decline from a running peak. Neither predicts what happens next.'},
-    mix:{title:'Build a mix',goal:'See how changing starting weights changes a hypothetical portfolio’s historical behavior.',
+      question:'What is the difference?',
+      answers:['Volatility measures swings; drawdown measures a fall from a peak.','Both measure the same loss.','Both predict the next price.'],correct:0,
+      explanation:'Volatility measures swings up and down. Drawdown measures a fall from a peak. Neither predicts the future.'},
+    mix:{title:'Build a mix',goal:'See what changes when you change the mix.',
       steps:['Simulate a two-stock portfolio','Change its weights and compare','Check your understanding'],
-      question:'What determines whether a mix reduces historical volatility?',
-      answers:['Any two stocks always reduce risk by the same amount.','How their returns move together, their individual variability, and the weights you choose.','A larger dollar price guarantees a steadier mix.'],correct:1,
-      explanation:'A mix’s behavior depends on its weights and on how the assets’ returns move together. Diversification can reduce some risk, but adding a second stock does not guarantee lower volatility or prevent losses.'}
+      question:'What affects how much your mix moves?',
+      answers:['Two stocks always make it safer.','Each stock’s swings, how they move together, and your weights.','The stock with the highest price.'],correct:1,
+      explanation:'The weights and how the stocks move together matter. Adding a stock does not guarantee less risk.'}
   };
   function fresh(){return {step:0,done:false,complete:false,stock:null,observations:{},feedback:null};}
   function blank(){return {version:1,active:null,progress:{returns:fresh(),risk:fresh(),mix:fresh()}};}
@@ -12191,7 +12200,7 @@ tr.row-rule th {
   function el(id){return document.getElementById(id);}
   function esc(s){return MP.fmt.escapeHtml(String(s));}
   function percent(n){return typeof n==='number'&&isFinite(n)?n.toFixed(2)+'%':'Unavailable';}
-  function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Progress saved in this browser.':'Progress works for this session but could not be saved in this browser.';}
+  function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Saved on this device.':'Progress could not be saved. You can still finish this session.';}
   function note(text){el('lessonNotice').textContent=text;}
   function current(){return state.active?state.progress[state.active]:null;}
   function library(){
@@ -12201,9 +12210,7 @@ tr.row-rule th {
   }
   function pairComparison(p){
     var a=p.observations.first,b=p.observations.second;if(!a||!b)return '';
-    return '<div class="table-scroll"><table class="lesson-comparison"><caption>Same stocks and dates · '+esc(a.start)+' to '+esc(a.end)+'</caption><thead><tr><th>Measurement</th><th>First mix</th><th>New mix</th></tr></thead><tbody>'+
-      '<tr><th>Weights</th><td>'+a.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join('<br>')+'</td><td>'+b.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join('<br>')+'</td></tr>'+
-      ['returnPct','volatilityPct','maxDrawdownPct'].map(function(k,i){return '<tr><th>'+['Price return','Annualized volatility','Maximum drawdown'][i]+'</th><td>'+percent(a[k])+'</td><td>'+percent(b[k])+'</td></tr>';}).join('')+'</tbody></table></div>';
+    return '<div class="lesson-comparison"><p>First mix → New mix</p><dl>'+['returnPct','volatilityPct','maxDrawdownPct'].map(function(k,i){return '<div><dt>'+['Gain or loss (return)','Swings (annualized volatility)','Biggest fall (drawdown)'][i]+'</dt><dd>'+percent(a[k])+' → '+percent(b[k])+'</dd></div>';}).join('')+'</dl><details class="explanation-details"><summary>Dates and weights</summary><p>'+esc(a.start)+' to '+esc(a.end)+'</p><p>First mix: '+a.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join(', ')+'</p><p>New mix: '+b.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join(', ')+'</p></details></div>';
   }
   function observations(p){
     if(state.active==='mix')return pairComparison(p);
@@ -12262,17 +12269,17 @@ tr.row-rule th {
     var l=MP.lessons.definitions[state.active],body='';
     el('lessonTitle').textContent=l.title;
     el('lessonStep').textContent=p.complete?'Completed':'Step '+(p.step+1)+' of 3 · '+l.steps[p.step];
-    el('lessonGoal').textContent=l.goal;
-    if(p.complete){body='<h4>You finished this lesson.</h4><p>'+esc(l.explanation)+'</p>'+(state.active==='mix'?observations(p):'<ul>'+observations(p)+'</ul>')+'<button class="pill" type="button" data-lesson-action="library">Back to guided lessons</button>';}
+    el('lessonGoal').textContent=l.goal;el('lessonGoal').hidden=true;
+    if(p.complete){body='<h4>You finished this lesson.</h4><p>'+esc(l.explanation)+'</p><details class="explanation-details"><summary>Your measurements</summary>'+(state.active==='mix'?observations(p):'<ul>'+observations(p)+'</ul>')+'</details><button class="pill" type="button" data-lesson-action="library">Back to guided lessons</button>';}
     else if(p.step===2){body='<fieldset><legend>'+esc(l.question)+'</legend>'+l.answers.map(function(a,i){return '<label class="lesson-answer"><input type="radio" name="lessonAnswer" value="'+i+'"> '+esc(a)+'</label>';}).join('')+'</fieldset><button class="pill" type="button" data-lesson-action="answer">Check answer</button>'+(p.feedback?'<p role="status">Try again. '+esc(l.explanation)+'</p>':'');}
     else if(state.active==='mix'){
-      body='<p>'+(p.step===0?'Open the practice portfolio. Choose exactly two stocks, set weights totaling 100%, and run a simulation.':'Keep the same two stocks and historical range. Change the weights and run it again to compare the measurements.')+'</p><button class="pill" type="button" data-lesson-action="portfolio">Open practice portfolio</button>'+pairComparison(p);
+      body='<p>'+(p.step===0?'Choose two stocks. Start with 50% each and run your mix.':'Change the weights and run again. Keep the same stocks and dates.')+'</p><button class="pill" type="button" data-lesson-action="portfolio">Open practice portfolio</button>'+pairComparison(p);
       if(p.step===0&&p.done)body+='<p>First simulation recorded. Continue before changing the weights.</p>';
     } else if(p.step===0){
-      body='<p>Choose a supported stock. It will also appear in WATCH.'+(state.active==='risk'?' Then inspect its volatility on VOL.':' Look at its closing price on the screen.')+'</p><label for="lessonStockSearch">Stock name or symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a stock"><ul class="rows picks" id="lessonStockResults"></ul>'+(p.stock?'<p>Selected stock: '+esc(p.stock)+'</p>':'')+'<ul>'+observations(p)+'</ul>';
+      body='<p>'+(state.active==='risk'?'Choose a stock to see its swings (VOL).':'Choose a stock to see its price.')+'</p><label for="lessonStockSearch">Stock name or symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a stock"><ul class="rows picks" id="lessonStockResults"></ul><ul>'+observations(p)+'</ul>';
     } else if(state.active==='returns'){
-      body='<p>Compare '+esc(p.stock)+' over one month and one year. Use the buttons below to change the instrument’s chart.</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
-    } else {body='<p>Now inspect DD for '+esc(p.stock)+'. Compare its fall from its peak with the volatility reading you just saw.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
+      body='<p>Tap both periods. How did '+esc(p.stock)+'’s return change?</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
+    } else {body='<p>See how far '+esc(p.stock)+' fell from its peak.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
     el('lessonBody').innerHTML=body;
     el('lessonNext').hidden=p.complete||p.step===2;el('lessonNext').disabled=!p.done;
     save();
