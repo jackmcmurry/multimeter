@@ -1727,8 +1727,108 @@
     learn: 'The idea behind the figure you were just looking at, explained with that figure, and the session in three plain sentences.'
   };
 
+
+  /* ---- what you are measuring ---------------------------------------------
+   * A figure on the screen is not self-explanatory: a student needs the
+   * subject, the measurement, the dates it covers and what it means, in one
+   * place. This fills the drawer's card from the same reading the screen
+   * draws, so the two can never disagree.
+   *
+   * `apart` is the part students most often get wrong: return, volatility and
+   * drawdown are three different questions about the same price history, and
+   * each line says what its measurement is *not*. Every figure here is
+   * measured from closes that have already happened; nothing is a forecast. */
+  var MEASURE_META = {
+    subject: { name: 'Last close, with the return across the period', unit: '',
+      meaning: 'The price at the last close shown, and how far that finished from the first close in the period.',
+      apart: 'A return says how far the price finished from where it started. It says nothing about how bumpy the path was, or how far it fell along the way.' },
+    watch: { name: 'Last close, with the return across the period', unit: '',
+      meaning: 'The price at the last close shown, and how far that finished from the first close in the period.',
+      apart: 'A return says how far the price finished from where it started. It says nothing about how bumpy the path was, or how far it fell along the way.' },
+    vol: { name: 'Volatility (annualized, 30 sessions)', unit: '',
+      meaning: 'How much daily returns varied over the window, scaled to a year.',
+      apart: 'Volatility counts moves up as well as down, so it is a measure of movement, not of loss. A high reading does not mean the price fell.' },
+    dd: { name: 'Drawdown from peak', unit: '',
+      meaning: 'How far the price sits below the highest close it had reached.',
+      apart: 'A drawdown is measured from a past peak, not from where you started and not from a typical day. It is one specific fall, already in the record.' },
+    corr: { name: 'Correlation (90 sessions)', unit: '',
+      meaning: 'Whether two things tended to move on the same days over the window.',
+      apart: 'Correlation describes how two series moved together. It is not a size of move, not a return, and not evidence that one caused the other.' },
+    beta: { name: 'Beta (90 sessions)', unit: '',
+      meaning: 'How far this asset tended to move for each move in the comparison index.',
+      apart: 'Beta is a slope, not a return and not a probability. A high beta describes past sensitivity, not a prediction.' }
+  };
+
+  /* The dates a stop's figure actually covers, and on a price stop the return
+   * across them. Each measurement has its own window: volatility is the last
+   * 30 sessions, correlation the last 90, and a drawdown is measured from the
+   * running peak across the whole matched window, so only that one uses it. */
+  var MEASURE_SESSIONS = { vol: 30, corr: 90, beta: 90 };
+
+  function measurePeriod(stop) {
+    var a = state.analytics;
+    if (['vol', 'corr', 'dd', 'beta'].indexOf(stop) >= 0) {
+      if (!a || !a.windowFrom || !a.windowTo) return null;
+      var sessions = MEASURE_SESSIONS[stop];
+      if (sessions) {
+        var win = [a.windowFrom].concat(a.dates).slice(-(sessions + 1));
+        if (win.length > 1) return { dates: win[0] + ' to ' + win[win.length - 1], returnPct: NaN };
+      }
+      var ddDates=a.coinDd.dates;
+      return { dates: ddDates[0] + ' to ' + ddDates[ddDates.length-1], returnPct: NaN };
+    }
+    var sym = stop === 'watch' ? watchSymbol() : state.stats.coin;
+    var series = sym ? stockSeries(sym) : null;
+    if (!series || series.length < 2) return null;
+    var n = (stop==='watch'||state.watch.list.indexOf(sym)>=0) && S.isNum(state.watch.sessions) ? state.watch.sessions : 21;
+    var slice = series.slice(-(n + 1));
+    if (slice.length < 2) return null;
+    var first = slice[0], last = slice[slice.length - 1];
+    return {
+      dates: first.date + ' to ' + last.date,
+      returnPct: first.price > 0 ? (last.price / first.price - 1) * 100 : NaN
+    };
+  }
+
+  function renderMeasureCard(stop) {
+    var card = el('measureCard');
+    if (!card) return;
+    var meta = MEASURE_META[stop];
+    var r = meta ? reading(stop) : null;
+    /* Shown only where there is a real measurement to explain. */
+    if (!meta || !r || r.empty || !r.text || r.text === F.DASH || (stop==='subject'&&!validTicker(state.stats.coin))) { card.hidden = true; return; }
+    card.hidden = false;
+
+    var L = statsLabels();
+    var sym = stop === 'watch' ? watchSymbol() : L.coin;
+    var row = stockRow(sym);
+    setText('mcSubject', row && row.name ? sym + ' · ' + row.name : sym || '—');
+    setText('mcName', stop === 'corr' || stop === 'beta' ? meta.name + ', against the ' + L.indexName : meta.name);
+
+    var value = el('mcValue');
+    if (value) {
+      /* r.text already carries its own unit for percentages and ratios. */
+      var unit = r.unit && r.text.indexOf(r.unit) < 0 ? ' ' + r.unit : '';
+      value.textContent = r.text + unit;
+      value.className = 'is-reading' + (S.isNum(r.value) && r.value < 0 ? ' is-down' : '');
+    }
+
+    var period = measurePeriod(stop);
+    setText('mcPeriod', period ? period.dates : 'Dates appear once daily closes load');
+
+    /* On a price stop the reading is a close, so the return across the period
+     * is stated in words rather than left for the reader to work out. */
+    var meaning = r.what || meta.meaning;
+    if (period && S.isNum(period.returnPct)) {
+      meaning += ' Across this period the price returned ' + F.signedPctPoints(period.returnPct, 2).replace(' pp', '%') + '.';
+    }
+    setText('mcMeaning', meaning);
+    setText('mcApart', meta.apart);
+    setText('mcFoot', 'Measured from daily closes already recorded. A historical reading, not a forecast and not advice.');
+  }
   function setStopNote(stop) {
     setText('viewNote', STOP_NOTES[stop] || '');
+    renderMeasureCard(stop);
   }
 
   /* The structured account of the current stop (MP.context), rebuilt on a
@@ -1755,6 +1855,9 @@
   }
 
   function refreshContext(force) {
+    /* Dates and values arrive after the first paint, so the card is rebuilt
+     * here too rather than only on a turn of the dial. */
+    renderMeasureCard(currentStop());
     var ctx = currentContext(force);
     if (!ctx) return;
     setText('drawerProv', MP.context.provenance(ctx));
@@ -2206,7 +2309,7 @@
     box.hidden = false;
     var stage = document.querySelector('.stage');
     if (stage) stage.setAttribute('inert', '');
-    var go = el('introGo');
+    var go = el('introLearn') || el('introGo');
     if (go) setTimeout(function () { try { go.focus({ preventScroll: true }); } catch (e) { go.focus(); } }, 0);
     return true;
   }
@@ -2227,8 +2330,15 @@
   function wireIntro() {
     var dialSettings = el('dialSettings');
     if (dialSettings) dialSettings.addEventListener('click', function () { MP.meter.setScreen('config'); });
-    var box = el('intro'), go = el('introGo'), how = el('howBtn');
+    var box = el('intro'), go = el('introGo'), learn = el('introLearn'), how = el('howBtn');
     if (go) go.addEventListener('click', function () { hideIntro(); if (MP.meter) MP.meter.setScreen('search'); });
+    /* The first visit leads with learning: this hands the reader straight to
+     * the lesson they would resume, which for a new reader is the first one. */
+    if (learn) learn.addEventListener('click', function () {
+      hideIntro();
+      if (MP.guided && MP.guided.startResume) MP.guided.startResume();
+      else if (MP.meter) MP.meter.setScreen('search');
+    });
     var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
     if (about && aboutBtn) aboutBtn.addEventListener('click', function () { about.showModal(); });
     if (about) about.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
@@ -2239,7 +2349,16 @@
     document.addEventListener('keydown', function (ev) {
       if (!box || box.hidden) return;
       if (ev.key === 'Escape') { hideIntro(); ev.preventDefault(); ev.stopImmediatePropagation(); }
-      else if (ev.key === 'Tab') { ev.preventDefault(); if (go) go.focus(); }
+      /* Two actions now, so Tab cycles between them rather than pinning
+       * focus to one. Keyboard focus stays inside the dialog either way. */
+      else if (ev.key === 'Tab') {
+        ev.preventDefault();
+        var stops = [learn, go].filter(Boolean);
+        if (!stops.length) return;
+        var at = stops.indexOf(document.activeElement);
+        var step = ev.shiftKey ? -1 : 1;
+        stops[(at + step + stops.length) % stops.length].focus();
+      }
     });
     showIntro(false);
   }
@@ -2716,6 +2835,7 @@
   function setWatchRange(n) {
     if (!sessionsLabel(n)) return;
     state.watch.sessions = n;
+    renderMeasureCard(currentStop());
     repaint();
   }
 

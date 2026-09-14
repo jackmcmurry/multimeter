@@ -63,6 +63,7 @@
  * ========================================================================== */
 
 :root {
+  --lesson-dock-space: 172px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
   --meter-mint-rgb: 46, 229, 157;
@@ -176,6 +177,143 @@
 .lesson-comparison th, .lesson-comparison td { text-align: left; padding: 8px; border-bottom: 1px solid var(--rule); }
 .lesson-comparison caption { text-align: left; color: var(--dim); margin: 8px 0; }
 @media(max-width:480px) { .lesson-guide,.lesson-card { padding: 12px; } .lesson-toolbar span { flex-basis:100%; } }
+
+/* ---- the way in for a new student --------------------------------------- */
+/* Three additions, all serving one problem: a student who opens this page
+ * having been told nothing. The intro leads with learning; the entry bar
+ * under the instrument is the standing way back in; the dock keeps the
+ * current step on screen while the instrument is being used. Green accents
+ * here follow --holster, which is Meter Mint on the default skin and keeps
+ * the skin picker working. */
+
+.intro-actions { display: grid; gap: 8px; }
+.intro-alt {
+  width: 100%;
+  padding: 11px 16px;
+  font-family: var(--f-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  cursor: pointer;
+}
+.intro-alt:hover { color: var(--text); border-color: var(--holster); }
+.intro-alt:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
+.learn-entry {
+  width: min(100%, 960px, max(640px, var(--meter-w)));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 14px 18px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--holster);
+  border-radius: 12px;
+}
+.learn-entry-text { min-width: 0; flex: 1 1 240px; line-height: 1.45; }
+.learn-entry-text b { display: block; color: var(--text); font-size: 14px; }
+.learn-entry-text span { color: var(--dim); font-size: 12.5px; }
+.learn-entry-go {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 11px 20px;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--lcd-dk);
+  background: var(--holster);
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 5px);
+  cursor: pointer;
+}
+.learn-entry-go:hover { background: var(--holster-lt); }
+.learn-entry-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
+/* ---- the lesson dock ----------------------------------------------------- */
+.lesson-dock {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 40;
+  background: var(--card);
+  border-top: 2px solid var(--holster);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.lesson-dock-inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.lesson-pips { display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; flex: 0 0 auto; }
+.lesson-pips li { width: 22px; height: 4px; background: var(--rule); border-radius: 2px; }
+.lesson-pips li.is-done { background: var(--holster); }
+.lesson-pips li.is-now { background: var(--holster-lt); }
+.lesson-dock-text { min-width: 0; flex: 1 1 220px; line-height: 1.4; }
+.lesson-dock-text b { display: block; color: var(--holster); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.lesson-dock-text span { display: block; color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+.lesson-dock-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 0 auto; }
+.lesson-dock-actions .pill { min-height: 44px; padding: 11px 14px; font-size: 12px; }
+.lesson-dock-next { background: var(--holster); color: var(--lcd-dk); }
+.lesson-dock-next:hover:not([disabled]) { background: var(--holster-lt); color: var(--lcd-dk); }
+.lesson-dock-next[disabled] { background: var(--cell); color: var(--dim); }
+/* nothing at the end of the page may hide behind the dock */
+body.has-dock .stage { padding-bottom: var(--lesson-dock-space); }
+html:has(body.has-dock) { scroll-padding-bottom: var(--lesson-dock-space); }
+
+/* ---- what you are measuring --------------------------------------------- */
+.measure-card {
+  margin: 16px 0;
+  padding: 16px 18px;
+  background: var(--cell);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--holster);
+  border-radius: 8px;
+  line-height: 1.55;
+}
+.measure-head {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.measure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 20px;
+  margin: 0 0 14px;
+}
+.measure-grid dt { color: var(--dim); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.measure-grid dd { margin: 3px 0 0; color: var(--text); font-size: 15px; overflow-wrap: anywhere; }
+.measure-grid dd.is-reading { font-family: var(--f-lcd); font-size: 20px; font-weight: 600; color: var(--holster); }
+.measure-grid dd.is-reading.is-down { color: var(--down); }
+.measure-meaning { margin: 0 0 8px; color: var(--text); }
+.measure-apart { margin: 0; color: var(--dim); font-size: 13px; }
+.measure-foot { margin: 10px 0 0; }
+
+@media (max-width: 480px) {
+  .learn-entry { padding: 12px 14px; border-radius: 8px; }
+  .learn-entry-go { width: 100%; }
+  .lesson-dock { padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .lesson-dock-inner { gap: 8px 10px; }
+  .lesson-dock-text { flex-basis: 100%; order: 2; }
+  .lesson-dock-actions { flex-basis: 100%; order: 3; }
+  .lesson-dock-actions .pill { flex: 1 1 auto; text-align: center; }
+  body.has-dock .stage { padding-bottom: var(--lesson-dock-space); }
+  .measure-card { padding: 13px 14px; }
+  .measure-grid { gap: 11px 14px; }
+}
 
 html { background: var(--bg); }
 
@@ -722,6 +860,7 @@ body {
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
 .drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
+.drawer:has([data-panel="portfolio"]:not([hidden])) #measureCard,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
 .drawer:has([data-panel="portfolio"]:not([hidden])) .drawer-tools { display: none; }
 .pill.share { background: var(--cell); color: var(--holster); }
@@ -1899,7 +2038,10 @@ tr.row-rule th {
       <li><b>3 · LEARN</b><span>Press LEARN to understand the number you just measured.</span></li>
     </ol>
     <p class="intro-turn">Next: CORR explores relationships; DD measures the fall from a peak.</p>
-    <button type="button" class="intro-go" id="introGo">CHOOSE AN ASSET</button>
+    <div class="intro-actions">
+      <button type="button" class="intro-go" id="introLearn">START LEARNING</button>
+      <button type="button" class="intro-alt" id="introGo">Explore on my own</button>
+    </div>
     <p class="intro-foot">Real market data. Nothing here is investment advice.</p>
   </div>
 </div>
@@ -2108,6 +2250,18 @@ tr.row-rule th {
     </div>
   </div>
 
+  <!-- The one obvious way in for a student who has not been told anything.
+       Reads "Start learning" until progress exists, then "Continue learning"
+       and the step it would resume at. Sits under the instrument so the
+       instrument stays the thing you look at first. -->
+  <div class="learn-entry" id="learnEntry" hidden>
+    <div class="learn-entry-text">
+      <b id="learnEntryTitle">New here?</b>
+      <span id="learnEntryNote">Three short lessons. About five minutes each.</span>
+    </div>
+    <button type="button" class="learn-entry-go" id="learnEntryGo">Start learning</button>
+  </div>
+
   <!-- ================= DETAIL DRAWER ================= -->
   <div class="drawer" id="drawer" hidden>
     <header class="drawer-head">
@@ -2125,6 +2279,22 @@ tr.row-rule th {
     <div class="concept" id="conceptBar" hidden></div>
 
     <div id="pageNotice"></div>
+
+    <!-- One place that says what is being measured, on what, over which dates,
+         and what the number means, so the figure on the screen is never just a
+         figure. Filled from the same reading the screen draws. -->
+    <section class="measure-card" id="measureCard" hidden aria-labelledby="mcHead">
+      <h3 class="measure-head" id="mcHead">What you are measuring</h3>
+      <dl class="measure-grid">
+        <div><dt>Subject</dt><dd id="mcSubject"></dd></div>
+        <div><dt>Measurement</dt><dd id="mcName"></dd></div>
+        <div><dt>Reading</dt><dd id="mcValue"></dd></div>
+        <div><dt>Period measured</dt><dd id="mcPeriod"></dd></div>
+      </dl>
+      <p class="measure-meaning" id="mcMeaning"></p>
+      <p class="measure-apart" id="mcApart"></p>
+      <p class="foot measure-foot" id="mcFoot"></p>
+    </section>
 
     <section class="lesson-guide" id="lessonGuide" aria-labelledby="lessonTitle" hidden>
       <div class="lesson-toolbar"><span id="lessonStep"></span><button class="pill" type="button" data-lesson-action="exit">Exit lesson</button><button class="pill" type="button" data-lesson-action="restart">Restart lesson</button></div>
@@ -2317,6 +2487,24 @@ tr.row-rule th {
     <p class="prov" id="drawerProv"></p>
   </div>
 </main>
+
+<!-- The lesson's current step, kept on screen while the student works the
+     instrument. The full task stays in the drawer; this is the part you need
+     to see without scrolling back to it. Only shown while a lesson is open. -->
+<div class="lesson-dock" id="lessonDock" hidden>
+  <div class="lesson-dock-inner">
+    <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
+    <div class="lesson-dock-text">
+      <b id="lessonDockStep">Step 1 of 3</b>
+      <span id="lessonDockTask"></span>
+    </div>
+    <div class="lesson-dock-actions">
+      <button type="button" class="pill" id="lessonDockTaskBtn">Show task</button>
+      <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
+      <button type="button" class="pill" id="lessonDockExit">Exit</button>
+    </div>
+  </div>
+</div>
 
 <dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
   <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
@@ -5067,14 +5255,14 @@ tr.row-rule th {
     if (ctx.mode === 'vol') {
       if (ctx.volatility) out.push('Is this unusually volatile?');
       if (ctx.volatility && ctx.indexVolatility) out.push('How does it compare with the market?');
-      if (ctx.volatility) out.push('Has it always moved this much?');
+      if (ctx.volatility) out.push('What does volatility measure?');
     } else if (ctx.mode === 'corr') {
       if (ctx.correlation) out.push('Is this a strong relationship?');
       if (ctx.correlation) out.push('Does this mean one causes the other?');
-      if (ctx.correlation) out.push('Have they always moved together?');
+      if (ctx.correlation) out.push('What does correlation measure?');
     } else if (ctx.mode === 'dd') {
       if (ctx.drawdown) out.push('Is this a large drawdown?');
-      if (ctx.episode) out.push('How long has it been falling?');
+      if (ctx.drawdown && ctx.episode) out.push('What was its worst drawdown?');
       if (ctx.drawdown) out.push('How much would it take to recover?');
     } else {
       if (ctx.move) out.push('Is this a big move?');
@@ -5094,7 +5282,7 @@ tr.row-rule th {
     universal.forEach(function (q) {
       if (out.length < 3 && out.indexOf(q) < 0) out.push(q);
     });
-    return out.slice(0, 3);
+    return out.filter(function(q){var f=answerRaw(ctx,q);return f&&f.status==='answered';}).slice(0, 3);
   }
 
   /* ---- reading a question -------------------------------------------------
@@ -5115,10 +5303,10 @@ tr.row-rule th {
     /* "does one cause the other" is about the relationship. "Musk caused
      * bitcoin to rise" is a claim about an outside event, and belongs with
      * the questions this instrument cannot answer from price alone. */
-    if (ctx.correlation && /caus|prove/.test(s) && /\bthey\b|\bboth\b|together|each other|correlat|relationship|one .*other/.test(s)) return 'causation';
+    if (/caus|prove/.test(s) && /\bthey\b|\bboth\b|together|each other|correlat|relationship|one .*other/.test(s)) return 'causation';
     if (/strong|relationship|together|correlat/.test(s)) return 'correlation';
     if (/recover|how long|falling|drawdown|peak|fell|fall/.test(s)) return 'drawdown';
-    if (/volatil|move this much|swing|jumpy|crazy|risky|risk/.test(s)) return 'volatility';
+    if (/volatil|mov(?:e|ed) this much|how much does it (?:usually|normally) move|swing|jumpy|crazy|risky|risk/.test(s)) return 'volatility';
     if (/big move|a lot|unusual|normal|large/.test(s)) return 'move';
     if (/compare|versus|vs|than the market|s&p|nasdaq/.test(s)) return 'compare';
     return null;
@@ -5209,7 +5397,7 @@ tr.row-rule th {
     }
     f.interpretation.push('Volatility measures the size of the swings, in both directions. It is not a direction and it is not a forecast.');
     f.concepts = ['volatility', 'risk'];
-    f.followUps = ['Has it always moved this much?', 'How far has it fallen from its peak?'];
+    f.followUps = ['What does volatility measure?', 'How far has it fallen from its peak?'];
     return f;
   }
 
@@ -5234,7 +5422,7 @@ tr.row-rule th {
     f.uncertainty.push('A drawdown says how far something fell, not why it fell or whether it will recover.');
     f.concepts = ['drawdown', 'risk'];
     f.actions = cleanActions([openMode('dd', 'SEE DRAWDOWN'), openLearn('drawdown', 'LEARN DRAWDOWN'), openMode('vol', 'SEE VOLATILITY')]);
-    f.followUps = ['Did the whole market fall too?', 'How much does it normally move?'];
+    f.followUps = ['How does it compare with the market?', 'How much does it normally move?'];
     return f;
   }
 
@@ -5253,7 +5441,7 @@ tr.row-rule th {
     f.uncertainty.push('This describes the days they moved together. It does not show that either one moved the other.');
     f.concepts = ['correlation', 'causation'];
     f.actions = cleanActions([openMode('corr', 'SEE CORRELATION'), openLearn('correlation', 'LEARN CORRELATION'), openLearn('causation', 'WHY NOT CAUSE?')]);
-    f.followUps = ['Does one cause the other?', 'Have they always moved together?'];
+    f.followUps = ['Does one cause the other?', 'What does correlation measure?'];
     return f;
   }
 
@@ -5261,14 +5449,14 @@ tr.row-rule th {
   function causationAnswer(ctx) {
     var c = ctx.correlation;
     var f = finding('answered', 'NO. MOVING TOGETHER IS NOT CAUSING.',
-      c ? 'A correlation of ' + c.value.toFixed(2) + ' says these two tended to move in similar directions. It does not say either one moved the other.'
+      c ? 'A correlation of ' + c.value.toFixed(2) + ' describes how their returns moved together. It does not say either one moved the other.'
         : 'Two things moving together does not show that one made the other move.');
     if (c) f.observations.push(calculated('Measured correlation: ' + c.value.toFixed(2) + ' over ' + (c.window || 90) + ' sessions.', 'daily log returns on shared sessions'));
     f.interpretation.push('Three explanations fit the same numbers equally well: one drives the other, something else drives both, or it happened by chance over a short window.');
     f.uncertainty.push('To argue that one caused the other you would need more than these two series: a reason it would work that way, and evidence it held up outside this window.');
     f.concepts = ['causation', 'correlation'];
     f.actions = cleanActions([openLearn('causation', 'LEARN THIS'), openMode('corr', 'SEE CORRELATION')]);
-    f.followUps = ['What would better evidence look like?', 'Have they always moved together?'];
+    f.followUps = ['What does correlation measure?', 'What does volatility measure?'];
     return f;
   }
 
@@ -5286,14 +5474,14 @@ tr.row-rule th {
     f.uncertainty.push('If you have heard a reason given for this move, treat it as a claim to check rather than a fact, because nothing on this screen confirms it.');
     f.concepts = ['returns', 'correlation'];
     f.actions = cleanActions([openMode('corr', 'COMPARE WITH THE MARKET'), openMode('vol', 'SEE VOLATILITY')]);
-    f.followUps = ['Did the whole market move too?', 'Is this a big move for it?'];
+    f.followUps = ['How does it compare with the market?', 'Is this a big move for it?'];
     return f;
   }
 
   /* ---- the entry point ----------------------------------------------------
    * Returns a finding, or null when nothing here can answer and the question
    * should be put to a model instead. */
-  function answer(ctx, question) {
+  function answerRaw(ctx, question) {
     if (!ctx) return null;
     var q = String(question || '');
     if (ADVICE_RE.test(q)) return refuseAdvice(ctx);
@@ -5301,19 +5489,28 @@ tr.row-rule th {
 
     var topic = topicOf(q, ctx);
     if (topic === 'causation') return causationAnswer(ctx);
+    if (CAUSE_Q_RE.test(q)) return noCauseAnswer(ctx);
     if (topic === 'correlation') return correlationAnswer(ctx) || null;
     if (topic === 'drawdown') return drawdownAnswer(ctx) || null;
-    if (topic === 'volatility' || topic === 'compare') return volatilityAnswer(ctx) || null;
+    if (topic === 'compare') return ctx.indexVolatility && ctx.comparison ? volatilityAnswer(ctx) : null;
+    if (topic === 'volatility') return volatilityAnswer(ctx) || null;
     if (topic === 'move') return moveAnswer(ctx) || null;
 
     /* "why did it fall", with only prices in hand */
     if (CAUSE_Q_RE.test(q)) return noCauseAnswer(ctx);
 
     /* a bare question on a measurement stop answers that measurement */
-    if (ctx.mode === 'vol') return volatilityAnswer(ctx);
-    if (ctx.mode === 'dd') return drawdownAnswer(ctx);
-    if (ctx.mode === 'corr') return correlationAnswer(ctx);
-    return moveAnswer(ctx);
+    return null;
+  }
+
+  function answer(ctx, question) {
+    if (!ctx) return null;
+    var f=answerRaw(ctx,question);
+    if (!f) f=finding('unavailable','TRY A QUESTION ABOUT THE MEASUREMENT',
+      'This question is outside the explanations available here. Choose a suggested question below to explore the measurements Multimeter can explain.');
+    f.followUps=(f.followUps||[]).filter(function(q){var next=answerRaw(ctx,q);return next&&next.status==='answered';});
+    if (!f.followUps.length) f.followUps=questionsFor(ctx).filter(function(q){return q!==question;});
+    return f;
   }
 
   /* Where a finding came from, for the INFO state. */
@@ -10229,8 +10426,108 @@ tr.row-rule th {
     learn: 'The idea behind the figure you were just looking at, explained with that figure, and the session in three plain sentences.'
   };
 
+
+  /* ---- what you are measuring ---------------------------------------------
+   * A figure on the screen is not self-explanatory: a student needs the
+   * subject, the measurement, the dates it covers and what it means, in one
+   * place. This fills the drawer's card from the same reading the screen
+   * draws, so the two can never disagree.
+   *
+   * `apart` is the part students most often get wrong: return, volatility and
+   * drawdown are three different questions about the same price history, and
+   * each line says what its measurement is *not*. Every figure here is
+   * measured from closes that have already happened; nothing is a forecast. */
+  var MEASURE_META = {
+    subject: { name: 'Last close, with the return across the period', unit: '',
+      meaning: 'The price at the last close shown, and how far that finished from the first close in the period.',
+      apart: 'A return says how far the price finished from where it started. It says nothing about how bumpy the path was, or how far it fell along the way.' },
+    watch: { name: 'Last close, with the return across the period', unit: '',
+      meaning: 'The price at the last close shown, and how far that finished from the first close in the period.',
+      apart: 'A return says how far the price finished from where it started. It says nothing about how bumpy the path was, or how far it fell along the way.' },
+    vol: { name: 'Volatility (annualized, 30 sessions)', unit: '',
+      meaning: 'How much daily returns varied over the window, scaled to a year.',
+      apart: 'Volatility counts moves up as well as down, so it is a measure of movement, not of loss. A high reading does not mean the price fell.' },
+    dd: { name: 'Drawdown from peak', unit: '',
+      meaning: 'How far the price sits below the highest close it had reached.',
+      apart: 'A drawdown is measured from a past peak, not from where you started and not from a typical day. It is one specific fall, already in the record.' },
+    corr: { name: 'Correlation (90 sessions)', unit: '',
+      meaning: 'Whether two things tended to move on the same days over the window.',
+      apart: 'Correlation describes how two series moved together. It is not a size of move, not a return, and not evidence that one caused the other.' },
+    beta: { name: 'Beta (90 sessions)', unit: '',
+      meaning: 'How far this asset tended to move for each move in the comparison index.',
+      apart: 'Beta is a slope, not a return and not a probability. A high beta describes past sensitivity, not a prediction.' }
+  };
+
+  /* The dates a stop's figure actually covers, and on a price stop the return
+   * across them. Each measurement has its own window: volatility is the last
+   * 30 sessions, correlation the last 90, and a drawdown is measured from the
+   * running peak across the whole matched window, so only that one uses it. */
+  var MEASURE_SESSIONS = { vol: 30, corr: 90, beta: 90 };
+
+  function measurePeriod(stop) {
+    var a = state.analytics;
+    if (['vol', 'corr', 'dd', 'beta'].indexOf(stop) >= 0) {
+      if (!a || !a.windowFrom || !a.windowTo) return null;
+      var sessions = MEASURE_SESSIONS[stop];
+      if (sessions) {
+        var win = [a.windowFrom].concat(a.dates).slice(-(sessions + 1));
+        if (win.length > 1) return { dates: win[0] + ' to ' + win[win.length - 1], returnPct: NaN };
+      }
+      var ddDates=a.coinDd.dates;
+      return { dates: ddDates[0] + ' to ' + ddDates[ddDates.length-1], returnPct: NaN };
+    }
+    var sym = stop === 'watch' ? watchSymbol() : state.stats.coin;
+    var series = sym ? stockSeries(sym) : null;
+    if (!series || series.length < 2) return null;
+    var n = (stop==='watch'||state.watch.list.indexOf(sym)>=0) && S.isNum(state.watch.sessions) ? state.watch.sessions : 21;
+    var slice = series.slice(-(n + 1));
+    if (slice.length < 2) return null;
+    var first = slice[0], last = slice[slice.length - 1];
+    return {
+      dates: first.date + ' to ' + last.date,
+      returnPct: first.price > 0 ? (last.price / first.price - 1) * 100 : NaN
+    };
+  }
+
+  function renderMeasureCard(stop) {
+    var card = el('measureCard');
+    if (!card) return;
+    var meta = MEASURE_META[stop];
+    var r = meta ? reading(stop) : null;
+    /* Shown only where there is a real measurement to explain. */
+    if (!meta || !r || r.empty || !r.text || r.text === F.DASH || (stop==='subject'&&!validTicker(state.stats.coin))) { card.hidden = true; return; }
+    card.hidden = false;
+
+    var L = statsLabels();
+    var sym = stop === 'watch' ? watchSymbol() : L.coin;
+    var row = stockRow(sym);
+    setText('mcSubject', row && row.name ? sym + ' · ' + row.name : sym || '—');
+    setText('mcName', stop === 'corr' || stop === 'beta' ? meta.name + ', against the ' + L.indexName : meta.name);
+
+    var value = el('mcValue');
+    if (value) {
+      /* r.text already carries its own unit for percentages and ratios. */
+      var unit = r.unit && r.text.indexOf(r.unit) < 0 ? ' ' + r.unit : '';
+      value.textContent = r.text + unit;
+      value.className = 'is-reading' + (S.isNum(r.value) && r.value < 0 ? ' is-down' : '');
+    }
+
+    var period = measurePeriod(stop);
+    setText('mcPeriod', period ? period.dates : 'Dates appear once daily closes load');
+
+    /* On a price stop the reading is a close, so the return across the period
+     * is stated in words rather than left for the reader to work out. */
+    var meaning = r.what || meta.meaning;
+    if (period && S.isNum(period.returnPct)) {
+      meaning += ' Across this period the price returned ' + F.signedPctPoints(period.returnPct, 2).replace(' pp', '%') + '.';
+    }
+    setText('mcMeaning', meaning);
+    setText('mcApart', meta.apart);
+    setText('mcFoot', 'Measured from daily closes already recorded. A historical reading, not a forecast and not advice.');
+  }
   function setStopNote(stop) {
     setText('viewNote', STOP_NOTES[stop] || '');
+    renderMeasureCard(stop);
   }
 
   /* The structured account of the current stop (MP.context), rebuilt on a
@@ -10257,6 +10554,9 @@ tr.row-rule th {
   }
 
   function refreshContext(force) {
+    /* Dates and values arrive after the first paint, so the card is rebuilt
+     * here too rather than only on a turn of the dial. */
+    renderMeasureCard(currentStop());
     var ctx = currentContext(force);
     if (!ctx) return;
     setText('drawerProv', MP.context.provenance(ctx));
@@ -10708,7 +11008,7 @@ tr.row-rule th {
     box.hidden = false;
     var stage = document.querySelector('.stage');
     if (stage) stage.setAttribute('inert', '');
-    var go = el('introGo');
+    var go = el('introLearn') || el('introGo');
     if (go) setTimeout(function () { try { go.focus({ preventScroll: true }); } catch (e) { go.focus(); } }, 0);
     return true;
   }
@@ -10729,8 +11029,15 @@ tr.row-rule th {
   function wireIntro() {
     var dialSettings = el('dialSettings');
     if (dialSettings) dialSettings.addEventListener('click', function () { MP.meter.setScreen('config'); });
-    var box = el('intro'), go = el('introGo'), how = el('howBtn');
+    var box = el('intro'), go = el('introGo'), learn = el('introLearn'), how = el('howBtn');
     if (go) go.addEventListener('click', function () { hideIntro(); if (MP.meter) MP.meter.setScreen('search'); });
+    /* The first visit leads with learning: this hands the reader straight to
+     * the lesson they would resume, which for a new reader is the first one. */
+    if (learn) learn.addEventListener('click', function () {
+      hideIntro();
+      if (MP.guided && MP.guided.startResume) MP.guided.startResume();
+      else if (MP.meter) MP.meter.setScreen('search');
+    });
     var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
     if (about && aboutBtn) aboutBtn.addEventListener('click', function () { about.showModal(); });
     if (about) about.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
@@ -10741,7 +11048,16 @@ tr.row-rule th {
     document.addEventListener('keydown', function (ev) {
       if (!box || box.hidden) return;
       if (ev.key === 'Escape') { hideIntro(); ev.preventDefault(); ev.stopImmediatePropagation(); }
-      else if (ev.key === 'Tab') { ev.preventDefault(); if (go) go.focus(); }
+      /* Two actions now, so Tab cycles between them rather than pinning
+       * focus to one. Keyboard focus stays inside the dialog either way. */
+      else if (ev.key === 'Tab') {
+        ev.preventDefault();
+        var stops = [learn, go].filter(Boolean);
+        if (!stops.length) return;
+        var at = stops.indexOf(document.activeElement);
+        var step = ev.shiftKey ? -1 : 1;
+        stops[(at + step + stops.length) % stops.length].focus();
+      }
     });
     showIntro(false);
   }
@@ -11218,6 +11534,7 @@ tr.row-rule th {
   function setWatchRange(n) {
     if (!sessionsLabel(n)) return;
     state.watch.sessions = n;
+    renderMeasureCard(currentStop());
     repaint();
   }
 
@@ -11821,8 +12138,56 @@ tr.row-rule th {
     if(state.active==='mix')return pairComparison(p);
     return Object.keys(p.observations).map(function(k){var o=p.observations[k];if(!o||typeof o.text!=='string')return '';return '<li>'+esc(o.text)+'</li>';}).join('');
   }
+  /* ---- the way in ---------------------------------------------------------
+   * A student arriving with no instructions needs one obvious next action.
+   * The entry bar under the instrument is it: "Start learning" until any
+   * progress exists, then "Continue learning" and where they left off. */
+  function order(){return Object.keys(MP.lessons.definitions);}
+  function started(p){return !!(p&&(p.step>0||p.complete||p.stock||p.observations&&Object.keys(p.observations).length));}
+  function resumeId(){
+    if(state.active)return state.active;
+    var ids=order();
+    var going=ids.filter(function(id){return started(state.progress[id])&&!state.progress[id].complete;})[0];
+    if(going)return going;
+    var untouched=ids.filter(function(id){return !started(state.progress[id]);})[0];
+    return untouched||ids[0];
+  }
+  function anyProgress(){return order().some(function(id){return started(state.progress[id]);});}
+  function entry(){
+    var bar=el('learnEntry');if(!bar)return;
+    /* While a lesson is open the dock carries the same job, so the bar steps
+     * aside rather than repeating it. */
+    bar.hidden=!!state.active;
+    if(state.active)return;
+    var id=resumeId(),p=state.progress[id],l=MP.lessons.definitions[id],going=anyProgress();
+    var allDone=order().every(function(k){return state.progress[k].complete;});
+    el('learnEntryGo').textContent=allDone?'Review lessons':going?'Continue learning':'Start learning';
+    el('learnEntryTitle').textContent=going?(allDone?'All three lessons complete':'Pick up where you left off'):'New here?';
+    el('learnEntryNote').textContent=allDone?'Review any lesson, or keep exploring the instrument.'
+      :going?l.title+' · step '+(p.step+1)+' of 3':'Three short lessons. About five minutes each.';
+  }
+
+  /* ---- the dock -----------------------------------------------------------
+   * The step stays on screen while the instrument is being used, so a task
+   * and the reading it asks about are never separated by a scroll. The full
+   * task text stays in the drawer; this is the part you must not lose. */
+  function dock(){
+    var bar=el('lessonDock');if(!bar)return;
+    var p=current();
+    bar.hidden=!p;
+    document.body.classList.toggle('has-dock',!!p);
+    if(!p)return;
+    var l=MP.lessons.definitions[state.active];
+    el('lessonPips').innerHTML=[0,1,2].map(function(i){
+      return '<li class="'+(p.complete||i<p.step?'is-done':i===p.step?'is-now':'')+'"></li>';}).join('');
+    el('lessonDockStep').textContent=p.complete?'Lesson complete':'Step '+(p.step+1)+' of 3';
+    el('lessonDockTask').textContent=p.complete?l.title:l.steps[p.step];
+    var next=el('lessonDockNext');
+    next.hidden=p.complete||p.step===2;
+    next.disabled=!p.done;
+  }
   function render(){
-    library();var p=current(),host=el('lessonGuide');host.hidden=!p;if(!p)return;
+    library();entry();dock();var p=current(),host=el('lessonGuide');host.hidden=!p;if(!p)return;
     var l=MP.lessons.definitions[state.active],body='';
     el('lessonTitle').textContent=l.title;
     el('lessonStep').textContent=p.complete?'Completed':'Step '+(p.step+1)+' of 3 · '+l.steps[p.step];
@@ -11841,8 +12206,9 @@ tr.row-rule th {
     el('lessonNext').hidden=p.complete||p.step===2;el('lessonNext').disabled=!p.done;
     save();
   }
-  function start(id,restart){request++;MP.lessons.start(state,id,restart);render();MP.meter.openDrawer(true);note('');el('lessonTitle').focus();}
-  function exit(){request++;state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);el('guidedLessonsOpen').focus();}
+  function showTask(){el('lessonGuide').scrollIntoView({block:'start',behavior:'instant'});el('lessonTitle').focus({preventScroll:true});}
+  function start(id,restart){request++;MP.lessons.start(state,id,restart);render();MP.meter.openDrawer(true);note('');showTask();}
+  function exit(){request++;state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('learnEntryGo')||el('guidedLessonsOpen');if(back)back.focus({preventScroll:true});}
   function search(){var q=el('lessonStockSearch').value;el('lessonStockResults').innerHTML=MP.search.query(MP.app.stockChoices(),q,6).map(function(c){return '<li><button class="pick" type="button" data-lesson-stock="'+esc(c.symbol)+'">'+esc(c.symbol)+' — '+esc(c.name)+'</button></li>';}).join('')||'<li>No matching supported stocks.</li>';}
   function selectStock(symbol){
     var p=current(),id=state.active,run=++request;if(!p||p.step!==0||id==='mix')return;
@@ -11880,22 +12246,48 @@ tr.row-rule th {
   }
   function init(){
     state=MP.lessons.read(MP.store.get(KEY,null));render();
+    if(root.ResizeObserver)new ResizeObserver(function(entries){
+      document.documentElement.style.setProperty('--lesson-dock-space',(Math.ceil(entries[0].target.getBoundingClientRect().height)+20)+'px');
+    }).observe(el('lessonDock'));
     el('guidedLessonsOpen').addEventListener('click',function(){var lib=el('lessonLibrary');lib.hidden=!lib.hidden;this.setAttribute('aria-expanded',String(!lib.hidden));});
+    /* The standing entry under the instrument, and the dock that follows the
+     * reader down the page. Both act on the lesson they would resume. */
+    var entryGo=el('learnEntryGo');
+    if(entryGo)entryGo.addEventListener('click',function(){startResume();});
+    var taskBtn=el('lessonDockTaskBtn');
+    if(taskBtn)taskBtn.addEventListener('click',function(){
+      MP.meter.openDrawer(true);
+      var guide=el('lessonGuide');
+      if(guide&&!guide.hidden){guide.scrollIntoView({block:'center',behavior:'smooth'});el('lessonTitle').focus({preventScroll:true});}
+    });
+    var dockNext=el('lessonDockNext');
+    if(dockNext)dockNext.addEventListener('click',function(){
+      if(MP.lessons.next(state)){request++;render();note('');MP.meter.openDrawer(true);showTask();}
+    });
+    var dockExit=el('lessonDockExit');
+    if(dockExit)dockExit.addEventListener('click',function(){exit();});
     el('lessonLibrary').addEventListener('click',function(e){var b=e.target.closest('[data-start-lesson]');if(b)start(b.dataset.startLesson,false);});
     el('lessonGuide').addEventListener('input',function(e){if(e.target.id==='lessonStockSearch')search();});
     el('lessonGuide').addEventListener('click',function(e){var stock=e.target.closest('[data-lesson-stock]');if(stock)return selectStock(stock.dataset.lessonStock);var b=e.target.closest('[data-lesson-action]');if(!b)return;var a=b.dataset.lessonAction;
       if(a==='exit')return exit();if(a==='restart')return start(state.active,true);
       if(a==='instrument'){document.querySelector('.meter').scrollIntoView({block:'start',behavior:'smooth'});return;}
-      if(a==='next'){if(MP.lessons.next(state)){request++;render();note('');el('lessonTitle').focus();}return;}
+      if(a==='next'){if(MP.lessons.next(state)){request++;render();note('');el('lessonTitle').focus({preventScroll:true});}return;}
       if(a==='portfolio'){MP.practice.open();return;}
       if(a==='month'||a==='year'||a==='drawdown')return inspect(a);
       if(a==='library'){exit();el('lessonLibrary').hidden=false;el('guidedLessonsOpen').setAttribute('aria-expanded','true');return;}
-      if(a==='answer'){var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus();}
+      if(a==='answer'){var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus({preventScroll:true});}
     });
-    document.addEventListener('practice:simulated',function(e){if(state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Return to the lesson above to continue.');});
+    document.addEventListener('practice:simulated',function(e){if(state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Press Continue on the lesson bar when you are ready.');});
     if(state.active)MP.meter.openDrawer(true);
   }
-  MP.guided={state:function(){return state;},start:start,exit:exit};
+  function startResume(){
+    if(order().every(function(id){return state.progress[id].complete;})){
+      exit();el('lessonLibrary').hidden=false;el('guidedLessonsOpen').setAttribute('aria-expanded','true');
+      el('guidedLessonsOpen').scrollIntoView({block:'start',behavior:'instant'});el('guidedLessonsOpen').focus({preventScroll:true});return;
+    }
+    start(resumeId(),false);
+  }
+  MP.guided={state:function(){return state;},start:start,startResume:startResume,exit:exit,resumeId:resumeId};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })(typeof globalThis!=='undefined'?globalThis:this);
 

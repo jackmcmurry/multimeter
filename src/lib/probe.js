@@ -108,14 +108,14 @@
     if (ctx.mode === 'vol') {
       if (ctx.volatility) out.push('Is this unusually volatile?');
       if (ctx.volatility && ctx.indexVolatility) out.push('How does it compare with the market?');
-      if (ctx.volatility) out.push('Has it always moved this much?');
+      if (ctx.volatility) out.push('What does volatility measure?');
     } else if (ctx.mode === 'corr') {
       if (ctx.correlation) out.push('Is this a strong relationship?');
       if (ctx.correlation) out.push('Does this mean one causes the other?');
-      if (ctx.correlation) out.push('Have they always moved together?');
+      if (ctx.correlation) out.push('What does correlation measure?');
     } else if (ctx.mode === 'dd') {
       if (ctx.drawdown) out.push('Is this a large drawdown?');
-      if (ctx.episode) out.push('How long has it been falling?');
+      if (ctx.drawdown && ctx.episode) out.push('What was its worst drawdown?');
       if (ctx.drawdown) out.push('How much would it take to recover?');
     } else {
       if (ctx.move) out.push('Is this a big move?');
@@ -135,7 +135,7 @@
     universal.forEach(function (q) {
       if (out.length < 3 && out.indexOf(q) < 0) out.push(q);
     });
-    return out.slice(0, 3);
+    return out.filter(function(q){var f=answerRaw(ctx,q);return f&&f.status==='answered';}).slice(0, 3);
   }
 
   /* ---- reading a question -------------------------------------------------
@@ -156,10 +156,10 @@
     /* "does one cause the other" is about the relationship. "Musk caused
      * bitcoin to rise" is a claim about an outside event, and belongs with
      * the questions this instrument cannot answer from price alone. */
-    if (ctx.correlation && /caus|prove/.test(s) && /\bthey\b|\bboth\b|together|each other|correlat|relationship|one .*other/.test(s)) return 'causation';
+    if (/caus|prove/.test(s) && /\bthey\b|\bboth\b|together|each other|correlat|relationship|one .*other/.test(s)) return 'causation';
     if (/strong|relationship|together|correlat/.test(s)) return 'correlation';
     if (/recover|how long|falling|drawdown|peak|fell|fall/.test(s)) return 'drawdown';
-    if (/volatil|move this much|swing|jumpy|crazy|risky|risk/.test(s)) return 'volatility';
+    if (/volatil|mov(?:e|ed) this much|how much does it (?:usually|normally) move|swing|jumpy|crazy|risky|risk/.test(s)) return 'volatility';
     if (/big move|a lot|unusual|normal|large/.test(s)) return 'move';
     if (/compare|versus|vs|than the market|s&p|nasdaq/.test(s)) return 'compare';
     return null;
@@ -250,7 +250,7 @@
     }
     f.interpretation.push('Volatility measures the size of the swings, in both directions. It is not a direction and it is not a forecast.');
     f.concepts = ['volatility', 'risk'];
-    f.followUps = ['Has it always moved this much?', 'How far has it fallen from its peak?'];
+    f.followUps = ['What does volatility measure?', 'How far has it fallen from its peak?'];
     return f;
   }
 
@@ -275,7 +275,7 @@
     f.uncertainty.push('A drawdown says how far something fell, not why it fell or whether it will recover.');
     f.concepts = ['drawdown', 'risk'];
     f.actions = cleanActions([openMode('dd', 'SEE DRAWDOWN'), openLearn('drawdown', 'LEARN DRAWDOWN'), openMode('vol', 'SEE VOLATILITY')]);
-    f.followUps = ['Did the whole market fall too?', 'How much does it normally move?'];
+    f.followUps = ['How does it compare with the market?', 'How much does it normally move?'];
     return f;
   }
 
@@ -294,7 +294,7 @@
     f.uncertainty.push('This describes the days they moved together. It does not show that either one moved the other.');
     f.concepts = ['correlation', 'causation'];
     f.actions = cleanActions([openMode('corr', 'SEE CORRELATION'), openLearn('correlation', 'LEARN CORRELATION'), openLearn('causation', 'WHY NOT CAUSE?')]);
-    f.followUps = ['Does one cause the other?', 'Have they always moved together?'];
+    f.followUps = ['Does one cause the other?', 'What does correlation measure?'];
     return f;
   }
 
@@ -302,14 +302,14 @@
   function causationAnswer(ctx) {
     var c = ctx.correlation;
     var f = finding('answered', 'NO. MOVING TOGETHER IS NOT CAUSING.',
-      c ? 'A correlation of ' + c.value.toFixed(2) + ' says these two tended to move in similar directions. It does not say either one moved the other.'
+      c ? 'A correlation of ' + c.value.toFixed(2) + ' describes how their returns moved together. It does not say either one moved the other.'
         : 'Two things moving together does not show that one made the other move.');
     if (c) f.observations.push(calculated('Measured correlation: ' + c.value.toFixed(2) + ' over ' + (c.window || 90) + ' sessions.', 'daily log returns on shared sessions'));
     f.interpretation.push('Three explanations fit the same numbers equally well: one drives the other, something else drives both, or it happened by chance over a short window.');
     f.uncertainty.push('To argue that one caused the other you would need more than these two series: a reason it would work that way, and evidence it held up outside this window.');
     f.concepts = ['causation', 'correlation'];
     f.actions = cleanActions([openLearn('causation', 'LEARN THIS'), openMode('corr', 'SEE CORRELATION')]);
-    f.followUps = ['What would better evidence look like?', 'Have they always moved together?'];
+    f.followUps = ['What does correlation measure?', 'What does volatility measure?'];
     return f;
   }
 
@@ -327,14 +327,14 @@
     f.uncertainty.push('If you have heard a reason given for this move, treat it as a claim to check rather than a fact, because nothing on this screen confirms it.');
     f.concepts = ['returns', 'correlation'];
     f.actions = cleanActions([openMode('corr', 'COMPARE WITH THE MARKET'), openMode('vol', 'SEE VOLATILITY')]);
-    f.followUps = ['Did the whole market move too?', 'Is this a big move for it?'];
+    f.followUps = ['How does it compare with the market?', 'Is this a big move for it?'];
     return f;
   }
 
   /* ---- the entry point ----------------------------------------------------
    * Returns a finding, or null when nothing here can answer and the question
    * should be put to a model instead. */
-  function answer(ctx, question) {
+  function answerRaw(ctx, question) {
     if (!ctx) return null;
     var q = String(question || '');
     if (ADVICE_RE.test(q)) return refuseAdvice(ctx);
@@ -342,19 +342,28 @@
 
     var topic = topicOf(q, ctx);
     if (topic === 'causation') return causationAnswer(ctx);
+    if (CAUSE_Q_RE.test(q)) return noCauseAnswer(ctx);
     if (topic === 'correlation') return correlationAnswer(ctx) || null;
     if (topic === 'drawdown') return drawdownAnswer(ctx) || null;
-    if (topic === 'volatility' || topic === 'compare') return volatilityAnswer(ctx) || null;
+    if (topic === 'compare') return ctx.indexVolatility && ctx.comparison ? volatilityAnswer(ctx) : null;
+    if (topic === 'volatility') return volatilityAnswer(ctx) || null;
     if (topic === 'move') return moveAnswer(ctx) || null;
 
     /* "why did it fall", with only prices in hand */
     if (CAUSE_Q_RE.test(q)) return noCauseAnswer(ctx);
 
     /* a bare question on a measurement stop answers that measurement */
-    if (ctx.mode === 'vol') return volatilityAnswer(ctx);
-    if (ctx.mode === 'dd') return drawdownAnswer(ctx);
-    if (ctx.mode === 'corr') return correlationAnswer(ctx);
-    return moveAnswer(ctx);
+    return null;
+  }
+
+  function answer(ctx, question) {
+    if (!ctx) return null;
+    var f=answerRaw(ctx,question);
+    if (!f) f=finding('unavailable','TRY A QUESTION ABOUT THE MEASUREMENT',
+      'This question is outside the explanations available here. Choose a suggested question below to explore the measurements Multimeter can explain.');
+    f.followUps=(f.followUps||[]).filter(function(q){var next=answerRaw(ctx,q);return next&&next.status==='answered';});
+    if (!f.followUps.length) f.followUps=questionsFor(ctx).filter(function(q){return q!==question;});
+    return f;
   }
 
   /* Where a finding came from, for the INFO state. */

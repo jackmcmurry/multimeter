@@ -8,13 +8,15 @@ This is a price-history exercise, not a record of real holdings. There are no de
 
 ## Guided lessons
 
-Open **LEARN**, then **INFO** to open its drawer, and choose **Guided lessons**. The existing explanation of your selected measurement stays available.
+Choose **Start learning** in the welcome screen or below the instrument. Returning students can choose **Continue learning**; after all three lessons are complete, **Review lessons** opens the lesson list. You can also open **LEARN → INFO → Guided lessons**. The existing explanation of your selected measurement stays available.
 
 - **Price versus return:** choose a stock, compare its 1-month and 1-year chart ranges, then answer what measures performance over a period.
 - **Volatility versus drawdown:** inspect VOL and DD for the same stock, then distinguish variability from a decline below a peak.
 - **Build a mix:** simulate two stocks, change their weights while keeping assets and dates fixed, then compare the historical measurements.
 
-Each lesson has three steps and a question with explanatory feedback. The guide remains in the drawer as you use the instrument. **Show instrument above** takes you back to the screen. **Exit lesson** keeps your progress; **Resume** continues it. **Restart lesson** clears that lesson’s progress. Progress is saved locally and does not require an account or an AI service.
+Each lesson has three steps and a question with explanatory feedback. A bar at the bottom of the screen keeps the current step visible; **Show task** returns to the full instructions. **Show instrument above** takes you back to the screen. **Exit lesson** keeps your progress; **Resume** continues it. **Restart lesson** clears that lesson’s progress. Progress is saved locally and does not require an account or an AI service.
+
+PROBE offers questions supported by the loaded measurements, plus an explanation of why correlation does not establish cause. Unsupported custom questions offer supported alternatives. These explanations run locally.
 
 ## Student testing tasks
 
@@ -25,4 +27,4 @@ Each lesson has three steps and a question with explanatory feedback. The guide 
 
 ## Developer verification
 
-Run `node test/portfolio.test.cjs` and `node test/lessons.test.cjs`, then `./build.ps1 -ReleaseOnly`. Browser checks should cover a complete two-stock simulation, all chart ranges, missing prices, a full WATCH list, storage failure, lesson exit/resume/restart, wrong answers, keyboard use and a narrow phone viewport.
+Run `node test/portfolio.test.cjs`, `node test/lessons.test.cjs` and `node test/probe.test.cjs`, then `./build.ps1 -ReleaseOnly`. Browser checks should cover a complete two-stock simulation, all chart ranges, missing prices, a full WATCH list, storage failure, lesson exit/resume/restart, the completed-lesson list, wrong answers, keyboard use and a narrow phone viewport.

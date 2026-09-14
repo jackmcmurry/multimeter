@@ -58,6 +58,7 @@
  * ========================================================================== */
 
 :root {
+  --lesson-dock-space: 172px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
   --meter-mint-rgb: 46, 229, 157;
@@ -171,6 +172,143 @@
 .lesson-comparison th, .lesson-comparison td { text-align: left; padding: 8px; border-bottom: 1px solid var(--rule); }
 .lesson-comparison caption { text-align: left; color: var(--dim); margin: 8px 0; }
 @media(max-width:480px) { .lesson-guide,.lesson-card { padding: 12px; } .lesson-toolbar span { flex-basis:100%; } }
+
+/* ---- the way in for a new student --------------------------------------- */
+/* Three additions, all serving one problem: a student who opens this page
+ * having been told nothing. The intro leads with learning; the entry bar
+ * under the instrument is the standing way back in; the dock keeps the
+ * current step on screen while the instrument is being used. Green accents
+ * here follow --holster, which is Meter Mint on the default skin and keeps
+ * the skin picker working. */
+
+.intro-actions { display: grid; gap: 8px; }
+.intro-alt {
+  width: 100%;
+  padding: 11px 16px;
+  font-family: var(--f-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  cursor: pointer;
+}
+.intro-alt:hover { color: var(--text); border-color: var(--holster); }
+.intro-alt:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
+.learn-entry {
+  width: min(100%, 960px, max(640px, var(--meter-w)));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 14px 18px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--holster);
+  border-radius: 12px;
+}
+.learn-entry-text { min-width: 0; flex: 1 1 240px; line-height: 1.45; }
+.learn-entry-text b { display: block; color: var(--text); font-size: 14px; }
+.learn-entry-text span { color: var(--dim); font-size: 12.5px; }
+.learn-entry-go {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 11px 20px;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--lcd-dk);
+  background: var(--holster);
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 5px);
+  cursor: pointer;
+}
+.learn-entry-go:hover { background: var(--holster-lt); }
+.learn-entry-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+
+/* ---- the lesson dock ----------------------------------------------------- */
+.lesson-dock {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 40;
+  background: var(--card);
+  border-top: 2px solid var(--holster);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.lesson-dock-inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.lesson-pips { display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; flex: 0 0 auto; }
+.lesson-pips li { width: 22px; height: 4px; background: var(--rule); border-radius: 2px; }
+.lesson-pips li.is-done { background: var(--holster); }
+.lesson-pips li.is-now { background: var(--holster-lt); }
+.lesson-dock-text { min-width: 0; flex: 1 1 220px; line-height: 1.4; }
+.lesson-dock-text b { display: block; color: var(--holster); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.lesson-dock-text span { display: block; color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+.lesson-dock-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 0 auto; }
+.lesson-dock-actions .pill { min-height: 44px; padding: 11px 14px; font-size: 12px; }
+.lesson-dock-next { background: var(--holster); color: var(--lcd-dk); }
+.lesson-dock-next:hover:not([disabled]) { background: var(--holster-lt); color: var(--lcd-dk); }
+.lesson-dock-next[disabled] { background: var(--cell); color: var(--dim); }
+/* nothing at the end of the page may hide behind the dock */
+body.has-dock .stage { padding-bottom: var(--lesson-dock-space); }
+html:has(body.has-dock) { scroll-padding-bottom: var(--lesson-dock-space); }
+
+/* ---- what you are measuring --------------------------------------------- */
+.measure-card {
+  margin: 16px 0;
+  padding: 16px 18px;
+  background: var(--cell);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--holster);
+  border-radius: 8px;
+  line-height: 1.55;
+}
+.measure-head {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.measure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 20px;
+  margin: 0 0 14px;
+}
+.measure-grid dt { color: var(--dim); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.measure-grid dd { margin: 3px 0 0; color: var(--text); font-size: 15px; overflow-wrap: anywhere; }
+.measure-grid dd.is-reading { font-family: var(--f-lcd); font-size: 20px; font-weight: 600; color: var(--holster); }
+.measure-grid dd.is-reading.is-down { color: var(--down); }
+.measure-meaning { margin: 0 0 8px; color: var(--text); }
+.measure-apart { margin: 0; color: var(--dim); font-size: 13px; }
+.measure-foot { margin: 10px 0 0; }
+
+@media (max-width: 480px) {
+  .learn-entry { padding: 12px 14px; border-radius: 8px; }
+  .learn-entry-go { width: 100%; }
+  .lesson-dock { padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .lesson-dock-inner { gap: 8px 10px; }
+  .lesson-dock-text { flex-basis: 100%; order: 2; }
+  .lesson-dock-actions { flex-basis: 100%; order: 3; }
+  .lesson-dock-actions .pill { flex: 1 1 auto; text-align: center; }
+  body.has-dock .stage { padding-bottom: var(--lesson-dock-space); }
+  .measure-card { padding: 13px 14px; }
+  .measure-grid { gap: 11px 14px; }
+}
 
 html { background: var(--bg); }
 
@@ -717,6 +855,7 @@ body {
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
 .drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
+.drawer:has([data-panel="portfolio"]:not([hidden])) #measureCard,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
 .drawer:has([data-panel="portfolio"]:not([hidden])) .drawer-tools { display: none; }
 .pill.share { background: var(--cell); color: var(--holster); }

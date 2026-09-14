@@ -60,7 +60,10 @@
       <li><b>3 · LEARN</b><span>Press LEARN to understand the number you just measured.</span></li>
     </ol>
     <p class="intro-turn">Next: CORR explores relationships; DD measures the fall from a peak.</p>
-    <button type="button" class="intro-go" id="introGo">CHOOSE AN ASSET</button>
+    <div class="intro-actions">
+      <button type="button" class="intro-go" id="introLearn">START LEARNING</button>
+      <button type="button" class="intro-alt" id="introGo">Explore on my own</button>
+    </div>
     <p class="intro-foot">Real market data. Nothing here is investment advice.</p>
   </div>
 </div>
@@ -269,6 +272,18 @@
     </div>
   </div>
 
+  <!-- The one obvious way in for a student who has not been told anything.
+       Reads "Start learning" until progress exists, then "Continue learning"
+       and the step it would resume at. Sits under the instrument so the
+       instrument stays the thing you look at first. -->
+  <div class="learn-entry" id="learnEntry" hidden>
+    <div class="learn-entry-text">
+      <b id="learnEntryTitle">New here?</b>
+      <span id="learnEntryNote">Three short lessons. About five minutes each.</span>
+    </div>
+    <button type="button" class="learn-entry-go" id="learnEntryGo">Start learning</button>
+  </div>
+
   <!-- ================= DETAIL DRAWER ================= -->
   <div class="drawer" id="drawer" hidden>
     <header class="drawer-head">
@@ -286,6 +301,22 @@
     <div class="concept" id="conceptBar" hidden></div>
 
     <div id="pageNotice"></div>
+
+    <!-- One place that says what is being measured, on what, over which dates,
+         and what the number means, so the figure on the screen is never just a
+         figure. Filled from the same reading the screen draws. -->
+    <section class="measure-card" id="measureCard" hidden aria-labelledby="mcHead">
+      <h3 class="measure-head" id="mcHead">What you are measuring</h3>
+      <dl class="measure-grid">
+        <div><dt>Subject</dt><dd id="mcSubject"></dd></div>
+        <div><dt>Measurement</dt><dd id="mcName"></dd></div>
+        <div><dt>Reading</dt><dd id="mcValue"></dd></div>
+        <div><dt>Period measured</dt><dd id="mcPeriod"></dd></div>
+      </dl>
+      <p class="measure-meaning" id="mcMeaning"></p>
+      <p class="measure-apart" id="mcApart"></p>
+      <p class="foot measure-foot" id="mcFoot"></p>
+    </section>
 
     <section class="lesson-guide" id="lessonGuide" aria-labelledby="lessonTitle" hidden>
       <div class="lesson-toolbar"><span id="lessonStep"></span><button class="pill" type="button" data-lesson-action="exit">Exit lesson</button><button class="pill" type="button" data-lesson-action="restart">Restart lesson</button></div>
@@ -478,6 +509,24 @@
     <p class="prov" id="drawerProv"></p>
   </div>
 </main>
+
+<!-- The lesson's current step, kept on screen while the student works the
+     instrument. The full task stays in the drawer; this is the part you need
+     to see without scrolling back to it. Only shown while a lesson is open. -->
+<div class="lesson-dock" id="lessonDock" hidden>
+  <div class="lesson-dock-inner">
+    <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
+    <div class="lesson-dock-text">
+      <b id="lessonDockStep">Step 1 of 3</b>
+      <span id="lessonDockTask"></span>
+    </div>
+    <div class="lesson-dock-actions">
+      <button type="button" class="pill" id="lessonDockTaskBtn">Show task</button>
+      <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
+      <button type="button" class="pill" id="lessonDockExit">Exit</button>
+    </div>
+  </div>
+</div>
 
 <dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
   <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
