@@ -21,11 +21,11 @@ Build a hypothetical stock mix in **WATCH → INFO → Practice portfolio**, or 
   <tr>
     <td align="center" valign="top">
       <img src="docs/screenshot-desktop.png" width="640"
-           alt="Multimeter on a desktop screen. The dial is turned to MOVER and the display reads AMD up 13.15 percent over five sessions, with its chart above and the day's move below.">
+           alt="Current horizontal Multimeter in Meter Mint, showing Apple’s one-month price chart beside the dial.">
     </td>
     <td align="center" valign="top">
       <img src="docs/screenshot-phone.png" width="178"
-           alt="Multimeter on a phone. The display reads bitcoin at 77,081 US dollars, down 0.44 percent over 24 hours, with the dial beneath it.">
+           alt="Current vertical Multimeter in Meter Mint, showing Apple’s one-month price chart with the dial beneath it.">
     </td>
   </tr>
 </table>

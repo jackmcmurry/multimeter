@@ -870,12 +870,12 @@ body {
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
 .quick-tools {
-  width: min(100%, 960px, max(640px, var(--meter-w)));
+  width: min(100%, var(--meter-w));
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  margin: 8px auto 0;
+  margin: -8px auto 0;
   padding: 0 4px;
 }
 .quick-tools .pill { min-height: 38px; }
@@ -7356,7 +7356,8 @@ tr.row-rule th {
     if (entry && stage) {
       var focus = document.activeElement;
       var restoreFocus = entry.contains(focus);
-      if (meter.nextElementSibling !== entry) stage.insertBefore(entry, meter.nextSibling);
+      var beforeEntry = stage.querySelector('.quick-tools') || meter;
+      if (beforeEntry.nextElementSibling !== entry) stage.insertBefore(entry, beforeEntry.nextSibling);
       if (restoreFocus && document.activeElement !== focus) focus.focus({ preventScroll: true });
     }
     var cs = stage ? root.getComputedStyle(stage) : null;

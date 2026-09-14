@@ -1344,7 +1344,8 @@
     if (entry && stage) {
       var focus = document.activeElement;
       var restoreFocus = entry.contains(focus);
-      if (meter.nextElementSibling !== entry) stage.insertBefore(entry, meter.nextSibling);
+      var beforeEntry = stage.querySelector('.quick-tools') || meter;
+      if (beforeEntry.nextElementSibling !== entry) stage.insertBefore(entry, beforeEntry.nextSibling);
       if (restoreFocus && document.activeElement !== focus) focus.focus({ preventScroll: true });
     }
     var cs = stage ? root.getComputedStyle(stage) : null;
