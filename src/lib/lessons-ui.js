@@ -1,0 +1,102 @@
+/* Guided tasks stay in the open drawer as students use the instrument. */
+(function(root){
+  'use strict';
+  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0;
+  function el(id){return document.getElementById(id);}
+  function esc(s){return MP.fmt.escapeHtml(String(s));}
+  function percent(n){return typeof n==='number'&&isFinite(n)?n.toFixed(2)+'%':'Unavailable';}
+  function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Progress saved in this browser.':'Progress works for this session but could not be saved in this browser.';}
+  function note(text){el('lessonNotice').textContent=text;}
+  function current(){return state.active?state.progress[state.active]:null;}
+  function library(){
+    el('lessonLibrary').innerHTML=Object.keys(MP.lessons.definitions).map(function(id){var l=MP.lessons.definitions[id],p=state.progress[id];
+      return '<article class="lesson-card"><h3>'+esc(l.title)+'</h3><p>'+esc(l.goal)+'</p><button class="pill" type="button" data-start-lesson="'+id+'">'+(p.complete?'Review':(p.stock||p.observations.first||p.step?'Resume':'Start'))+'</button> '+(p.complete?'<span class="lesson-complete">Completed</span>':'')+'</article>';
+    }).join('');
+  }
+  function pairComparison(p){
+    var a=p.observations.first,b=p.observations.second;if(!a||!b)return '';
+    return '<div class="table-scroll"><table class="lesson-comparison"><caption>Same stocks and dates · '+esc(a.start)+' to '+esc(a.end)+'</caption><thead><tr><th>Measurement</th><th>First mix</th><th>New mix</th></tr></thead><tbody>'+
+      '<tr><th>Weights</th><td>'+a.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join('<br>')+'</td><td>'+b.holdings.map(function(h){return esc(h.symbol)+' '+h.weight+'%';}).join('<br>')+'</td></tr>'+
+      ['returnPct','volatilityPct','maxDrawdownPct'].map(function(k,i){return '<tr><th>'+['Price return','Annualized volatility','Maximum drawdown'][i]+'</th><td>'+percent(a[k])+'</td><td>'+percent(b[k])+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }
+  function observations(p){
+    if(state.active==='mix')return pairComparison(p);
+    return Object.keys(p.observations).map(function(k){var o=p.observations[k];if(!o||typeof o.text!=='string')return '';return '<li>'+esc(o.text)+'</li>';}).join('');
+  }
+  function render(){
+    library();var p=current(),host=el('lessonGuide');host.hidden=!p;if(!p)return;
+    var l=MP.lessons.definitions[state.active],body='';
+    el('lessonTitle').textContent=l.title;
+    el('lessonStep').textContent=p.complete?'Completed':'Step '+(p.step+1)+' of 3 · '+l.steps[p.step];
+    el('lessonGoal').textContent=l.goal;
+    if(p.complete){body='<h4>You finished this lesson.</h4><p>'+esc(l.explanation)+'</p>'+(state.active==='mix'?observations(p):'<ul>'+observations(p)+'</ul>')+'<button class="pill" type="button" data-lesson-action="library">Back to guided lessons</button>';}
+    else if(p.step===2){body='<fieldset><legend>'+esc(l.question)+'</legend>'+l.answers.map(function(a,i){return '<label class="lesson-answer"><input type="radio" name="lessonAnswer" value="'+i+'"> '+esc(a)+'</label>';}).join('')+'</fieldset><button class="pill" type="button" data-lesson-action="answer">Check answer</button>'+(p.feedback?'<p role="status">Try again. '+esc(l.explanation)+'</p>':'');}
+    else if(state.active==='mix'){
+      body='<p>'+(p.step===0?'Open the practice portfolio. Choose exactly two stocks, set weights totaling 100%, and run a simulation.':'Keep the same two stocks and historical range. Change the weights and run it again to compare the measurements.')+'</p><button class="pill" type="button" data-lesson-action="portfolio">Open practice portfolio</button>'+pairComparison(p);
+      if(p.step===0&&p.done)body+='<p>First simulation recorded. Continue before changing the weights.</p>';
+    } else if(p.step===0){
+      body='<p>Choose a supported stock. It will also appear in WATCH.'+(state.active==='risk'?' Then inspect its volatility on VOL.':' Look at its closing price on the screen.')+'</p><label for="lessonStockSearch">Stock name or symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a stock"><ul class="rows picks" id="lessonStockResults"></ul>'+(p.stock?'<p>Selected stock: '+esc(p.stock)+'</p>':'')+'<ul>'+observations(p)+'</ul>';
+    } else if(state.active==='returns'){
+      body='<p>Compare '+esc(p.stock)+' over one month and one year. Use the buttons below to change the instrument’s chart.</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
+    } else {body='<p>Now inspect DD for '+esc(p.stock)+'. Compare its fall from its peak with the volatility reading you just saw.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
+    el('lessonBody').innerHTML=body;
+    el('lessonNext').hidden=p.complete||p.step===2;el('lessonNext').disabled=!p.done;
+    save();
+  }
+  function start(id,restart){request++;MP.lessons.start(state,id,restart);render();MP.meter.openDrawer(true);note('');el('lessonTitle').focus();}
+  function exit(){request++;state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);el('guidedLessonsOpen').focus();}
+  function search(){var q=el('lessonStockSearch').value;el('lessonStockResults').innerHTML=MP.search.query(MP.app.stockChoices(),q,6).map(function(c){return '<li><button class="pick" type="button" data-lesson-stock="'+esc(c.symbol)+'">'+esc(c.symbol)+' — '+esc(c.name)+'</button></li>';}).join('')||'<li>No matching supported stocks.</li>';}
+  function selectStock(symbol){
+    var p=current(),id=state.active,run=++request;if(!p||p.step!==0||id==='mix')return;
+    if(!MP.app.stockChoices().some(function(c){return c.symbol===symbol;}))return;
+    if(MP.app.state.watch.list.length>=MP.watch.MAX&&!MP.app.isWatched(symbol))return note('WATCH is full. Choose a stock already on it, or remove one before adding another.');
+    note('Loading '+symbol+'…');
+    Promise.resolve(MP.app.ensureStock(symbol,true)).then(function(){
+      if(run!==request)return;
+      var series=MP.app.stockSeries(symbol);
+      if(!series||series.length<32)throw new Error('This lesson needs at least 32 daily closes. Try a stock with more available history.');
+      MP.app.addWatch(symbol);MP.app.setStats({coin:symbol});MP.app.setWatchRange(21);
+      p.stock=symbol;p.observations={};p.done=false;
+      if(id==='risk'){
+        MP.router.go('vol');MP.router.show('vol');var m=MP.app.learnMeasure('volatility','vol');
+        if(!m)throw new Error('VOL cannot be measured yet. Wait for daily history, then select the stock again.');
+        p.observations.vol={text:symbol+' · VOL: '+m.text+' annualized, over 30 sessions.'};
+      } else {MP.router.go('subject');MP.router.show('subject');p.observations.price={text:symbol+' · latest close: '+MP.fmt.usd(series[series.length-1].price,2)+' on '+series[series.length-1].date+'.'};}
+      p.done=true;MP.meter.openDrawer(true);render();note('Measurement ready. Inspect the instrument, then continue.');
+    }).catch(function(e){if(run===request)note(e.message);});
+  }
+  function inspect(action){
+    var p=current();if(!p||p.step!==1||!p.stock)return;
+    MP.app.setStats({coin:p.stock});
+    if(state.active==='returns'){
+      var n=action==='month'?21:252;MP.app.setWatchRange(n);MP.router.go('subject');MP.router.show('subject');
+      var series=MP.app.stockSeries(p.stock),slice=series&&series.slice(-(n+1));if(!slice||slice.length<3)return note('Closing prices are unavailable. Retry after they load.');
+      var change=(slice[slice.length-1].price/slice[0].price-1)*100;
+      p.observations[action]={text:p.stock+' · '+(action==='month'?'1-month':'1-year')+' chart: '+percent(change)+' price return, '+slice[0].date+' to '+slice[slice.length-1].date+(slice.length<n+1?' (available history is shorter).':'.')};
+      p.done=!!(p.observations.month&&p.observations.year);
+    } else {
+      MP.router.go('dd');MP.router.show('dd');var m=MP.app.learnMeasure('drawdown','dd');if(!m)return note('Drawdown is unavailable. Wait for daily history and try again.');
+      p.observations.dd={text:p.stock+' · DD: '+m.text+' from its running peak.'};p.done=true;
+    }
+    MP.meter.openDrawer(true);render();note(p.done?'Both measurements are recorded. Continue when you are ready.':'Inspect the other range to continue.');
+  }
+  function init(){
+    state=MP.lessons.read(MP.store.get(KEY,null));render();
+    el('guidedLessonsOpen').addEventListener('click',function(){var lib=el('lessonLibrary');lib.hidden=!lib.hidden;this.setAttribute('aria-expanded',String(!lib.hidden));});
+    el('lessonLibrary').addEventListener('click',function(e){var b=e.target.closest('[data-start-lesson]');if(b)start(b.dataset.startLesson,false);});
+    el('lessonGuide').addEventListener('input',function(e){if(e.target.id==='lessonStockSearch')search();});
+    el('lessonGuide').addEventListener('click',function(e){var stock=e.target.closest('[data-lesson-stock]');if(stock)return selectStock(stock.dataset.lessonStock);var b=e.target.closest('[data-lesson-action]');if(!b)return;var a=b.dataset.lessonAction;
+      if(a==='exit')return exit();if(a==='restart')return start(state.active,true);
+      if(a==='instrument'){document.querySelector('.meter').scrollIntoView({block:'start',behavior:'smooth'});return;}
+      if(a==='next'){if(MP.lessons.next(state)){request++;render();note('');el('lessonTitle').focus();}return;}
+      if(a==='portfolio'){MP.practice.open();return;}
+      if(a==='month'||a==='year'||a==='drawdown')return inspect(a);
+      if(a==='library'){exit();el('lessonLibrary').hidden=false;el('guidedLessonsOpen').setAttribute('aria-expanded','true');return;}
+      if(a==='answer'){var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus();}
+    });
+    document.addEventListener('practice:simulated',function(e){if(state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Return to the lesson above to continue.');});
+    if(state.active)MP.meter.openDrawer(true);
+  }
+  MP.guided={state:function(){return state;},start:start,exit:exit};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})(typeof globalThis!=='undefined'?globalThis:this);

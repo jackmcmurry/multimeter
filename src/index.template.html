@@ -287,6 +287,16 @@
 
     <div id="pageNotice"></div>
 
+    <section class="lesson-guide" id="lessonGuide" aria-labelledby="lessonTitle" hidden>
+      <div class="lesson-toolbar"><span id="lessonStep"></span><button class="pill" type="button" data-lesson-action="exit">Exit lesson</button><button class="pill" type="button" data-lesson-action="restart">Restart lesson</button></div>
+      <h3 id="lessonTitle" tabindex="-1"></h3>
+      <p id="lessonGoal"></p>
+      <div id="lessonBody"></div>
+      <p id="lessonNotice" role="status" aria-live="polite"></p>
+      <div class="lesson-actions"><button class="pill" type="button" id="lessonNext" data-lesson-action="next">Continue</button><button class="pill" type="button" data-lesson-action="instrument">Show instrument above</button></div>
+      <p class="foot" id="lessonSave"></p>
+    </section>
+
     <!-- BTC -->
     <section class="view" data-panel="hero">
       <div class="hero-sub">
@@ -401,6 +411,8 @@
 
     <!-- LEARN -->
     <section class="view" data-panel="learn" hidden>
+      <p><button type="button" class="pill" id="guidedLessonsOpen" aria-expanded="false" aria-controls="lessonLibrary">Guided lessons</button> <span class="foot">Learn by doing, in three short steps.</span></p>
+      <div id="lessonLibrary" hidden></div>
       <div id="learnCard"></div>
       <h3 class="learn-h">Today’s reading</h3>
       <p class="note-text" id="noteText"></p>

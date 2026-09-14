@@ -114,6 +114,24 @@
 
 * { box-sizing: border-box; }
 
+.lesson-guide, .lesson-card { border: 1px solid var(--rule); border-left: 3px solid var(--holster); border-radius: 6px; padding: 18px; margin: 16px 0; line-height: 1.6; background: var(--card); }
+.lesson-guide h3, .lesson-card h3 { margin: 8px 0; font-size: 20px; }
+.lesson-guide h4 { font-size: 18px; }
+.lesson-toolbar, .lesson-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.lesson-toolbar { font-size: 12px; color: var(--dim); }
+.lesson-toolbar span { margin-right: auto; }
+.lesson-guide fieldset { border: 0; margin: 0 0 16px; padding: 0; min-width: 0; }
+.lesson-guide legend { margin-bottom: 12px; font-weight: 600; }
+.lesson-answer { display: flex; gap: 10px; align-items: baseline; padding: 10px 4px; cursor: pointer; }
+.lesson-answer input { accent-color: var(--holster); flex-shrink: 0; }
+.lesson-guide button:disabled { opacity: .5; cursor: not-allowed; }
+.lesson-guide :focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
+.lesson-complete { color: var(--holster); font-size: 13px; }
+.lesson-comparison { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+.lesson-comparison th, .lesson-comparison td { text-align: left; padding: 8px; border-bottom: 1px solid var(--rule); }
+.lesson-comparison caption { text-align: left; color: var(--dim); margin: 8px 0; }
+@media(max-width:480px) { .lesson-guide,.lesson-card { padding: 12px; } .lesson-toolbar span { flex-basis:100%; } }
+
 html { background: var(--bg); }
 
 body {

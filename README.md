@@ -6,6 +6,8 @@
 
 A financial instrument for learning how markets move. Turn the dial to a stock or cryptocurrency, measure its volatility, correlation or drawdown, and press LEARN to understand the number on screen.
 
+Build a hypothetical stock mix in **WATCH → INFO → Practice portfolio**, or try **LEARN → INFO → Guided lessons**. Read the [practice portfolio and lessons guide](docs/learning.md).
+
 > [!IMPORTANT]
 > **Multimeter is in beta and is a prototype.** Stock data comes from published snapshots and may be delayed.
 
