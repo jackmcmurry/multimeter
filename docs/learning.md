@@ -8,7 +8,7 @@ This is a price-history exercise, not a record of real holdings. There are no de
 
 ## Guided lessons
 
-Choose **Start learning** in the welcome screen or below the instrument. Returning students can choose **Continue learning**; after all three lessons are complete, **Review lessons** opens the lesson list. You can also open **LEARN → INFO → Guided lessons**. The existing explanation of your selected measurement stays available.
+Choose **Start learning** in the welcome screen or in the learning bar. The bar sits above the instrument in desktop browsers and below it on phones and in the installed app. Returning students can choose **Continue learning**; after all three lessons are complete, **Review lessons** opens the lesson list. You can also open **LEARN → INFO → Guided lessons**. The existing explanation of your selected measurement stays available.
 
 - **Price versus return:** choose a stock, compare its 1-month and 1-year chart ranges, then answer what measures performance over a period.
 - **Volatility versus drawdown:** inspect VOL and DD for the same stock, then distinguish variability from a decline below a peak.

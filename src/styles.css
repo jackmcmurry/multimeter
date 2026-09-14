@@ -191,6 +191,14 @@
 .learn-entry-go:hover { background: var(--holster-lt); }
 .learn-entry-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 
+/* Reserve a compact row before the instrument in desktop browser windows.
+ * Its width is independent of the meter's height-fitting calculation. */
+@media (min-width: 860px) and (min-aspect-ratio: 6/5) and (display-mode: browser) {
+  .learn-entry { width: min(100%, 960px); padding: 8px 16px; gap: 8px 16px; border-radius: 8px; }
+  .learn-entry-text { flex: 1 1 240px; }
+  .learn-entry-go { padding: 10px 18px; }
+}
+
 /* ---- the lesson dock ----------------------------------------------------- */
 .lesson-dock {
   position: fixed;

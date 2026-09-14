@@ -1227,11 +1227,17 @@
 
     fitToWindow();
     var fitQueued = false;
-    root.addEventListener('resize', function () {
+    function queueFit() {
       if (fitQueued) return;
       fitQueued = true;
       (root.requestAnimationFrame || setTimeout)(function () { fitQueued = false; fitToWindow(); });
-    });
+    }
+    root.addEventListener('resize', queueFit);
+    desktopLearning.addEventListener('change', queueFit);
+    var learningEntry = el('learnEntry');
+    if (learningEntry && root.ResizeObserver) new ResizeObserver(function () {
+      if (desktopLearning.matches) queueFit();
+    }).observe(learningEntry);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
   }
 
@@ -1315,6 +1321,7 @@
 
   /* ---- fitting the window ------------------------------------------------- */
   var FIT_MIN_W = 300;   /* narrower than this and the dial is too small to turn; scroll instead */
+  var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5) and (display-mode: browser)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
    * window's height with no scrolling. The meter's height is (almost exactly)
@@ -1331,10 +1338,23 @@
      * bottom padding hanging past the fold, so the page scrolled by exactly
      * that much on a laptop. */
     var stage = meter.parentNode;
+    var entry = el('learnEntry');
+    /* Move the existing control, so keyboard and reading order follow the
+     * desktop layout. Installed and narrow layouts keep their original order. */
+    if (entry && stage) {
+      var focus = document.activeElement;
+      var restoreFocus = entry.contains(focus);
+      if (desktopLearning.matches && entry.nextElementSibling !== meter) stage.insertBefore(entry, meter);
+      else if (!desktopLearning.matches && meter.nextElementSibling !== entry) stage.insertBefore(entry, meter.nextSibling);
+      if (restoreFocus && document.activeElement !== focus) focus.focus({ preventScroll: true });
+    }
     var cs = stage ? root.getComputedStyle(stage) : null;
     var padTop = cs ? parseFloat(cs.paddingTop) || 0 : 0;
     var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
     var avail = h - padTop - padBottom;
+    if (desktopLearning.matches && entry && !entry.hidden) {
+      avail -= entry.offsetHeight + (parseFloat(cs.rowGap) || 0);
+    }
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
     if (h1 > avail && w1 > FIT_MIN_W) {
       var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
