@@ -12,7 +12,7 @@
 <meta property="og:image" content="https://multimtr.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The Multimeter: a yellow handheld meter with bitcoin's price and chart on its screen and a rotary dial of market readings beside it.">
+<meta property="og:image:alt" content="Multimeter’s mint wordmark with two angular Ms and rounded lettering. Learn how markets move: explore real data, compare measurements, and understand the numbers.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://multimtr.com/og.png">
 <meta property="og:description" content="A running answer from daily closes: correlation regimes, beta, volatility and drawdowns for bitcoin against the Nasdaq and the S&amp;P 500.">
@@ -401,32 +401,23 @@ body {
   justify-content: space-between;
   padding: 0 4px 12px;
 }
-/* Original wordmark proportions; the center join is raised in the SVG. */
+/* One outlined master keeps both logo Ms and rounded letters identical everywhere. */
 .brand {
   display: inline-flex;
   align-items: baseline;
-  font-family: Arial, sans-serif;
   font-size: 30px;
   font-weight: 800;
   letter-spacing: 0.005em;
   line-height: 1;
   color: var(--brand);
 }
-/* The app-icon M is deliberately larger than ULTIMETER. Preserve its shape
- * and baseline while giving the first letter a stronger silhouette. */
-.brand-mark {
-  width: 1.1088em;
-  height: .9422em;
-  margin-right: .16em;
-  /* The square cap overshoots the box by half a stroke, so the box is lifted
-     by that much to put the M's foot on the wordmark's baseline rather than
-     below it. */
-  margin-bottom: .0896em;
-  flex-shrink: 0;
-  overflow: visible;
-}
+/* Both app-icon Ms stand taller than the lighter, rounded letter groups. */
+.wordmark { display: block; width: 100%; height: auto; overflow: visible; }
+.brand { width: 9.3em; max-width: calc(100% - 90px); flex-shrink: 1; }
+.page-wordmark { display: block; width: min(320px, 100%); color: var(--brand); margin: 0 0 24px; }
+.intro-title .wordmark { max-width: 360px; }
+@media print { .page-wordmark { color: #000 !important; width: 240px; } }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; transform: translateY(-.07em); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* the model number is equipment labelling, not a second brand */
@@ -2086,6 +2077,23 @@ tr.row-rule th {
 
 <main class="stage">
   <article class="drawer findings">
+    <a class="page-wordmark" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" class="wordmark" viewBox="0 0 694 104" role="img" aria-label="Multimeter">
+<g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="6">
+<path transform="translate(-14 -16) scale(2.05)" d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
+<path transform="translate(311 -16) scale(2.05)" d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
+</g>
+<g fill="currentColor">
+<!-- Rounded outlined letters; the two angular Ms share the app-icon geometry. -->
+<path d="M109 30 Q109 26 113 26 H120 Q124 26 124 30 V62 Q124 76 140 76 Q156 76 156 62 V30 Q156 26 160 26 H167 Q171 26 171 30 V63 Q171 90 140 90 Q109 90 109 63 Z"/>
+<path d="M184 30 Q184 26 188 26 H195 Q199 26 199 30 V75 H229 Q233 75 233 79 V85 Q233 89 229 89 H188 Q184 89 184 85 Z"/>
+<path d="M239 26 H291 Q295 26 295 30 V36 Q295 40 291 40 H272 V85 Q272 89 268 89 H261 Q257 89 257 85 V40 H239 Q235 40 235 36 V30 Q235 26 239 26 Z"/>
+<path d="M305 26 H312 Q316 26 316 30 V85 Q316 89 312 89 H305 Q301 89 301 85 V30 Q301 26 305 26 Z"/>
+<path d="M434 26 H476 Q480 26 480 30 V36 Q480 40 476 40 H445 V51 H471 Q475 51 475 55 V60 Q475 64 471 64 H445 V75 H476 Q480 75 480 79 V85 Q480 89 476 89 H434 Q430 89 430 85 V30 Q430 26 434 26 Z"/>
+<path d="M491 26 H543 Q547 26 547 30 V36 Q547 40 543 40 H524 V85 Q524 89 520 89 H513 Q509 89 509 85 V40 H491 Q487 40 487 36 V30 Q487 26 491 26 Z"/>
+<path d="M559 26 H601 Q605 26 605 30 V36 Q605 40 601 40 H570 V51 H596 Q600 51 600 55 V60 Q600 64 596 64 H570 V75 H601 Q605 75 605 79 V85 Q605 89 601 89 H559 Q555 89 555 85 V30 Q555 26 559 26 Z"/>
+<path fill-rule="evenodd" d="M622 26 H652 Q678 26 678 48 Q678 63 664 68 L684 86 Q687 89 682 89 H669 Q666 89 664 87 L641 66 H633 V85 Q633 89 629 89 H622 Q618 89 618 85 V30 Q618 26 622 26 Z M633 40 V53 H652 Q663 53 663 47 Q663 40 652 40 Z"/>
+</g>
+</svg></a>
     <header class="drawer-head">
       <h2>Is bitcoin a tech stock?</h2>
       <span class="drawer-tools">

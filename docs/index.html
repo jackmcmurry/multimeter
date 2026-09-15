@@ -12,7 +12,7 @@
 <meta property="og:image" content="https://multimtr.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The Multimeter: a yellow handheld meter with bitcoin's price and chart on its screen and a rotary dial of market readings beside it.">
+<meta property="og:image:alt" content="Multimeter: two angular Ms and lighter rounded lettering in mint. Learn how markets move.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://multimtr.com/og.png">
 <meta property="og:description" content="A live market multimeter: bitcoin, ether, the Nasdaq and the S&amp;P on one dial, with correlation, volatility, drawdowns, the week's highest and lowest movers, and a watch list of Nasdaq-100 stocks.">
@@ -406,32 +406,23 @@ body {
   justify-content: space-between;
   padding: 0 4px 12px;
 }
-/* Original wordmark proportions; the center join is raised in the SVG. */
+/* One outlined master keeps both logo Ms and rounded letters identical everywhere. */
 .brand {
   display: inline-flex;
   align-items: baseline;
-  font-family: Arial, sans-serif;
   font-size: 30px;
   font-weight: 800;
   letter-spacing: 0.005em;
   line-height: 1;
   color: var(--brand);
 }
-/* The app-icon M is deliberately larger than ULTIMETER. Preserve its shape
- * and baseline while giving the first letter a stronger silhouette. */
-.brand-mark {
-  width: 1.1088em;
-  height: .9422em;
-  margin-right: .16em;
-  /* The square cap overshoots the box by half a stroke, so the box is lifted
-     by that much to put the M's foot on the wordmark's baseline rather than
-     below it. */
-  margin-bottom: .0896em;
-  flex-shrink: 0;
-  overflow: visible;
-}
+/* Both app-icon Ms stand taller than the lighter, rounded letter groups. */
+.wordmark { display: block; width: 100%; height: auto; overflow: visible; }
+.brand { width: 9.3em; max-width: calc(100% - 90px); flex-shrink: 1; }
+.page-wordmark { display: block; width: min(320px, 100%); color: var(--brand); margin: 0 0 24px; }
+.intro-title .wordmark { max-width: 360px; }
+@media print { .page-wordmark { color: #000 !important; width: 240px; } }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; transform: translateY(-.07em); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* the model number is equipment labelling, not a second brand */
@@ -2093,7 +2084,23 @@ tr.row-rule th {
      visible behind it, because the instrument is the explanation. -->
 <div class="intro" id="intro" hidden role="dialog" aria-modal="true" aria-labelledby="introTitle">
   <div class="intro-card" role="document">
-    <h2 class="intro-title" id="introTitle">MULTIMETER</h2>
+    <h2 class="intro-title" id="introTitle"><svg xmlns="http://www.w3.org/2000/svg" class="wordmark" viewBox="0 0 694 104" role="img" aria-label="Multimeter">
+<g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="6">
+<path transform="translate(-14 -16) scale(2.05)" d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
+<path transform="translate(311 -16) scale(2.05)" d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
+</g>
+<g fill="currentColor">
+<!-- Rounded outlined letters; the two angular Ms share the app-icon geometry. -->
+<path d="M109 30 Q109 26 113 26 H120 Q124 26 124 30 V62 Q124 76 140 76 Q156 76 156 62 V30 Q156 26 160 26 H167 Q171 26 171 30 V63 Q171 90 140 90 Q109 90 109 63 Z"/>
+<path d="M184 30 Q184 26 188 26 H195 Q199 26 199 30 V75 H229 Q233 75 233 79 V85 Q233 89 229 89 H188 Q184 89 184 85 Z"/>
+<path d="M239 26 H291 Q295 26 295 30 V36 Q295 40 291 40 H272 V85 Q272 89 268 89 H261 Q257 89 257 85 V40 H239 Q235 40 235 36 V30 Q235 26 239 26 Z"/>
+<path d="M305 26 H312 Q316 26 316 30 V85 Q316 89 312 89 H305 Q301 89 301 85 V30 Q301 26 305 26 Z"/>
+<path d="M434 26 H476 Q480 26 480 30 V36 Q480 40 476 40 H445 V51 H471 Q475 51 475 55 V60 Q475 64 471 64 H445 V75 H476 Q480 75 480 79 V85 Q480 89 476 89 H434 Q430 89 430 85 V30 Q430 26 434 26 Z"/>
+<path d="M491 26 H543 Q547 26 547 30 V36 Q547 40 543 40 H524 V85 Q524 89 520 89 H513 Q509 89 509 85 V40 H491 Q487 40 487 36 V30 Q487 26 491 26 Z"/>
+<path d="M559 26 H601 Q605 26 605 30 V36 Q605 40 601 40 H570 V51 H596 Q600 51 600 55 V60 Q600 64 596 64 H570 V75 H601 Q605 75 605 79 V85 Q605 89 601 89 H559 Q555 89 555 85 V30 Q555 26 559 26 Z"/>
+<path fill-rule="evenodd" d="M622 26 H652 Q678 26 678 48 Q678 63 664 68 L684 86 Q687 89 682 89 H669 Q666 89 664 87 L641 66 H633 V85 Q633 89 629 89 H622 Q618 89 618 85 V30 Q618 26 622 26 Z M633 40 V53 H652 Q663 53 663 47 Q663 40 652 40 Z"/>
+</g>
+</svg></h2>
     <p class="intro-lead">A financial instrument for exploring how markets move.</p>
     <ol class="intro-loop">
       <li><b>1 · CHOOSE</b><span>Search for an asset, such as NVIDIA.</span></li>
@@ -2118,15 +2125,23 @@ tr.row-rule th {
         <div class="face face-screen">
 
         <div class="head">
-          <!-- the wordmark: the first M is drawn, not typed, so the letter
-               and the rising line are the same four strokes. The path, its
-               stroke and its joins are src/icon.svg's, verbatim; the viewBox
-               origin crops that 64x64 icon down to the glyph. Change the mark
-               in src/icon.svg and copy it here, so the tab icon, the app icon
-               and this wordmark can never drift apart. -->
-          <span class="brand">
-<svg class="brand-mark" viewBox="12 15 40 34" role="img" aria-label="Multimeter"><path d="M12 49 L22 20 L32 36 L42 15 L52 38" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="6"/></svg><span class="brand-word" aria-hidden="true">ULTIMETER</span>
-          </span>
+          <span class="brand"><svg xmlns="http://www.w3.org/2000/svg" class="wordmark" viewBox="0 0 694 104" role="img" aria-label="Multimeter">
+<g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="6">
+<path transform="translate(-14 -16) scale(2.05)" d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
+<path transform="translate(311 -16) scale(2.05)" d="M12 49 L22 20 L32 36 L42 15 L52 38"/>
+</g>
+<g fill="currentColor">
+<!-- Rounded outlined letters; the two angular Ms share the app-icon geometry. -->
+<path d="M109 30 Q109 26 113 26 H120 Q124 26 124 30 V62 Q124 76 140 76 Q156 76 156 62 V30 Q156 26 160 26 H167 Q171 26 171 30 V63 Q171 90 140 90 Q109 90 109 63 Z"/>
+<path d="M184 30 Q184 26 188 26 H195 Q199 26 199 30 V75 H229 Q233 75 233 79 V85 Q233 89 229 89 H188 Q184 89 184 85 Z"/>
+<path d="M239 26 H291 Q295 26 295 30 V36 Q295 40 291 40 H272 V85 Q272 89 268 89 H261 Q257 89 257 85 V40 H239 Q235 40 235 36 V30 Q235 26 239 26 Z"/>
+<path d="M305 26 H312 Q316 26 316 30 V85 Q316 89 312 89 H305 Q301 89 301 85 V30 Q301 26 305 26 Z"/>
+<path d="M434 26 H476 Q480 26 480 30 V36 Q480 40 476 40 H445 V51 H471 Q475 51 475 55 V60 Q475 64 471 64 H445 V75 H476 Q480 75 480 79 V85 Q480 89 476 89 H434 Q430 89 430 85 V30 Q430 26 434 26 Z"/>
+<path d="M491 26 H543 Q547 26 547 30 V36 Q547 40 543 40 H524 V85 Q524 89 520 89 H513 Q509 89 509 85 V40 H491 Q487 40 487 36 V30 Q487 26 491 26 Z"/>
+<path d="M559 26 H601 Q605 26 605 30 V36 Q605 40 601 40 H570 V51 H596 Q600 51 600 55 V60 Q600 64 596 64 H570 V75 H601 Q605 75 605 79 V85 Q605 89 601 89 H559 Q555 89 555 85 V30 Q555 26 559 26 Z"/>
+<path fill-rule="evenodd" d="M622 26 H652 Q678 26 678 48 Q678 63 664 68 L684 86 Q687 89 682 89 H669 Q666 89 664 87 L641 66 H633 V85 Q633 89 629 89 H622 Q618 89 618 85 V30 Q618 26 622 26 Z M633 40 V53 H652 Q663 53 663 47 Q663 40 652 40 Z"/>
+</g>
+</svg></span>
           <span class="head-right">
             <span class="skin-picker">
               <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
@@ -7786,6 +7801,8 @@ tr.row-rule th {
     ]).then(function () { return document.fonts.ready; }).catch(function () { /* system fonts then */ });
   }
 
+  var wordmark = "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"wordmark\" viewBox=\"0 0 694 104\" role=\"img\" aria-label=\"Multimeter\">\n<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.5\" stroke-linejoin=\"miter\" stroke-linecap=\"square\" stroke-miterlimit=\"6\">\n<path transform=\"translate(-14 -16) scale(2.05)\" d=\"M12 49 L22 20 L32 36 L42 15 L52 38\"/>\n<path transform=\"translate(311 -16) scale(2.05)\" d=\"M12 49 L22 20 L32 36 L42 15 L52 38\"/>\n</g>\n<g fill=\"currentColor\">\n<!-- Rounded outlined letters; the two angular Ms share the app-icon geometry. -->\n<path d=\"M109 30 Q109 26 113 26 H120 Q124 26 124 30 V62 Q124 76 140 76 Q156 76 156 62 V30 Q156 26 160 26 H167 Q171 26 171 30 V63 Q171 90 140 90 Q109 90 109 63 Z\"/>\n<path d=\"M184 30 Q184 26 188 26 H195 Q199 26 199 30 V75 H229 Q233 75 233 79 V85 Q233 89 229 89 H188 Q184 89 184 85 Z\"/>\n<path d=\"M239 26 H291 Q295 26 295 30 V36 Q295 40 291 40 H272 V85 Q272 89 268 89 H261 Q257 89 257 85 V40 H239 Q235 40 235 36 V30 Q235 26 239 26 Z\"/>\n<path d=\"M305 26 H312 Q316 26 316 30 V85 Q316 89 312 89 H305 Q301 89 301 85 V30 Q301 26 305 26 Z\"/>\n<path d=\"M434 26 H476 Q480 26 480 30 V36 Q480 40 476 40 H445 V51 H471 Q475 51 475 55 V60 Q475 64 471 64 H445 V75 H476 Q480 75 480 79 V85 Q480 89 476 89 H434 Q430 89 430 85 V30 Q430 26 434 26 Z\"/>\n<path d=\"M491 26 H543 Q547 26 547 30 V36 Q547 40 543 40 H524 V85 Q524 89 520 89 H513 Q509 89 509 85 V40 H491 Q487 40 487 36 V30 Q487 26 491 26 Z\"/>\n<path d=\"M559 26 H601 Q605 26 605 30 V36 Q605 40 601 40 H570 V51 H596 Q600 51 600 55 V60 Q600 64 596 64 H570 V75 H601 Q605 75 605 79 V85 Q605 89 601 89 H559 Q555 89 555 85 V30 Q555 26 559 26 Z\"/>\n<path fill-rule=\"evenodd\" d=\"M622 26 H652 Q678 26 678 48 Q678 63 664 68 L684 86 Q687 89 682 89 H669 Q666 89 664 87 L641 66 H633 V85 Q633 89 629 89 H622 Q618 89 618 85 V30 Q618 26 622 26 Z M633 40 V53 H652 Q663 53 663 47 Q663 40 652 40 Z\"/>\n</g>\n</svg>";
+
   /* r: a reading from MP.app.reading; meta: { mode, dir, change, label, site, when } */
   function renderCard(r, meta) {
     var canvas = document.createElement('canvas');
@@ -7796,10 +7813,12 @@ tr.row-rule th {
     var series = r.spark || [];
 
     return fontsReady().then(function () {
-      return series.length > 1
+      var chart = series.length > 1
         ? svgToImage(G.smoothLine({ values: series, w: 1040, h: 250, color: color, strokeWidth: 3 }), 1040, 250)
         : null;
-    }).then(function (chart) {
+      return Promise.all([chart, svgToImage(wordmark.replace(/currentColor/g, token('--holster')), 260, 39)]);
+    }).then(function (images) {
+      var chart = images[0];
       ctx.fillStyle = token('--bg');
       ctx.fillRect(0, 0, W, H);
 
@@ -7816,8 +7835,7 @@ tr.row-rule th {
       ctx.fillText(String(meta.mode || '').toUpperCase(), 80, 74);
       ctx.textAlign = 'right';
       ctx.fillStyle = token('--holster');
-      ctx.font = '900 28px "Neue Haas Grotesk Display Pro", "Helvetica Neue", "Inter Tight", sans-serif';   /* the wordmark, as on the meter */
-      ctx.fillText('MULTIMETER', W - 80, 70);
+      ctx.drawImage(images[1], W - 340, 63, 260, 39);
       ctx.textAlign = 'left';
 
       if (chart) ctx.drawImage(chart, 80, 118, 1040, 250);

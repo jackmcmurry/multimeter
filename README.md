@@ -2,7 +2,7 @@
 
 [multimtr.com](https://www.multimtr.com/)
 
-<img src="docs/icons/icon.svg" width="160" height="160" alt="Multimeter app icon in Meter Mint on a dark background">
+<img src="docs/multimeter-logo.svg" width="640" alt="Multimeter: two angular rising-line Ms with lighter rounded lettering in Meter Mint">
 
 A financial instrument for learning how markets move. Turn the dial to a stock or cryptocurrency, measure its volatility, correlation or drawdown, and press LEARN to understand the number on screen.
 
@@ -21,11 +21,11 @@ Build a hypothetical stock mix in **WATCH → INFO → Practice portfolio**, or 
   <tr>
     <td align="center" valign="top">
       <img src="docs/screenshot-desktop.png" width="640"
-           alt="Current horizontal Multimeter in Meter Mint, showing Apple’s one-month price chart beside the dial.">
+           alt="Desktop Multimeter with the unified angular-M wordmark in Meter Mint, showing Apple’s one-month price chart beside the dial.">
     </td>
     <td align="center" valign="top">
       <img src="docs/screenshot-phone.png" width="178"
-           alt="Current vertical Multimeter in Meter Mint, showing Apple’s one-month price chart with the dial beneath it.">
+           alt="Phone Multimeter with the unified angular-M wordmark in Meter Mint, showing Apple’s one-month price chart with the dial beneath it.">
     </td>
   </tr>
 </table>

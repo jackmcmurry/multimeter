@@ -98,6 +98,13 @@ function Write-Text([string]$relative, [string]$text) {
 $template = Read-Text 'src/index.template.html'
 $findingsTemplate = Read-Text 'src/findings.template.html'
 $css = Read-Text 'src/styles.css'
+$wordmark = (Read-Text 'src/wordmark.svg').Trim()
+$wordmarkJson = ConvertTo-Json -InputObject $wordmark -Compress
+function Apply-Brand([string]$page) {
+    return $page.Replace('<!-- @inject wordmark -->', $wordmark).Replace('"__MULTIMETER_WORDMARK__"', $wordmarkJson)
+}
+$logo = $wordmark.Replace('viewBox="0 0 694 104"', 'width="1041" height="216" viewBox="-30 -20 754 144"').Replace('currentColor', '#2ee59d').Replace('<g fill="none"', '<rect x="-30" y="-20" width="754" height="144" fill="#24282e"/><g fill="none"')
+Write-Text 'docs/multimeter-logo.svg' $logo | Out-Null
 
 $cssMarker = '/* @inject styles.css */'
 $libMarker = '/* @inject lib */'
@@ -108,11 +115,11 @@ foreach ($t in @(@('index', $template), @('findings', $findingsTemplate))) {
 }
 
 # ---- release ---------------------------------------------------------------
-$release = $template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $libOrder))
+$release = Apply-Brand ($template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $libOrder)))
 $releaseKb = Write-Text 'docs/index.html' $release
 Write-Output "release  docs/index.html              $releaseKb KB  ($($libOrder.Count) modules)"
 
-$findingsPage = $findingsTemplate.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $findingsOrder))
+$findingsPage = Apply-Brand ($findingsTemplate.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $findingsOrder)))
 $findingsKb = Write-Text 'docs/findings.html' $findingsPage
 Write-Output "findings docs/findings.html           $findingsKb KB  ($($findingsOrder.Count) modules)"
 
@@ -131,7 +138,8 @@ Write-Output "sw       docs/sw.js                   version $version"
 
 # ---- debug -----------------------------------------------------------------
 if (-not $ReleaseOnly) {
-    $debug = $template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources ($libOrder + $debugOrder)))
+    $debug = Apply-Brand ($template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources ($libOrder + $debugOrder))))
+    Write-Text 'dist/brand-social.html' (Apply-Brand (Read-Text 'src/social.template.html')) | Out-Null
     $debugKb = Write-Text 'dist/multimeter.debug.html' $debug
     Write-Output "debug    dist/multimeter.debug.html   $debugKb KB  (+ data job, tests, synthetic render)"
     Write-Text 'dist/findings.html' $findingsPage | Out-Null
@@ -160,6 +168,7 @@ $bundles = @{ 'release' = $release; 'findings' = $findingsPage }
 foreach ($name in $bundles.Keys) {
     $b = $bundles[$name]
     if ($b.IndexOf('@inject') -ge 0) { $problems += "an inject marker survived into the $name bundle" }
+    if ($b.IndexOf('__MULTIMETER_WORDMARK__') -ge 0) { $problems += "the wordmark placeholder survived into the $name bundle" }
     foreach ($leak in @('MP.debug', 'MP.test', 'MP.dataTest', 'MP.pipeline', 'MP.note', 'MP.universe', 'MP.probePrompt')) {
         if ($b.IndexOf($leak) -ge 0) { $problems += "$leak leaked into the $name bundle" }
     }

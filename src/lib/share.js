@@ -74,6 +74,8 @@
     ]).then(function () { return document.fonts.ready; }).catch(function () { /* system fonts then */ });
   }
 
+  var wordmark = "__MULTIMETER_WORDMARK__";
+
   /* r: a reading from MP.app.reading; meta: { mode, dir, change, label, site, when } */
   function renderCard(r, meta) {
     var canvas = document.createElement('canvas');
@@ -84,10 +86,12 @@
     var series = r.spark || [];
 
     return fontsReady().then(function () {
-      return series.length > 1
+      var chart = series.length > 1
         ? svgToImage(G.smoothLine({ values: series, w: 1040, h: 250, color: color, strokeWidth: 3 }), 1040, 250)
         : null;
-    }).then(function (chart) {
+      return Promise.all([chart, svgToImage(wordmark.replace(/currentColor/g, token('--holster')), 260, 39)]);
+    }).then(function (images) {
+      var chart = images[0];
       ctx.fillStyle = token('--bg');
       ctx.fillRect(0, 0, W, H);
 
@@ -104,8 +108,7 @@
       ctx.fillText(String(meta.mode || '').toUpperCase(), 80, 74);
       ctx.textAlign = 'right';
       ctx.fillStyle = token('--holster');
-      ctx.font = '900 28px "Neue Haas Grotesk Display Pro", "Helvetica Neue", "Inter Tight", sans-serif';   /* the wordmark, as on the meter */
-      ctx.fillText('MULTIMETER', W - 80, 70);
+      ctx.drawImage(images[1], W - 340, 63, 260, 39);
       ctx.textAlign = 'left';
 
       if (chart) ctx.drawImage(chart, 80, 118, 1040, 250);

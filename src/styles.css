@@ -361,32 +361,23 @@ body {
   justify-content: space-between;
   padding: 0 4px 12px;
 }
-/* Original wordmark proportions; the center join is raised in the SVG. */
+/* One outlined master keeps both logo Ms and rounded letters identical everywhere. */
 .brand {
   display: inline-flex;
   align-items: baseline;
-  font-family: Arial, sans-serif;
   font-size: 30px;
   font-weight: 800;
   letter-spacing: 0.005em;
   line-height: 1;
   color: var(--brand);
 }
-/* The app-icon M is deliberately larger than ULTIMETER. Preserve its shape
- * and baseline while giving the first letter a stronger silhouette. */
-.brand-mark {
-  width: 1.1088em;
-  height: .9422em;
-  margin-right: .16em;
-  /* The square cap overshoots the box by half a stroke, so the box is lifted
-     by that much to put the M's foot on the wordmark's baseline rather than
-     below it. */
-  margin-bottom: .0896em;
-  flex-shrink: 0;
-  overflow: visible;
-}
+/* Both app-icon Ms stand taller than the lighter, rounded letter groups. */
+.wordmark { display: block; width: 100%; height: auto; overflow: visible; }
+.brand { width: 9.3em; max-width: calc(100% - 90px); flex-shrink: 1; }
+.page-wordmark { display: block; width: min(320px, 100%); color: var(--brand); margin: 0 0 24px; }
+.intro-title .wordmark { max-width: 360px; }
+@media print { .page-wordmark { color: #000 !important; width: 240px; } }
 .head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.brand-word { text-shadow: none; transform: translateY(-.07em); }
 .head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
 
 /* the model number is equipment labelling, not a second brand */
