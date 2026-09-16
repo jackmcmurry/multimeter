@@ -1347,7 +1347,7 @@
     document.documentElement.style.setProperty('--student-controls-height',controlsHeight+'px');
     document.documentElement.style.setProperty('--utility-footer-height',footerHeight+'px');
     var gap=cs?parseFloat(cs.rowGap)||0:0;
-    var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - gap;
+    var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - (controlsHeight ? gap : 0);
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
     var readableMinimum = Math.min(w1, FIT_READABLE_W);
     /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */

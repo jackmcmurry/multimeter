@@ -27,7 +27,7 @@
  * ========================================================================== */
 
 :root {
-  --student-controls-height: 160px;
+  --student-controls-height: 0px;
   --utility-footer-height: 64px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
@@ -2081,6 +2081,17 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
  .student-controls .learn-entry-go { width:auto; padding:8px; }
 }
 
+/* Compact navigation stays inside the instrument; dormant lessons reserve no space. */
+.student-controls[hidden], .explore-menu[hidden] { display:none; }
+.explore-control { position:relative; display:inline-flex; }
+.explore-toggle { min-height:44px; padding:8px 12px; border:1px solid var(--rule); border-radius:6px; background:var(--cell); color:var(--text); font:600 15px var(--f-body); cursor:pointer; }
+.explore-menu { position:absolute; left:0; top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
+.explore-menu button { min-height:44px; padding:10px 12px; text-align:left; background:var(--cell); border:1px solid var(--rule); color:var(--text); font:500 16px var(--f-body); cursor:pointer; }
+.explore-menu button:hover { border-color:var(--holster); }
+.explore-toggle:focus-visible,.explore-menu button:focus-visible { outline:2px solid var(--holster); outline-offset:2px; }
+.head:has(.explore-control) { position:relative; z-index:10; flex-wrap:wrap; gap:10px; }
+.head-right:has(.explore-control) { flex-wrap:wrap; gap:10px; }
+
 </style>
 <style>
 body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 system-ui,sans-serif;margin:0}
@@ -2133,16 +2144,16 @@ body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 syst
 <section aria-labelledby="prepare"><h2 id="prepare">Before the session</h2>
 <ul><li>Use one phone or computer per student or pair, with internet access. No account is required. Have paper ready, or print the worksheet below.</li>
 <li>Open Multimeter and check that <b>Price versus return</b> loads before participants arrive. The starter tries Apple, then Microsoft, then NVIDIA, and requires at least 253 closing prices. Use the company and actual dates displayed; values can change as data updates.</li>
-<li>For new learners, choose <b>Start experiment</b>. For returning learners, choose <b>Lessons</b> and open <b>Price versus return</b> to resume. Use saved observations for steps already finished, or deliberately choose <b>Restart lesson</b> for a fresh run: it clears that lesson’s saved work. If the lesson is complete, discuss the saved observations and do the worksheet questions, or restart to repeat the on-screen activity. Opening the library does not reset progress.</li>
+<li>For new learners, choose <b>Explore → Start experiment</b>. For returning learners, choose <b>Explore → Lessons</b> and open <b>Price versus return</b> to resume. Use saved observations for steps already finished, or deliberately choose <b>Restart lesson</b> for a fresh run: it clears that lesson’s saved work. If the lesson is complete, discuss the saved observations and do the worksheet questions, or restart to repeat the on-screen activity. Opening the library does not reset progress.</li>
 <li>Tell participants: “We are investigating historical prices, not choosing investments.” Keep the answer notes out of view until the discussion.</li></ul></section>
 <section aria-labelledby="run"><h2 id="run">Lead the session</h2>
 <h3><span class="time">0–2 minutes · Predict</span>Start with a question</h3>
 <p>“If one company’s share costs more than another’s, does that mean it performed better?” Give everyone time to write or tell a partner why. Collect a few explanations without revealing the answer.</p>
 <h3><span class="time">2–7 minutes · Explore</span>Compare the same company over two periods</h3>
 <ol><li>Start or resume <b>Price versus return</b>. In step 1, record the company, latest closing price, and its date. Choose <b>Continue</b>.</li>
-<li>In step 2, choose <b>View 1 month</b>. Record the dates and percentage price return in the worksheet. Choose <b>Explore charts</b> to see the history, then <b>Back to task</b> to return.</li>
+<li>In step 2, choose <b>View 1 month</b>. Record the dates and percentage price return in the worksheet. Choose <b>Explore → Explore charts</b> to see the history, then <b>Back to task</b> to return.</li>
 <li>Choose <b>View 1 year</b> and record that range’s dates and return. Keep the same company for both readings. Returns may be positive, negative, or zero.</li>
-<li>If the meaning is unclear, choose <b>Explain this</b> for the current measurement, then <b>Back to task</b>. This differs from <b>PROBE</b>, which answers questions about available figures. Leave the final lesson question for the understanding check.</li></ol>
+<li>If the meaning is unclear, choose <b>Explore → Explain this</b> for the current measurement, then <b>Back to task</b>. This differs from <b>PROBE</b>, which answers questions about available figures. Leave the final lesson question for the understanding check.</li></ol>
 <p class="note">If you choose <b>Change company</b>, wait until its history is validated, then repeat both readings. A successful company change resets this lesson’s company-dependent observations.</p>
 <h3><span class="time">7–11 minutes · Discuss</span>Ask participants to explain their evidence</h3>
 <ul><li>What does the closing price tell you? What extra information does the percentage return give you?</li><li>Why can the same company have different returns over a month and a year? Refer to your actual dates, even if the returns happen to be equal.</li><li>What can these readings tell you about the past? What can they not tell you about tomorrow or the path between the two dates?</li></ul>
@@ -2160,7 +2171,7 @@ body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 syst
 <p>What does comparing these readings show? Mention the period in your explanation.</p><div class="write-line"></div>
 <p><b>1.</b> A hypothetical share rises from $50 to $55. What is its percentage price return? Explain how you know.</p><div class="write-line"></div>
 <p><b>2.</b> Another share costs $200. Does that alone prove it performed better? What information would you need?</p><div class="write-line"></div>
-<p><b>Testing version:</b> student-d3928d9c9f28<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
+<p><b>Testing version:</b> student-c21af0194798<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
 <p>Session status: □ Live activity completed &nbsp; □ Live activity could not be completed</p>
 <p>Multimeter: multimtr.com · Historical price changes are not predictions.</p></section>
 <section class="answers" id="answers" aria-labelledby="answers-title"><p class="eyebrow">FACILITATOR ONLY · DISCUSS AFTER INDEPENDENT ANSWERS</p><h2 id="answers-title">Answers and observation notes</h2>

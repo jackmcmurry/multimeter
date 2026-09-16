@@ -72,20 +72,7 @@
 </div>
 
 <main class="stage">
-  <div class="student-controls" id="studentControls">
-  <nav class="student-nav" id="studentNav" aria-label="Explore and learn">
-    <button type="button" data-student-action="choose">Choose an asset</button>
-    <button type="button" data-student-action="charts">Explore charts</button>
-    <button type="button" data-student-action="explain">Explain this</button>
-    <button type="button" data-student-action="lessons">Lessons</button>
-  </nav>
-  <div class="learn-entry" id="learnEntry" hidden>
-    <div class="learn-entry-text">
-      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
-      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
-    </div>
-    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
-  </div>
+  <div class="student-controls" id="studentControls" hidden>
 <div class="lesson-dock" id="lessonDock" hidden>
   <div class="lesson-dock-inner">
     <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
@@ -111,6 +98,16 @@
         <div class="head">
           <span class="brand"><!-- @inject wordmark --></span>
           <span class="head-right">
+            <span class="explore-control">
+              <button type="button" class="explore-toggle" id="exploreToggle" aria-expanded="false" aria-controls="studentNav">Explore</button>
+              <nav class="explore-menu" id="studentNav" aria-label="Explore and learn" hidden>
+                <button type="button" data-student-action="start" id="exploreStart">Start experiment</button>
+                <button type="button" data-student-action="choose">Choose an asset</button>
+                <button type="button" data-student-action="charts">Explore charts</button>
+                <button type="button" data-student-action="explain">Explain this</button>
+                <button type="button" data-student-action="lessons">Lessons</button>
+              </nav>
+            </span>
             <span class="skin-picker">
               <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
@@ -473,7 +470,7 @@
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. The four buttons above the meter are always available: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
+      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. Open Explore in the meter header for these actions: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
       <p>You can also turn the dial by dragging it, using the mouse wheel, or pressing its arrow keys. Coin quotes are requested about once a minute. Stock and index snapshots can be delayed; use the dates shown with a reading to tell what period it describes. Measurements use historical closing prices.</p>
 
       <h2>Dial</h2>
@@ -487,7 +484,7 @@
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the strip beneath the navigation; <b>Back to task</b> returns to its instructions.</p>
+      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The Explore menu offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. After you start or resume, the current lesson stays in a compact strip above the meter; <b>Back to task</b> returns to its instructions.</p>
       <p>On the instrument, <b>DATA</b> opens search and <b>LEARN</b> explains the current measurement. <b>INDEX</b> switches the comparison on CORR, VOL and DD; <b>PROBE</b> opens questions about those readings. Other keys change with the screen: read their current labels. Clicking the display also opens the details.</p>
       <p><b>HOLD</b> freezes the display. <b>REL</b> shows changes from the reading you captured. <b>MIN/MAX</b> tracks readings while enabled; alerts notify you of a level crossing while the page is open. These tools are optional. Settings and lesson progress are kept in this browser when storage is available.</p>
 
@@ -528,25 +525,6 @@
   </nav>
 </main>
 
-<!-- The lesson's current step, kept on screen while the student works the
-     instrument. The full task stays in the drawer; this is the part you need
-     to see without scrolling back to it. Only shown while a lesson is open. -->
-<div class="lesson-dock" id="lessonDock" hidden>
-  <div class="lesson-dock-inner">
-    <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
-    <div class="lesson-dock-text">
-      <b id="lessonDockStep">Step 1 of 3</b>
-      <span id="lessonDockTask"></span>
-      <span id="lessonDockContext"></span>
-    </div>
-    <div class="lesson-dock-actions">
-      <button type="button" class="pill" id="lessonDockTaskBtn">Back to task</button>
-      <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
-      <button type="button" class="pill" id="lessonDockExit">Exit</button>
-    </div>
-  </div>
-</div>
-
 <dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
   <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
   <h2 id="aboutTitle">About the project</h2>
@@ -555,7 +533,7 @@
   <p>I'm Jack McMurry, a student at Emory.<br>I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument.</p>
   <h3>My design decisions</h3>
   <p>I developed Multimeter with help from Claude Code and Codex. My design goal is to help beginners explain what a market measurement means, using the actual company, dates, and values in front of them.</p>
-  <p>I simplified technical chart explanations, added a ready-to-use first activity, and made the main navigation visible outside the dial. The app checks that a company has enough history before replacing a learner’s selection and observations.</p>
+  <p>I simplified technical chart explanations, added a ready-to-use first activity, and made the main actions available in an Explore menu outside the dial. The app checks that a company has enough history before replacing a learner’s selection and observations.</p>
   <p>Implementation checks include automated tests, keyboard navigation, phone layouts, enlarged text, and recovery when data is unavailable. These checks verify behavior and layout; they do not establish that students understand the material. <b>Student testing: upcoming.</b></p>
   <div class="project-links"><button type="button" class="pill" id="aboutTry">Try the activity</button><a href="workshop.html">Workshop guide</a><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View source</a></div>
   <p>The workshop provides independent understanding checks and prompts for recording where students need help. It is ready to facilitate; learning outcomes have not yet been established.</p>

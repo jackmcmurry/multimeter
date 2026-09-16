@@ -1,13 +1,13 @@
 /* Guided tasks stay in the open drawer as students use the instrument. */
 (function(root){
   'use strict';
-  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0, loader, busy=false, failure=null, changing=false;
+  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0, loader, busy=false, failure=null, changing=false, sessionActive=false;
   function el(id){return document.getElementById(id);}
   function esc(s){return MP.fmt.escapeHtml(String(s));}
   function percent(n){return typeof n==='number'&&isFinite(n)?n.toFixed(2)+'%':'Unavailable';}
   function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Saved on this device.':'Progress could not be saved. You can still finish this session.';}
   function note(text){el('lessonNotice').textContent=text;}
-  function current(){return state.active?state.progress[state.active]:null;}
+  function current(){return sessionActive&&state.active?state.progress[state.active]:null;}
   function library(){
     el('lessonLibrary').innerHTML=Object.keys(MP.lessons.definitions).map(function(id){var l=MP.lessons.definitions[id],p=state.progress[id];
       return '<article class="lesson-card"><h3>'+esc(l.title)+'</h3><p>'+esc(l.goal)+'</p><button class="pill" type="button" data-start-lesson="'+id+'">'+(p.complete?'Review':(p.stock||p.observations.first||p.step?'Resume':'Start'))+'</button> '+(p.complete?'<span class="lesson-complete">Completed</span>':'')+'</article>';
@@ -23,7 +23,7 @@
   }
   /* ---- the way in ---------------------------------------------------------
    * A student arriving with no instructions needs one obvious next action.
-   * The entry beneath navigation reads "Start experiment" until any
+   * The Explore menu reads "Start experiment" until any
    * progress exists, then "Continue experiment" and where they left off. */
   function order(){return Object.keys(MP.lessons.definitions);}
   function started(p){return !!(p&&(p.step>0||p.complete||p.stock||p.observations&&Object.keys(p.observations).length));}
@@ -37,17 +37,9 @@
   }
   function anyProgress(){return order().some(function(id){return started(state.progress[id]);});}
   function entry(){
-    var bar=el('learnEntry');if(!bar)return;
-    /* While a lesson is open the dock carries the same job, so the bar steps
-     * aside rather than repeating it. */
-    bar.hidden=!!state.active;
-    if(state.active)return;
-    var id=resumeId(),p=state.progress[id],l=MP.lessons.definitions[id],going=anyProgress();
-    var allDone=order().every(function(k){return state.progress[k].complete;});
-    el('learnEntryGo').textContent=allDone?'Review lessons':going?'Continue experiment':'Start experiment';
-    el('learnEntryTitle').textContent=going?(allDone?'All three lessons complete':'Pick up where you left off'):'Try your first market experiment · About 5 minutes.';
-    el('learnEntryNote').textContent=allDone?'Review any lesson, or keep exploring the instrument.'
-      :going?l.title+' · step '+(p.step+1)+' of 3':'Does a stock’s price tell you how well it performed?';
+    var button=el('exploreStart');if(!button)return;
+    var allDone=order().every(function(id){return state.progress[id].complete;});
+    button.textContent=allDone?'Review lessons':anyProgress()||state.active?'Continue experiment':'Start experiment';
   }
 
   /* ---- the dock -----------------------------------------------------------
@@ -57,7 +49,7 @@
   function dock(){
     var bar=el('lessonDock');if(!bar)return;
     var p=current();
-    bar.hidden=!p;
+    bar.hidden=!p;el('studentControls').hidden=!p;
     document.body.classList.toggle('has-dock',!!p);
     if(!p)return;
     var l=MP.lessons.definitions[state.active];
@@ -103,13 +95,13 @@
     el('lessonTitle').focus({preventScroll:true});
   }
   function start(id,restart){
-    cancelSelection();if(!MP.lessons.start(state,id,restart))return;
+    cancelSelection();if(!MP.lessons.start(state,id,restart))return;sessionActive=true;
     render();note('');showTask();
     var p=current();
     if(id!=='mix'&&!started(p))return selectStock(null);
     if(p.stock&&!p.complete)return selectStock(p.stock);
   }
-  function exit(){cancelSelection();state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('learnEntryGo')||el('guidedLessonsOpen');if(back)back.focus({preventScroll:true});}
+  function exit(){cancelSelection();sessionActive=false;state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('exploreToggle');if(back)back.focus({preventScroll:true});}
   function openLibrary(){
     cancelSelection();render();note('');
     MP.router.overridePanel('lessons');MP.meter.openDrawer(true);
@@ -164,10 +156,6 @@
     loader=MP.lessons.selectionLoader({ensureStock:MP.app.ensureStock,stockSeries:MP.app.stockSeries,history:function(){return MP.app.state.history;},analyticsFor:MP.app.analyticsFor});
     render();
     el('guidedLessonsOpen').addEventListener('click',openLibrary);
-    /* The standing entry beneath navigation, and the task strip that follows the
-     * reader down the page. Both act on the lesson they would resume. */
-    var entryGo=el('learnEntryGo');
-    if(entryGo)entryGo.addEventListener('click',function(){startResume();});
     var taskBtn=el('lessonDockTaskBtn');
     if(taskBtn)taskBtn.addEventListener('click',function(){
       MP.meter.openDrawer(true);
@@ -194,8 +182,8 @@
       if(a==='library')return openLibrary();
       if(a==='answer'){if(busy)return;var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus({preventScroll:true});}
     });
-    document.addEventListener('practice:simulated',function(e){if(state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Press Continue on the lesson bar when you are ready.');});
-    if(state.active){MP.meter.openDrawer(true);if(!root.location.hash&&current().stock)selectStock(current().stock);}
+    document.addEventListener('practice:simulated',function(e){if(!sessionActive||state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Press Continue on the lesson bar when you are ready.');});
+    // Saved progress stays dormant until the learner explicitly resumes.
   }
   function startResume(){if(order().every(function(id){return state.progress[id].complete;}))return openLibrary();start(resumeId(),false);}
   MP.guided={state:function(){return state;},start:start,startResume:startResume,exit:exit,resumeId:resumeId,openLibrary:openLibrary,selectCompany:selectStock};

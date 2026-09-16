@@ -2954,6 +2954,7 @@
   }
 
   function studentNavigate(action) {
+    if (action === 'start') { if (MP.guided) MP.guided.startResume(); return; }
     if (action === 'lessons') { if (MP.guided) MP.guided.openLibrary(); return; }
     if (action === 'charts') {
       MP.meter.setScreen('reading'); MP.router.overridePanel(null); MP.meter.openDrawer(true);
@@ -2968,9 +2969,13 @@
     if (action === 'choose') openSearch();
   }
   function wireStudentNav() {
-    var nav = el('studentNav'); if (!nav) return;
-    nav.addEventListener('click', function(e) { var b = e.target.closest('[data-student-action]'); if (b) studentNavigate(b.dataset.studentAction); });
-
+    var nav=el('studentNav'),toggle=el('exploreToggle');if(!nav||!toggle)return;
+    function close(focus){nav.hidden=true;toggle.setAttribute('aria-expanded','false');if(focus)toggle.focus();}
+    toggle.addEventListener('click',function(){var open=nav.hidden;nav.hidden=!open;toggle.setAttribute('aria-expanded',String(open));});
+    nav.addEventListener('click',function(e){var b=e.target.closest('[data-student-action]');if(b){close(true);studentNavigate(b.dataset.studentAction);}});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!nav.hidden){e.preventDefault();close(true);}});
+    document.addEventListener('click',function(e){if(!e.target.closest('.explore-control'))close(false);});
+    document.addEventListener('focusin',function(e){if(!e.target.closest('.explore-control'))close(false);});
   }
 
   /* ---- boot --------------------------------------------------------------- */

@@ -63,7 +63,7 @@
  * ========================================================================== */
 
 :root {
-  --student-controls-height: 160px;
+  --student-controls-height: 0px;
   --utility-footer-height: 64px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
@@ -2117,6 +2117,17 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
  .student-controls .learn-entry-go { width:auto; padding:8px; }
 }
 
+/* Compact navigation stays inside the instrument; dormant lessons reserve no space. */
+.student-controls[hidden], .explore-menu[hidden] { display:none; }
+.explore-control { position:relative; display:inline-flex; }
+.explore-toggle { min-height:44px; padding:8px 12px; border:1px solid var(--rule); border-radius:6px; background:var(--cell); color:var(--text); font:600 15px var(--f-body); cursor:pointer; }
+.explore-menu { position:absolute; left:0; top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
+.explore-menu button { min-height:44px; padding:10px 12px; text-align:left; background:var(--cell); border:1px solid var(--rule); color:var(--text); font:500 16px var(--f-body); cursor:pointer; }
+.explore-menu button:hover { border-color:var(--holster); }
+.explore-toggle:focus-visible,.explore-menu button:focus-visible { outline:2px solid var(--holster); outline-offset:2px; }
+.head:has(.explore-control) { position:relative; z-index:10; flex-wrap:wrap; gap:10px; }
+.head-right:has(.explore-control) { flex-wrap:wrap; gap:10px; }
+
 </style>
 </head>
 <body>
@@ -2161,20 +2172,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 </div>
 
 <main class="stage">
-  <div class="student-controls" id="studentControls">
-  <nav class="student-nav" id="studentNav" aria-label="Explore and learn">
-    <button type="button" data-student-action="choose">Choose an asset</button>
-    <button type="button" data-student-action="charts">Explore charts</button>
-    <button type="button" data-student-action="explain">Explain this</button>
-    <button type="button" data-student-action="lessons">Lessons</button>
-  </nav>
-  <div class="learn-entry" id="learnEntry" hidden>
-    <div class="learn-entry-text">
-      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
-      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
-    </div>
-    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
-  </div>
+  <div class="student-controls" id="studentControls" hidden>
 <div class="lesson-dock" id="lessonDock" hidden>
   <div class="lesson-dock-inner">
     <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
@@ -2216,6 +2214,16 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 </g>
 </svg></span>
           <span class="head-right">
+            <span class="explore-control">
+              <button type="button" class="explore-toggle" id="exploreToggle" aria-expanded="false" aria-controls="studentNav">Explore</button>
+              <nav class="explore-menu" id="studentNav" aria-label="Explore and learn" hidden>
+                <button type="button" data-student-action="start" id="exploreStart">Start experiment</button>
+                <button type="button" data-student-action="choose">Choose an asset</button>
+                <button type="button" data-student-action="charts">Explore charts</button>
+                <button type="button" data-student-action="explain">Explain this</button>
+                <button type="button" data-student-action="lessons">Lessons</button>
+              </nav>
+            </span>
             <span class="skin-picker">
               <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
@@ -2578,7 +2586,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. The four buttons above the meter are always available: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
+      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. Open Explore in the meter header for these actions: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
       <p>You can also turn the dial by dragging it, using the mouse wheel, or pressing its arrow keys. Coin quotes are requested about once a minute. Stock and index snapshots can be delayed; use the dates shown with a reading to tell what period it describes. Measurements use historical closing prices.</p>
 
       <h2>Dial</h2>
@@ -2592,7 +2600,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the strip beneath the navigation; <b>Back to task</b> returns to its instructions.</p>
+      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The Explore menu offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. After you start or resume, the current lesson stays in a compact strip above the meter; <b>Back to task</b> returns to its instructions.</p>
       <p>On the instrument, <b>DATA</b> opens search and <b>LEARN</b> explains the current measurement. <b>INDEX</b> switches the comparison on CORR, VOL and DD; <b>PROBE</b> opens questions about those readings. Other keys change with the screen: read their current labels. Clicking the display also opens the details.</p>
       <p><b>HOLD</b> freezes the display. <b>REL</b> shows changes from the reading you captured. <b>MIN/MAX</b> tracks readings while enabled; alerts notify you of a level crossing while the page is open. These tools are optional. Settings and lesson progress are kept in this browser when storage is available.</p>
 
@@ -2633,25 +2641,6 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   </nav>
 </main>
 
-<!-- The lesson's current step, kept on screen while the student works the
-     instrument. The full task stays in the drawer; this is the part you need
-     to see without scrolling back to it. Only shown while a lesson is open. -->
-<div class="lesson-dock" id="lessonDock" hidden>
-  <div class="lesson-dock-inner">
-    <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
-    <div class="lesson-dock-text">
-      <b id="lessonDockStep">Step 1 of 3</b>
-      <span id="lessonDockTask"></span>
-      <span id="lessonDockContext"></span>
-    </div>
-    <div class="lesson-dock-actions">
-      <button type="button" class="pill" id="lessonDockTaskBtn">Back to task</button>
-      <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
-      <button type="button" class="pill" id="lessonDockExit">Exit</button>
-    </div>
-  </div>
-</div>
-
 <dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
   <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
   <h2 id="aboutTitle">About the project</h2>
@@ -2660,7 +2649,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <p>I'm Jack McMurry, a student at Emory.<br>I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument.</p>
   <h3>My design decisions</h3>
   <p>I developed Multimeter with help from Claude Code and Codex. My design goal is to help beginners explain what a market measurement means, using the actual company, dates, and values in front of them.</p>
-  <p>I simplified technical chart explanations, added a ready-to-use first activity, and made the main navigation visible outside the dial. The app checks that a company has enough history before replacing a learner’s selection and observations.</p>
+  <p>I simplified technical chart explanations, added a ready-to-use first activity, and made the main actions available in an Explore menu outside the dial. The app checks that a company has enough history before replacing a learner’s selection and observations.</p>
   <p>Implementation checks include automated tests, keyboard navigation, phone layouts, enlarged text, and recovery when data is unavailable. These checks verify behavior and layout; they do not establish that students understand the material. <b>Student testing: upcoming.</b></p>
   <div class="project-links"><button type="button" class="pill" id="aboutTry">Try the activity</button><a href="workshop.html">Workshop guide</a><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View source</a></div>
   <p>The workshop provides independent understanding checks and prompts for recording where students need help. It is ready to facilitate; learning outcomes have not yet been established.</p>
@@ -2668,7 +2657,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-d3928d9c9f28</code></p>
+  <p class="muted">Testing version: <code>student-c21af0194798</code></p>
 </dialog>
 
 <script>
@@ -7453,7 +7442,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     document.documentElement.style.setProperty('--student-controls-height',controlsHeight+'px');
     document.documentElement.style.setProperty('--utility-footer-height',footerHeight+'px');
     var gap=cs?parseFloat(cs.rowGap)||0:0;
-    var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - gap;
+    var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - (controlsHeight ? gap : 0);
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
     var readableMinimum = Math.min(w1, FIT_READABLE_W);
     /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
@@ -11958,6 +11947,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   }
 
   function studentNavigate(action) {
+    if (action === 'start') { if (MP.guided) MP.guided.startResume(); return; }
     if (action === 'lessons') { if (MP.guided) MP.guided.openLibrary(); return; }
     if (action === 'charts') {
       MP.meter.setScreen('reading'); MP.router.overridePanel(null); MP.meter.openDrawer(true);
@@ -11972,9 +11962,13 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     if (action === 'choose') openSearch();
   }
   function wireStudentNav() {
-    var nav = el('studentNav'); if (!nav) return;
-    nav.addEventListener('click', function(e) { var b = e.target.closest('[data-student-action]'); if (b) studentNavigate(b.dataset.studentAction); });
-
+    var nav=el('studentNav'),toggle=el('exploreToggle');if(!nav||!toggle)return;
+    function close(focus){nav.hidden=true;toggle.setAttribute('aria-expanded','false');if(focus)toggle.focus();}
+    toggle.addEventListener('click',function(){var open=nav.hidden;nav.hidden=!open;toggle.setAttribute('aria-expanded',String(open));});
+    nav.addEventListener('click',function(e){var b=e.target.closest('[data-student-action]');if(b){close(true);studentNavigate(b.dataset.studentAction);}});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!nav.hidden){e.preventDefault();close(true);}});
+    document.addEventListener('click',function(e){if(!e.target.closest('.explore-control'))close(false);});
+    document.addEventListener('focusin',function(e){if(!e.target.closest('.explore-control'))close(false);});
   }
 
   /* ---- boot --------------------------------------------------------------- */
@@ -12425,13 +12419,13 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 /* Guided tasks stay in the open drawer as students use the instrument. */
 (function(root){
   'use strict';
-  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0, loader, busy=false, failure=null, changing=false;
+  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0, loader, busy=false, failure=null, changing=false, sessionActive=false;
   function el(id){return document.getElementById(id);}
   function esc(s){return MP.fmt.escapeHtml(String(s));}
   function percent(n){return typeof n==='number'&&isFinite(n)?n.toFixed(2)+'%':'Unavailable';}
   function save(){el('lessonSave').textContent=MP.store.set(KEY,state)?'Saved on this device.':'Progress could not be saved. You can still finish this session.';}
   function note(text){el('lessonNotice').textContent=text;}
-  function current(){return state.active?state.progress[state.active]:null;}
+  function current(){return sessionActive&&state.active?state.progress[state.active]:null;}
   function library(){
     el('lessonLibrary').innerHTML=Object.keys(MP.lessons.definitions).map(function(id){var l=MP.lessons.definitions[id],p=state.progress[id];
       return '<article class="lesson-card"><h3>'+esc(l.title)+'</h3><p>'+esc(l.goal)+'</p><button class="pill" type="button" data-start-lesson="'+id+'">'+(p.complete?'Review':(p.stock||p.observations.first||p.step?'Resume':'Start'))+'</button> '+(p.complete?'<span class="lesson-complete">Completed</span>':'')+'</article>';
@@ -12447,7 +12441,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   }
   /* ---- the way in ---------------------------------------------------------
    * A student arriving with no instructions needs one obvious next action.
-   * The entry beneath navigation reads "Start experiment" until any
+   * The Explore menu reads "Start experiment" until any
    * progress exists, then "Continue experiment" and where they left off. */
   function order(){return Object.keys(MP.lessons.definitions);}
   function started(p){return !!(p&&(p.step>0||p.complete||p.stock||p.observations&&Object.keys(p.observations).length));}
@@ -12461,17 +12455,9 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   }
   function anyProgress(){return order().some(function(id){return started(state.progress[id]);});}
   function entry(){
-    var bar=el('learnEntry');if(!bar)return;
-    /* While a lesson is open the dock carries the same job, so the bar steps
-     * aside rather than repeating it. */
-    bar.hidden=!!state.active;
-    if(state.active)return;
-    var id=resumeId(),p=state.progress[id],l=MP.lessons.definitions[id],going=anyProgress();
-    var allDone=order().every(function(k){return state.progress[k].complete;});
-    el('learnEntryGo').textContent=allDone?'Review lessons':going?'Continue experiment':'Start experiment';
-    el('learnEntryTitle').textContent=going?(allDone?'All three lessons complete':'Pick up where you left off'):'Try your first market experiment · About 5 minutes.';
-    el('learnEntryNote').textContent=allDone?'Review any lesson, or keep exploring the instrument.'
-      :going?l.title+' · step '+(p.step+1)+' of 3':'Does a stock’s price tell you how well it performed?';
+    var button=el('exploreStart');if(!button)return;
+    var allDone=order().every(function(id){return state.progress[id].complete;});
+    button.textContent=allDone?'Review lessons':anyProgress()||state.active?'Continue experiment':'Start experiment';
   }
 
   /* ---- the dock -----------------------------------------------------------
@@ -12481,7 +12467,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   function dock(){
     var bar=el('lessonDock');if(!bar)return;
     var p=current();
-    bar.hidden=!p;
+    bar.hidden=!p;el('studentControls').hidden=!p;
     document.body.classList.toggle('has-dock',!!p);
     if(!p)return;
     var l=MP.lessons.definitions[state.active];
@@ -12527,13 +12513,13 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     el('lessonTitle').focus({preventScroll:true});
   }
   function start(id,restart){
-    cancelSelection();if(!MP.lessons.start(state,id,restart))return;
+    cancelSelection();if(!MP.lessons.start(state,id,restart))return;sessionActive=true;
     render();note('');showTask();
     var p=current();
     if(id!=='mix'&&!started(p))return selectStock(null);
     if(p.stock&&!p.complete)return selectStock(p.stock);
   }
-  function exit(){cancelSelection();state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('learnEntryGo')||el('guidedLessonsOpen');if(back)back.focus({preventScroll:true});}
+  function exit(){cancelSelection();sessionActive=false;state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('exploreToggle');if(back)back.focus({preventScroll:true});}
   function openLibrary(){
     cancelSelection();render();note('');
     MP.router.overridePanel('lessons');MP.meter.openDrawer(true);
@@ -12588,10 +12574,6 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     loader=MP.lessons.selectionLoader({ensureStock:MP.app.ensureStock,stockSeries:MP.app.stockSeries,history:function(){return MP.app.state.history;},analyticsFor:MP.app.analyticsFor});
     render();
     el('guidedLessonsOpen').addEventListener('click',openLibrary);
-    /* The standing entry beneath navigation, and the task strip that follows the
-     * reader down the page. Both act on the lesson they would resume. */
-    var entryGo=el('learnEntryGo');
-    if(entryGo)entryGo.addEventListener('click',function(){startResume();});
     var taskBtn=el('lessonDockTaskBtn');
     if(taskBtn)taskBtn.addEventListener('click',function(){
       MP.meter.openDrawer(true);
@@ -12618,8 +12600,8 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
       if(a==='library')return openLibrary();
       if(a==='answer'){if(busy)return;var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus({preventScroll:true});}
     });
-    document.addEventListener('practice:simulated',function(e){if(state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Press Continue on the lesson bar when you are ready.');});
-    if(state.active){MP.meter.openDrawer(true);if(!root.location.hash&&current().stock)selectStock(current().stock);}
+    document.addEventListener('practice:simulated',function(e){if(!sessionActive||state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Press Continue on the lesson bar when you are ready.');});
+    // Saved progress stays dormant until the learner explicitly resumes.
   }
   function startResume(){if(order().every(function(id){return state.progress[id].complete;}))return openLibrary();start(resumeId(),false);}
   MP.guided={state:function(){return state;},start:start,startResume:startResume,exit:exit,resumeId:resumeId,openLibrary:openLibrary,selectCompany:selectStock};

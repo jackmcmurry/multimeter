@@ -10,7 +10,7 @@ A financial instrument for learning how markets move. Choose a stock or cryptocu
 
 **[Lead a 15-minute workshop](https://www.multimtr.com/workshop.html)** with the facilitator guide, printable worksheet, discussion prompts, and independent understanding checks.
 
-Open **Lessons** for the activity library. Build a hypothetical stock mix in **WATCH → Explore charts → Practice portfolio**. Read the [practice portfolio and lessons guide](docs/learning.md). **Explain this** explains the current measurement; **PROBE** answers questions about available figures.
+Open **Explore → Lessons** for the activity library. Build a hypothetical stock mix in **WATCH → Explore charts → Practice portfolio**. Read the [practice portfolio and lessons guide](docs/learning.md). **Explain this** explains the current measurement; **PROBE** answers questions about available figures.
 
 > [!IMPORTANT]
 > **Multimeter is in beta and is a prototype.** Stock data comes from published snapshots and may be delayed.
@@ -25,11 +25,11 @@ Open **Lessons** for the activity library. Build a hypothetical stock mix in **W
   <tr>
     <td align="center" valign="top">
       <img src="docs/screenshot-desktop.png" width="640"
-           alt="Desktop Multimeter with visible beginner navigation, Apple’s one-month price chart, and the compact lesson strip beneath navigation.">
+           alt="Desktop Multimeter with a compact Explore menu, Apple’s one-month price chart, and the clean opening view.">
     </td>
     <td align="center" valign="top">
       <img src="docs/screenshot-phone.png" width="178"
-           alt="Phone Multimeter with navigation in two columns, Apple’s one-month price chart, and the persistent bottom utility buttons.">
+           alt="Phone Multimeter with a compact Explore menu, Apple’s one-month price chart, and the persistent bottom utility buttons.">
     </td>
   </tr>
 </table>
