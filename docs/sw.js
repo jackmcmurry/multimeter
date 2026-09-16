@@ -13,12 +13,13 @@
  * The cache name carries the build hash, so a new build purges the old one.
  * ========================================================================== */
 /* eslint-env serviceworker */
-var VERSION = 'b78a4cfb9bdb';
+var VERSION = '50375aced440';
 var CACHE = 'mm-' + VERSION;
 var SHELL = [
   './',
   './index.html',
   './findings.html',
+  './workshop.html',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-180.png',

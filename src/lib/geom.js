@@ -90,20 +90,24 @@
   }
 
   /* X labels at first / middle / last index. */
-  function xLabels(labels, x, p, h) {
+  function xLabels(labels, x, p, h, endpointsOnly) {
     if (!labels || !labels.length) return '';
     var yPos = h - p.b + 13;
     var last = labels.length - 1;
     var mid = Math.floor(last / 2);
     var s = axisText(p.l, yPos, labels[0], 'start');
-    if (last > 1) s += axisText(x(mid), yPos, labels[mid], 'middle');
+    if (last > 1 && !endpointsOnly) s += axisText(x(mid), yPos, labels[mid], 'middle');
     if (last > 0) s += axisText(x(last), yPos, labels[last], 'end');
     return s;
   }
 
-  function open(w, h, cls) {
+  function open(w, h, cls, opts) {
+    opts = opts || {};
+    var escape = function (v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="chart ' + (cls || '') +
-      '" role="img" preserveAspectRatio="xMidYMid meet">';
+      (opts.readable ? ' chart-readable' : '') + '" role="img"' +
+      (opts.description ? ' aria-label="' + escape(opts.description) + '"' : '') +
+      ' preserveAspectRatio="xMidYMid meet">';
   }
 
   /* -------------------------------------------------------------------------
@@ -149,15 +153,15 @@
     var all = [];
     series.forEach(function (s) { all = all.concat((s.values || []).filter(isNum)); });
     if (all.length < 2) {
-      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+      return open(w, h, 'chart-empty', opts) + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
     }
     var dom = opts.yDomain || extent(all);
     var maxLen = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
     var x = scale([0, Math.max(1, maxLen - 1)], [p.l, w - p.r]);
     var y = scale(dom, [h - p.b, p.t]);
-    var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
+    var ticks = opts.yTicks || niceTicks(dom[0], dom[1], opts.tickCount || 4);
 
-    var s = open(w, h);
+    var s = open(w, h, '', opts);
     /* optional horizontal bands (regime thresholds), under everything else */
     (opts.bands || []).forEach(function (b) {
       var top = Math.min(b.to, dom[1]), bottom = Math.max(b.from, dom[0]);
@@ -177,14 +181,14 @@
       var path = stairPath(ser.values || [], x, y);
       if (!path.started) return;
       s += '<path d="' + path.d + '" fill="none" stroke="' + (ser.color || 'currentColor') +
-        '" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
+        '" stroke-dasharray="' + (ser.dash || '') + '" stroke-width="' + (opts.readable ? 2 : 1.6) + '" stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
       var li = (ser.values || []).length - 1;
       if (isNum(ser.values[li])) {
         s += '<rect x="' + (x(li) - 2.5).toFixed(2) + '" y="' + (y(ser.values[li]) - 2.5).toFixed(2) +
           '" width="5" height="5" fill="' + (ser.color || 'currentColor') + '"/>';
       }
     });
-    s += xLabels(opts.xLabels, x, p, h);
+    s += xLabels(opts.xLabels, x, p, h, opts.readable && w < 480);
     s += '</svg>';
     return s;
   }
@@ -243,10 +247,12 @@
     var xs = opts.xs || [], ys = opts.ys || [];
     var w = opts.w || 420, h = opts.h || 300;
     var p = pad(opts.pad || { l: 44, r: 14, t: 14, b: 30 });
-    var fmt = opts.fmt || function (v) { return (v * 100).toFixed(0) + '%'; };
-    var n = Math.min(xs.length, ys.length);
+    var fmt = opts.fmt || function (v) { return (opts.readable ? Number((v * 100).toPrecision(3)) : (v * 100).toFixed(0)) + '%'; };
+    var clean = xs.map(function (v, i) { return [v, ys[i]]; }).filter(function (p) { return isNum(p[0]) && isNum(p[1]); });
+    xs = clean.map(function (p) { return p[0]; }); ys = clean.map(function (p) { return p[1]; });
+    var n = xs.length;
     if (n < 3) {
-      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting returns', 'middle') + '</svg>';
+      return open(w, h, 'chart-empty', opts) + axisText(w / 2, h / 2 + 3, 'awaiting returns', 'middle') + '</svg>';
     }
     var xd = extent(xs), yd = extent(ys);
     /* Each axis is scaled to its own spread, kept symmetric about zero so the
@@ -262,14 +268,14 @@
     var yTicks = niceTicks(-yLim, yLim, 4);
     var xTicks = niceTicks(-xLim, xLim, 4);
 
-    var s = open(w, h);
+    var s = open(w, h, '', opts);
     for (var t = 0; t < yTicks.length; t++) {
       s += '<line x1="' + p.l + '" y1="' + y(yTicks[t]).toFixed(2) + '" x2="' + (w - p.r) +
         '" y2="' + y(yTicks[t]).toFixed(2) + '" class="gx-grid"/>';
       s += axisText(p.l - 5, y(yTicks[t]) + 3, fmt(yTicks[t]), 'end');
     }
     for (var xt = 0; xt < xTicks.length; xt++) {
-      if (xTicks[xt] === 0) continue;
+      if (xTicks[xt] === 0 && !opts.readable) continue;
       s += axisText(x(xTicks[xt]), h - p.b + 13, fmt(xTicks[xt]), 'middle');
     }
     /* zero crosshair */
@@ -295,12 +301,12 @@
     }
 
     /* square marks */
-    var mark = opts.markSize || 3.2;
+    var mark = opts.markSize || (opts.readable ? 5 : 3.2);
     for (var i = 0; i < n; i++) {
       if (!isNum(xs[i]) || !isNum(ys[i])) continue;
       s += '<rect x="' + (x(xs[i]) - mark / 2).toFixed(2) + '" y="' + (y(ys[i]) - mark / 2).toFixed(2) +
         '" width="' + mark + '" height="' + mark + '" fill="' + (opts.pointColor || 'currentColor') +
-        '" fill-opacity="0.72"/>';
+        '" fill-opacity="' + (opts.readable ? 0.9 : 0.72) + '"/>';
     }
 
     if (opts.xTitle) s += axisText(w - p.r, h - 4, opts.xTitle, 'end', 'gx-title');
@@ -323,16 +329,16 @@
     var fmt = opts.yFmt || function (v) { return (v * 100).toFixed(0) + '%'; };
     var finite = values.filter(isNum);
     if (finite.length < 2) {
-      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+      return open(w, h, 'chart-empty', opts) + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
     }
     var lo = Math.min.apply(null, finite);
-    var dom = [Math.min(lo * 1.1, -0.02), 0];
+    var dom = opts.yDomain || [Math.min(lo * 1.1, -0.02), 0];
     var x = scale([0, values.length - 1], [p.l, w - p.r]);
     var y = scale(dom, [h - p.b, p.t]);
     var ticks = niceTicks(dom[0], dom[1], 3);
     var hatchId = nextId('hatch');
 
-    var s = open(w, h);
+    var s = open(w, h, '', opts);
     s += '<defs><pattern id="' + hatchId + '" patternUnits="userSpaceOnUse" width="5" height="5">' +
       '<path d="M0,5 L5,0" stroke="' + color + '" stroke-width="0.9" fill="none"/></pattern></defs>';
     s += yAxis(ticks, y, p, w, fmt);
@@ -373,7 +379,7 @@
       }
     });
 
-    s += xLabels(opts.xLabels, x, p, h);
+    s += xLabels(opts.xLabels, x, p, h, opts.readable && w < 480);
     s += '</svg>';
     return s;
   }

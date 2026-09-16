@@ -65,6 +65,8 @@
 :root {
   --lesson-dock-space: 172px;
   --learning-rail-width: 124px;
+  --student-nav-height: 60px;
+  --lesson-dock-height: 132px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
   --meter-mint-rgb: 46, 229, 157;
@@ -177,8 +179,6 @@
 .lesson-comparison dt { color: var(--dim); font-size: 13px; }
 .lesson-comparison dd { margin: 4px 0 0; font-size: 18px; color: var(--text); }
 /* Keep the guided task separate from the general concept explanation. */
-body.has-dock [data-panel="learn"] #learnCard,
-body.has-dock [data-panel="learn"] > .explanation-details,
 body.has-dock #measureCard { display: none; }
 .lesson-guide button:disabled { opacity: .5; cursor: not-allowed; }
 .lesson-guide :focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
@@ -277,8 +277,26 @@ body.has-dock #measureCard { display: none; }
 .lesson-dock-next:hover:not([disabled]) { background: var(--holster-lt); color: var(--lcd-dk); }
 .lesson-dock-next[disabled] { background: var(--cell); color: var(--dim); }
 /* nothing at the end of the page may hide behind the dock */
-body.has-dock .stage { padding-bottom: var(--lesson-dock-space); }
-html:has(body.has-dock) { scroll-padding-bottom: var(--lesson-dock-space); }
+body.has-dock .stage { padding-bottom: calc(var(--lesson-dock-height) + 24px); }
+html { scroll-padding-top: calc(var(--student-nav-height) + 24px); }
+body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
+.student-nav {
+  position: sticky; top: 8px; z-index: 45; width: min(100%, 960px);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+  padding: 8px; margin-bottom: 16px; border: 1px solid var(--rule);
+  background: var(--card); border-radius: 10px;
+}
+.student-nav button { min-height: 44px; border: 1px solid var(--rule); background: var(--cell); color: var(--text); font: 600 15px var(--f-body); padding: 10px; cursor: pointer; }
+.student-nav button:hover { border-color: var(--holster); }
+.student-nav button:focus-visible, .lesson-guide button:focus-visible { outline: 2px solid var(--holster); outline-offset: 2px; }
+.learn-entry-text b { font-size: 18px; }
+.learn-entry-text span, .lesson-guide, .lesson-card { font-size: 16px; }
+.lesson-company, .lesson-recovery { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.lesson-guide .pill, .lesson-card .pill { min-height: 44px; font-size: 14px; }
+.lesson-guide, .view, .meter { scroll-margin-top: calc(var(--student-nav-height) + 24px); scroll-margin-bottom: calc(var(--lesson-dock-height) + 24px); }
+@media (max-width: 600px) {
+  .student-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); top: 4px; gap: 6px; padding: 6px; }
+}
 
 /* ---- what you are measuring --------------------------------------------- */
 .measure-card {
@@ -320,7 +338,7 @@ html:has(body.has-dock) { scroll-padding-bottom: var(--lesson-dock-space); }
   .lesson-dock-text { flex-basis: 100%; order: 2; }
   .lesson-dock-actions { flex-basis: 100%; order: 3; }
   .lesson-dock-actions .pill { flex: 1 1 auto; text-align: center; }
-  body.has-dock .stage { padding-bottom: var(--lesson-dock-space); }
+  body.has-dock .stage { padding-bottom: calc(var(--lesson-dock-height) + 24px); }
   .measure-card { padding: 13px 14px; }
   .measure-grid { gap: 11px 14px; }
 }
@@ -1128,6 +1146,41 @@ body {
 .gx-zero { stroke: var(--dim); stroke-width: 0.7; stroke-dasharray: 3 3; }
 .gx-tick { font-size: 9.5px; fill: currentColor; font-variant-numeric: tabular-nums; }
 .gx-title { font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* Measurement panels keep their teaching text in HTML, at reading size.
+   SVG viewBoxes follow the container width, so tick labels do not shrink. */
+.measurements { min-width: 0; font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
+.measurement-card { margin: 28px 0; padding-top: 24px; border-top: 1px solid var(--rule); }
+.measurement-card h3 { margin: 0 0 10px; font-size: clamp(20px, 3vw, 26px); line-height: 1.3; font-weight: 600; }
+.measurement-guide { margin: 10px 0 16px; }
+.measurement-pair { margin: 24px 0 6px; font-weight: 600; }
+.measurement-score { margin: 6px 0; font-size: 20px; font-variant-numeric: tabular-nums; }
+.measurement-takeaway { margin: 18px 0 0; padding: 14px 16px; border-left: 3px solid var(--meter-mint); background: rgba(46, 229, 157, 0.05); }
+.measurement-axis { font-size: 14px; font-weight: 600; margin: 16px 0 10px; }
+.measurement-period { font-size: 14px; margin: 12px 0; }
+.measurement-legend { display: flex; flex-wrap: wrap; gap: 10px 24px; margin: 16px 0; font-size: 16px; }
+.measurement-legend span { min-width: 0; }
+.measurement-swatch { display: inline-block; width: 26px; border-top: 3px solid var(--gold); vertical-align: middle; margin-right: 8px; }
+.measurement-swatch.dashed { border-top: 3px dashed var(--c-idx); }
+.measurement-quadrants { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-left: 48px; margin-right: 16px; font-size: 14px; line-height: 1.35; }
+.measurement-quadrants span { padding: 6px 0; }
+.measurement-quadrants span:last-child { text-align: right; }
+.measurement-scale { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; margin: 16px 0; }
+.measurement-scale b { font-variant-numeric: tabular-nums; margin-right: 4px; }
+.measurement-details { margin: 24px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 16px 0; }
+.measurement-details summary { cursor: pointer; font-size: 16px; font-weight: 600; padding: 6px 0; }
+.measurement-details summary:focus-visible { outline: 2px solid var(--meter-mint); outline-offset: 4px; }
+.measurement-details .data { font-size: 14px; }
+.measurement-empty { padding: 24px 0; }
+.measurements .chart { color: var(--text); }
+.chart-readable .gx-tick, .chart-readable .gx-title { font-size: 14px; }
+.chart-readable .gx-grid { stroke: currentColor; opacity: 0.18; }
+.chart-readable .gx-zero { stroke: currentColor; opacity: 0.65; stroke-width: 1; }
+@media (max-width: 480px) {
+  .measurement-card { margin: 22px 0; padding-top: 20px; }
+  .measurement-scale { display: grid; gap: 4px; }
+  .measurement-takeaway { padding: 12px; }
+}
 
 /* ---- market rows --------------------------------------------------------- */
 .rows { list-style: none; margin: 0; padding: 0; }
@@ -2076,6 +2129,22 @@ tr.row-rule th {
 .lcd-ranges .rng-end[data-end="mover"] { background: var(--knob-mark); }
 .keys:has(.key[hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
+/* First-visit and reviewer routes, sized for readable text. */
+.intro-project { display:block; margin:20px auto 0; padding:10px; background:none; border:0; color:var(--text); text-decoration:underline; font:inherit; cursor:pointer; }
+.project-links { display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin:20px 0; }
+.about-link { white-space:normal; max-width:90px; text-align:center; line-height:1.25; }
+.head-right { flex-shrink:0; }
+.brand { max-width:calc(100% - 150px); }
+.key[data-act="info"] { font-size:clamp(10px, 2.4vw, 12px); white-space:normal; line-height:1.2; }
+#lessonDockContext { display:block; font-size:14px; line-height:1.4; overflow-wrap:anywhere; }
+html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) + 16px); }
+@media (min-width:860px) and (min-aspect-ratio:6/5) {
+  .learn-entry-text b,.learn-entry-text span,.learn-entry-go,.lesson-dock-text span { font-size:14px; }
+  html:has(body.has-dock) { scroll-padding-bottom:20px; }
+}
+
+.view a, dialog a { color:var(--holster); text-decoration:underline; text-underline-offset:3px; }
+
 </style>
 </head>
 <body>
@@ -2101,22 +2170,31 @@ tr.row-rule th {
 <path fill-rule="evenodd" d="M622 26 H652 Q678 26 678 48 Q678 63 664 68 L684 86 Q687 89 682 89 H669 Q666 89 664 87 L641 66 H633 V85 Q633 89 629 89 H622 Q618 89 618 85 V30 Q618 26 622 26 Z M633 40 V53 H652 Q663 53 663 47 Q663 40 652 40 Z"/>
 </g>
 </svg></h2>
-    <p class="intro-lead">A financial instrument for exploring how markets move.</p>
+    <p class="intro-lead">Explore real market history. Learn what the numbers mean.</p>
+    <p>Try your first market experiment · About 5 minutes.</p>
+    <p>Does a stock’s price tell you how well it performed?</p>
     <ol class="intro-loop">
-      <li><b>1 · CHOOSE</b><span>Search for an asset, such as NVIDIA.</span></li>
-      <li><b>2 · MEASURE</b><span>Turn to VOL (volatility) to inspect how much its price moves.</span></li>
-      <li><b>3 · LEARN</b><span>Press LEARN to understand the number you just measured.</span></li>
+      <li><b>1 · LOOK</b><span>Start with Apple’s historical closing price.</span></li>
+      <li><b>2 · COMPARE</b><span>See how its return changes over one month and one year.</span></li>
+      <li><b>3 · EXPLAIN</b><span>Check what the price can and cannot tell you.</span></li>
     </ol>
-    <p class="intro-turn">Next: CORR explores relationships; DD measures the fall from a peak.</p>
+    <p class="intro-turn">We’ll use another example if Apple’s history is unavailable. You can change the company.</p>
     <div class="intro-actions">
-      <button type="button" class="intro-go" id="introLearn">START LEARNING</button>
+      <button type="button" class="intro-go" id="introLearn">Start experiment</button>
       <button type="button" class="intro-alt" id="introGo">Explore on my own</button>
     </div>
+    <button type="button" class="intro-project" id="introProject">About the project</button>
     <p class="intro-foot">Real market data. Nothing here is investment advice.</p>
   </div>
 </div>
 
 <main class="stage">
+  <nav class="student-nav" id="studentNav" aria-label="Explore and learn">
+    <button type="button" data-student-action="choose">Choose an asset</button>
+    <button type="button" data-student-action="charts">Explore charts</button>
+    <button type="button" data-student-action="explain">Explain this</button>
+    <button type="button" data-student-action="lessons">Lessons</button>
+  </nav>
 
   <!-- ================= THE METER ================= -->
   <div class="meter">
@@ -2158,7 +2236,7 @@ tr.row-rule th {
                 <button type="button" class="skin" data-skin="silver" aria-label="Silver skin" aria-pressed="false"></button>
               </span>
             </span>
-            <button type="button" class="about-link" id="aboutBtn">About</button><span class="model" aria-hidden="true">MM-10</span>
+            <button type="button" class="about-link" id="aboutBtn">About the project</button><span class="model" aria-hidden="true">MM-10</span>
           </span>
         </div>
 
@@ -2168,7 +2246,7 @@ tr.row-rule th {
             <span class="ann-group">
               <button type="button" class="ann ann-rel" id="lcdRel" aria-pressed="false" aria-label="Relative: zero the reading where it stands">REL</button>
               <button type="button" class="ann ann-bell" id="lcdBell" aria-label="No alerts. Open the list."><svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true"><path d="M6 0.5a1 1 0 0 1 1 1v.6A4 4 0 0 1 10 6v3l1.5 2v.5H.5V11L2 9V6a4 4 0 0 1 3-3.9v-.6a1 1 0 0 1 1-1zM4.5 12.5h3a1.5 1.5 0 0 1-3 0z" fill="currentColor"/></svg><b id="lcdBellCount"></b></button>
-              <button type="button" class="ann ann-sound is-on" id="lcdSound" aria-pressed="true" aria-label="Sound on. Press to mute."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+              <button type="button" class="ann ann-sound" id="lcdSound" aria-pressed="false" aria-label="Sound off. Press to turn it on."><svg viewBox="0 0 15 12" width="14" height="11" aria-hidden="true"><path d="M1 4h2.5L7 1v10L3.5 8H1z" fill="currentColor"/><path class="snd-wave" d="M9 3.6a3.4 3.4 0 0 1 0 4.8M10.9 1.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-x" d="M9.6 4.2l3.6 3.6M13.2 4.2l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
               <span class="ann ann-hold" id="lcdHold">HOLD</span>
             </span>
           </div>
@@ -2285,7 +2363,7 @@ tr.row-rule th {
              screen's mode, so the row always operates what is on screen -->
         <div class="keys" id="keys">
           <button type="button" class="key" data-slot="1" data-act="data">DATA</button>
-          <button type="button" class="key" data-slot="2" data-act="info">INFO</button>
+          <button type="button" class="key" data-slot="2" data-act="info">Explore charts</button>
           <button type="button" class="key" data-slot="3" data-act="minmax">MIN/MAX</button>
           <button type="button" class="key" data-slot="4" data-act="alert">ALERT</button>
           <button type="button" class="key key-hold" data-slot="5" data-act="hold">HOLD</button>
@@ -2328,7 +2406,6 @@ tr.row-rule th {
   </div>
 
   <nav class="quick-tools" aria-label="Multimeter help and sharing">
-    <button type="button" class="pill learn-jump" id="learnBelowBtn" aria-label="Go to learning below" aria-controls="drawer">LEARN ↓</button>
     <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
     <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
     <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
@@ -2340,10 +2417,10 @@ tr.row-rule th {
        instrument stays the thing you look at first. -->
   <div class="learn-entry" id="learnEntry" hidden>
     <div class="learn-entry-text">
-      <b id="learnEntryTitle">New here?</b>
-      <span id="learnEntryNote">Three short lessons. About five minutes each.</span>
+      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
+      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
     </div>
-    <button type="button" class="learn-entry-go" id="learnEntryGo">Start learning</button>
+    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
   </div>
 
   <!-- ================= DETAIL DRAWER ================= -->
@@ -2398,6 +2475,10 @@ tr.row-rule th {
       <p class="foot unusual" id="heroUnusual"></p>
 
       <div id="heroNotice"></div>
+    </section>
+
+    <section class="view" data-panel="stockdetail" hidden>
+      <div class="measurements" id="subjectChart"></div>
     </section>
 
     <!-- ETH / NASDAQ / S&P -->
@@ -2462,33 +2543,21 @@ tr.row-rule th {
     <!-- CORR -->
     <section class="view" data-panel="coupling" hidden>
       <div class="stats-picker" id="pickCoupling"></div>
-      <div class="strip" id="couplingStrip"></div>
-      <div class="chartbox" id="chartScatter"></div>
-      <p class="foot" id="scatterCaption"></p>
-      <div class="chartbox" id="chartRollCorr"></div>
-      <p class="foot">Rolling 30-session correlation.</p>
-      <div class="table-host" id="couplingTable"></div>
+      <div class="measurements" id="measurementCorrelation"></div>
       <div id="notice-history"></div>
     </section>
 
     <!-- VOL -->
     <section class="view" data-panel="volatility" hidden>
       <div class="stats-picker" id="pickVolatility"></div>
-      <div class="strip" id="volStrip"></div>
-      <div class="chartbox" id="chartVol"></div>
-      <p class="foot" id="volFoot">30-session realized volatility, annualized. BTC left, ^IXIC right.</p>
-      <p class="foot unusual" id="volUnusual"></p>
+      <div class="measurements" id="measurementVolatility"></div>
+      <p class="measurement-guide" id="volUnusual"></p>
     </section>
 
     <!-- DD -->
     <section class="view" data-panel="drawdown" hidden>
       <div class="stats-picker" id="pickDrawdown"></div>
-      <div class="strip" id="ddStrip"></div>
-      <div class="chartbox" id="chartDdBtc"></div>
-      <p class="foot" id="ddFootCoin">BTC / USD below running peak.</p>
-      <div class="chartbox" id="chartDdIxic"></div>
-      <p class="foot" id="ddFootIndex">^IXIC below running peak.</p>
-      <div class="table-scroll" id="ddTable"></div>
+      <div class="measurements" id="measurementDrawdown"></div>
     </section>
 
     <!-- INVESTIGATE: where the investigation's figures came from -->
@@ -2501,7 +2570,6 @@ tr.row-rule th {
     <!-- LEARN -->
     <section class="view" data-panel="learn" hidden>
       <p><button type="button" class="pill" id="guidedLessonsOpen" aria-expanded="false" aria-controls="lessonLibrary">Guided lessons</button> <span class="foot">Learn by doing, in three short steps.</span></p>
-      <div id="lessonLibrary" hidden></div>
       <div id="learnCard"></div>
       <details class="explanation-details"><summary>Today’s market recap</summary>
       <p class="note-text" id="noteText"></p>
@@ -2510,6 +2578,13 @@ tr.row-rule th {
       <p class="foot">Based on the latest published daily closes. <a href="findings.html">Read the full findings and methodology.</a></p>
       <div id="noteNotice"></div>
       </details>
+    </section>
+
+    <section class="view" data-panel="lessons" hidden aria-labelledby="lessonsTitle">
+      <h2 id="lessonsTitle" tabindex="-1">Lessons</h2>
+      <p><a href="workshop.html">Lead a 15-minute workshop</a> · A facilitator guide and printable student worksheet.</p>
+      <p>Start with price versus return, or pick up a lesson you have already started. Your current task stays in the lesson bar.</p>
+      <div id="lessonLibrary"></div>
     </section>
 
     <!-- ALERTS (reached from the bell on the screen) -->
@@ -2521,27 +2596,29 @@ tr.row-rule th {
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>A live market meter. Turn the dial to pick a reading: drag it, roll the mouse wheel over it, or use the arrow keys. The tabs on the screen set the chart's range for the coins, switch MOVER and LOSER between stocks and crypto, and step through WATCH. DATA opens the charts behind the reading. Crypto refreshes every 45&nbsp;seconds. Index figures refresh about every 15&nbsp;minutes during US market hours, and the statistics are recomputed from daily closes after each session.</p>
+      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. The four buttons above the meter are always available: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
+      <p>You can also turn the dial by dragging it, using the mouse wheel, or pressing its arrow keys. Coin quotes are requested about once a minute. Stock and index snapshots can be delayed; use the dates shown with a reading to tell what period it describes. Measurements use historical closing prices.</p>
 
       <h2>Dial</h2>
       <p><b>BTC</b>, <b>ETH</b>: spot bitcoin and ether in US dollars, volume-weighted across the exchanges CoinGecko tracks. Both trade every calendar day.</p>
       <p><b>NASDAQ</b>: the Nasdaq Composite (^IXIC), about 3,000 listed securities. <b>S&amp;P</b>: the S&amp;P 500 (^GSPC). Both are index levels, not tradable prices.</p>
       <p><b>MOVER</b> and <b>LOSER</b>: the highest and the lowest move of the past week. For stocks, the data job keeps the daily closes of every Nasdaq-100 member it can price and ranks their five-session moves once it has them all, usually before Monday's open. For crypto, it ranks 15 large coins other than bitcoin and ether by their seven-day move. The tabs on the screen switch between the two, and the drawer shows the five highest and the five lowest together.</p>
       <p>Both ends describe the past week. Neither is a recommendation.</p>
-      <p><b>WATCH</b>: up to eight stocks you choose, from the Nasdaq-100, a list of majors, or any other listed company. Open DATA on that stop and search by symbol or name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
-      <p><b>PROBE</b>: a coin you choose. Open DATA on that stop and search any coin CoinGecko tracks. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
+      <p><b>WATCH</b>: up to eight stocks you choose, from the Nasdaq-100, a list of majors, or any other listed company. Use Choose an asset to search by symbol or company name. The arrows on the screen step through the list and the tabs set the range. These are daily closes from the data job, not live prices. The list stays in this browser.</p>
+      <p><b>PROBE</b>: a coin you choose. Use Choose an asset to search coins by name or symbol. It takes the stop, and its symbol replaces PROBE on the dial. The choice stays in this browser.</p>
       <p><b>LEARN</b>: the idea behind the figure you were just looking at, explained with that figure. Turn to it, or press LEARN at any stop. It names the concept, prints the live measurement, says what size that measurement counts as, gives one line on how to read it, and offers a way back into the instrument. The drawer holds the same concept in full, with why it matters, the common misconception, and how this page measures it. Underneath sits the daily reading: after each US close, Claude writes three plain sentences about the session's figures. The rules forbid predictions and advice. A checker enforces them, and a reply that breaks them is replaced by a fixed template.</p>
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p>The five keys are soft keys: the first two and the last never move, and the middle two follow the stop, so the row always operates what is on the screen. <b>DATA</b> turns the display into the instrument search. <b>LEARN</b> explains the figure on the screen. <b>HOLD</b> freezes the display.</p>
-      <p>Between them, on a price: <b>MIN/MAX</b> captures the lowest and highest reading while it is on, and <b>ALERT</b> sets a level on the current stop, so that when the reading crosses it the meter beeps three times, flashes, and sends a notification if you allowed them; the bell on the screen lists them. On CORR, VOL and DD: <b>COMPARE</b> switches the index the coin is measured against, and <b>INFO</b> opens this drawer. On MOVER and LOSER: <b>WATCH</b> puts that stock on your list or takes it off. On WATCH: <b>LIST</b> shows the list and <b>REMOVE</b> drops the stock on the screen. With the list on the display the row becomes <b>OPEN</b>, <b>ADD</b>, <b>REMOVE</b> and <b>INFO</b>; in search it becomes <b>CANCEL</b>; in LEARN, <b>BACK</b>.</p>
-      <p>On the screen itself, <b>REL</b> zeroes the reading where it stands, so the change line shows the move since you pressed it. The speaker mutes the dial's click and the alarm. Clicking the display opens this drawer. Alerts, the probe and these settings live in this browser only.</p>
+      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the bar at the bottom; <b>Back to task</b> returns to its instructions.</p>
+      <p>On the instrument, <b>DATA</b> opens search and <b>LEARN</b> explains the current measurement. <b>INDEX</b> switches the comparison on CORR, VOL and DD; <b>PROBE</b> opens questions about those readings. Other keys change with the screen: read their current labels. Clicking the display also opens the details.</p>
+      <p><b>HOLD</b> freezes the display. <b>REL</b> shows changes from the reading you captured. <b>MIN/MAX</b> tracks readings while enabled; alerts notify you of a level crossing while the page is open. These tools are optional. Settings and lesson progress are kept in this browser when storage is available.</p>
 
       <h2>Learning as you go</h2>
-      <p>The idea is to learn finance by using the instrument, so nothing here is a course. Under each title, one line says what the stop answers. A question mark beside a figure opens what it measures and how this page computes it, so a concept arrives next to the number it describes. LEARN goes further: it takes the measurement on the screen and says what size it counts as, which is the step from reading a number to judging one.</p>
+      <p><b>Explain this</b> introduces the concept behind the current measurement. <b>PROBE</b> answers questions about the available figures, such as whether a move is unusually large. <b>Lessons</b> gives you a task to work through. Opening the library does not reset your task or change your selected company.</p>
+      <p>The three guided lessons offer short activities; you can also explore freely. Under each title, one line says what the stop answers. A question mark beside a figure opens what it measures and how this page computes it, so a concept arrives next to the number it describes. LEARN goes further: it takes the measurement on the screen and says what size it counts as, which is the step from reading a number to judging one.</p>
       <p>Those words are rules of thumb. LOW, MODERATE, HIGH, DEEP and the rest are thresholds this instrument adopts so a figure has somewhere to stand, and the panel says so wherever one appears. They are conventions, not facts about markets.</p>
-      <p>On bitcoin and on VOL, a line says how large the last session's move was against the last 251 daily moves, which is how you tell an ordinary day from a rare one. On DD, the chart marks the peak the current fall began from and the lowest point since, so the drawdown is shown happening rather than defined. The line at the foot of the drawer names the source of the figures above it and when they were read.</p>
+      <p>On bitcoin and on VOL, a line says how large the last session's move was against the last 251 daily moves, which is how you tell an ordinary day from a rare one. On DD, the charts show the decline below each asset’s previous high, with the current and deepest decline stated beneath them. The line at the foot of the drawer names the source of the figures above it and when they were read.</p>
       <p><b>FEEDBACK</b> opens a note you can send about what confused you. It carries nothing but what you type, and counts of which stops you opened if you choose to paste them. Those counts are kept in this browser, are never sent anywhere on their own, and hold no personal information.</p>
 
       <h2>Skins</h2>
@@ -2578,9 +2655,10 @@ tr.row-rule th {
     <div class="lesson-dock-text">
       <b id="lessonDockStep">Step 1 of 3</b>
       <span id="lessonDockTask"></span>
+      <span id="lessonDockContext"></span>
     </div>
     <div class="lesson-dock-actions">
-      <button type="button" class="pill" id="lessonDockTaskBtn">Show task</button>
+      <button type="button" class="pill" id="lessonDockTaskBtn">Back to task</button>
       <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
       <button type="button" class="pill" id="lessonDockExit">Exit</button>
     </div>
@@ -2589,15 +2667,21 @@ tr.row-rule th {
 
 <dialog id="aboutDialog" class="about-dialog prose" aria-labelledby="aboutTitle">
   <form method="dialog"><button class="pill" aria-label="Close About">CLOSE</button></form>
-  <h2 id="aboutTitle">About Multimeter</h2>
+  <h2 id="aboutTitle">About the project</h2>
+  <h3>The problem</h3>
+  <p>Market charts can be difficult to understand without knowing the vocabulary first. Multimeter gives independent beginners, including high-school students, a short activity using real historical prices.</p>
   <p>I'm Jack McMurry, a student at Emory.<br>I'm building Multimeter to make market concepts easier to explore through a more hands-on instrument.</p>
-  <h2>My process</h2>
-  <p>I developed Multimeter with help from Claude Code and Codex.<br>My next step is student testing.</p>
+  <h3>My design decisions</h3>
+  <p>I developed Multimeter with help from Claude Code and Codex. My design goal is to help beginners explain what a market measurement means, using the actual company, dates, and values in front of them.</p>
+  <p>I simplified technical chart explanations, added a ready-to-use first activity, and made the main navigation visible outside the dial. The app checks that a company has enough history before replacing a learner’s selection and observations.</p>
+  <p>Implementation checks include automated tests, keyboard navigation, phone layouts, enlarged text, and recovery when data is unavailable. These checks verify behavior and layout; they do not establish that students understand the material. <b>Student testing: upcoming.</b></p>
+  <div class="project-links"><button type="button" class="pill" id="aboutTry">Try the activity</button><a href="workshop.html">Workshop guide</a><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View source</a></div>
+  <p>The workshop provides independent understanding checks and prompts for recording where students need help. It is ready to facilitate; learning outcomes have not yet been established.</p>
   <p><b>Fun fact:</b> Our signature green has a name: <b>Meter Mint</b> (#2EE59D).</p>
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p><a href="https://github.com/jackmcmurry/multimeter" target="_blank" rel="noopener noreferrer">View the project on GitHub</a></p>
+  <p class="muted">Testing version: <code>student-77f5a652195f</code></p>
 </dialog>
 
 <script>
@@ -3115,20 +3199,24 @@ tr.row-rule th {
   }
 
   /* X labels at first / middle / last index. */
-  function xLabels(labels, x, p, h) {
+  function xLabels(labels, x, p, h, endpointsOnly) {
     if (!labels || !labels.length) return '';
     var yPos = h - p.b + 13;
     var last = labels.length - 1;
     var mid = Math.floor(last / 2);
     var s = axisText(p.l, yPos, labels[0], 'start');
-    if (last > 1) s += axisText(x(mid), yPos, labels[mid], 'middle');
+    if (last > 1 && !endpointsOnly) s += axisText(x(mid), yPos, labels[mid], 'middle');
     if (last > 0) s += axisText(x(last), yPos, labels[last], 'end');
     return s;
   }
 
-  function open(w, h, cls) {
+  function open(w, h, cls, opts) {
+    opts = opts || {};
+    var escape = function (v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="chart ' + (cls || '') +
-      '" role="img" preserveAspectRatio="xMidYMid meet">';
+      (opts.readable ? ' chart-readable' : '') + '" role="img"' +
+      (opts.description ? ' aria-label="' + escape(opts.description) + '"' : '') +
+      ' preserveAspectRatio="xMidYMid meet">';
   }
 
   /* -------------------------------------------------------------------------
@@ -3174,15 +3262,15 @@ tr.row-rule th {
     var all = [];
     series.forEach(function (s) { all = all.concat((s.values || []).filter(isNum)); });
     if (all.length < 2) {
-      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+      return open(w, h, 'chart-empty', opts) + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
     }
     var dom = opts.yDomain || extent(all);
     var maxLen = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
     var x = scale([0, Math.max(1, maxLen - 1)], [p.l, w - p.r]);
     var y = scale(dom, [h - p.b, p.t]);
-    var ticks = niceTicks(dom[0], dom[1], opts.tickCount || 4);
+    var ticks = opts.yTicks || niceTicks(dom[0], dom[1], opts.tickCount || 4);
 
-    var s = open(w, h);
+    var s = open(w, h, '', opts);
     /* optional horizontal bands (regime thresholds), under everything else */
     (opts.bands || []).forEach(function (b) {
       var top = Math.min(b.to, dom[1]), bottom = Math.max(b.from, dom[0]);
@@ -3202,14 +3290,14 @@ tr.row-rule th {
       var path = stairPath(ser.values || [], x, y);
       if (!path.started) return;
       s += '<path d="' + path.d + '" fill="none" stroke="' + (ser.color || 'currentColor') +
-        '" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
+        '" stroke-dasharray="' + (ser.dash || '') + '" stroke-width="' + (opts.readable ? 2 : 1.6) + '" stroke-linejoin="miter" stroke-linecap="butt" vector-effect="non-scaling-stroke"/>';
       var li = (ser.values || []).length - 1;
       if (isNum(ser.values[li])) {
         s += '<rect x="' + (x(li) - 2.5).toFixed(2) + '" y="' + (y(ser.values[li]) - 2.5).toFixed(2) +
           '" width="5" height="5" fill="' + (ser.color || 'currentColor') + '"/>';
       }
     });
-    s += xLabels(opts.xLabels, x, p, h);
+    s += xLabels(opts.xLabels, x, p, h, opts.readable && w < 480);
     s += '</svg>';
     return s;
   }
@@ -3268,10 +3356,12 @@ tr.row-rule th {
     var xs = opts.xs || [], ys = opts.ys || [];
     var w = opts.w || 420, h = opts.h || 300;
     var p = pad(opts.pad || { l: 44, r: 14, t: 14, b: 30 });
-    var fmt = opts.fmt || function (v) { return (v * 100).toFixed(0) + '%'; };
-    var n = Math.min(xs.length, ys.length);
+    var fmt = opts.fmt || function (v) { return (opts.readable ? Number((v * 100).toPrecision(3)) : (v * 100).toFixed(0)) + '%'; };
+    var clean = xs.map(function (v, i) { return [v, ys[i]]; }).filter(function (p) { return isNum(p[0]) && isNum(p[1]); });
+    xs = clean.map(function (p) { return p[0]; }); ys = clean.map(function (p) { return p[1]; });
+    var n = xs.length;
     if (n < 3) {
-      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting returns', 'middle') + '</svg>';
+      return open(w, h, 'chart-empty', opts) + axisText(w / 2, h / 2 + 3, 'awaiting returns', 'middle') + '</svg>';
     }
     var xd = extent(xs), yd = extent(ys);
     /* Each axis is scaled to its own spread, kept symmetric about zero so the
@@ -3287,14 +3377,14 @@ tr.row-rule th {
     var yTicks = niceTicks(-yLim, yLim, 4);
     var xTicks = niceTicks(-xLim, xLim, 4);
 
-    var s = open(w, h);
+    var s = open(w, h, '', opts);
     for (var t = 0; t < yTicks.length; t++) {
       s += '<line x1="' + p.l + '" y1="' + y(yTicks[t]).toFixed(2) + '" x2="' + (w - p.r) +
         '" y2="' + y(yTicks[t]).toFixed(2) + '" class="gx-grid"/>';
       s += axisText(p.l - 5, y(yTicks[t]) + 3, fmt(yTicks[t]), 'end');
     }
     for (var xt = 0; xt < xTicks.length; xt++) {
-      if (xTicks[xt] === 0) continue;
+      if (xTicks[xt] === 0 && !opts.readable) continue;
       s += axisText(x(xTicks[xt]), h - p.b + 13, fmt(xTicks[xt]), 'middle');
     }
     /* zero crosshair */
@@ -3320,12 +3410,12 @@ tr.row-rule th {
     }
 
     /* square marks */
-    var mark = opts.markSize || 3.2;
+    var mark = opts.markSize || (opts.readable ? 5 : 3.2);
     for (var i = 0; i < n; i++) {
       if (!isNum(xs[i]) || !isNum(ys[i])) continue;
       s += '<rect x="' + (x(xs[i]) - mark / 2).toFixed(2) + '" y="' + (y(ys[i]) - mark / 2).toFixed(2) +
         '" width="' + mark + '" height="' + mark + '" fill="' + (opts.pointColor || 'currentColor') +
-        '" fill-opacity="0.72"/>';
+        '" fill-opacity="' + (opts.readable ? 0.9 : 0.72) + '"/>';
     }
 
     if (opts.xTitle) s += axisText(w - p.r, h - 4, opts.xTitle, 'end', 'gx-title');
@@ -3348,16 +3438,16 @@ tr.row-rule th {
     var fmt = opts.yFmt || function (v) { return (v * 100).toFixed(0) + '%'; };
     var finite = values.filter(isNum);
     if (finite.length < 2) {
-      return open(w, h, 'chart-empty') + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
+      return open(w, h, 'chart-empty', opts) + axisText(w / 2, h / 2 + 3, 'awaiting series', 'middle') + '</svg>';
     }
     var lo = Math.min.apply(null, finite);
-    var dom = [Math.min(lo * 1.1, -0.02), 0];
+    var dom = opts.yDomain || [Math.min(lo * 1.1, -0.02), 0];
     var x = scale([0, values.length - 1], [p.l, w - p.r]);
     var y = scale(dom, [h - p.b, p.t]);
     var ticks = niceTicks(dom[0], dom[1], 3);
     var hatchId = nextId('hatch');
 
-    var s = open(w, h);
+    var s = open(w, h, '', opts);
     s += '<defs><pattern id="' + hatchId + '" patternUnits="userSpaceOnUse" width="5" height="5">' +
       '<path d="M0,5 L5,0" stroke="' + color + '" stroke-width="0.9" fill="none"/></pattern></defs>';
     s += yAxis(ticks, y, p, w, fmt);
@@ -3398,7 +3488,7 @@ tr.row-rule th {
       }
     });
 
-    s += xLabels(opts.xLabels, x, p, h);
+    s += xLabels(opts.xLabels, x, p, h, opts.readable && w < 480);
     s += '</svg>';
     return s;
   }
@@ -5713,7 +5803,7 @@ tr.row-rule th {
   };
 
   /* Panels that belong to no stop; shown by overridePanel() until the dial moves. */
-  var PANEL_TITLES = { alerts: 'Alerts', portfolio: 'Practice portfolio' };
+  var PANEL_TITLES = { alerts: 'Alerts', portfolio: 'Practice portfolio', lessons: 'Lessons', learn: 'Explanation' };
 
   var DEFAULT_VIEW = 'btc';
 
@@ -6280,7 +6370,7 @@ tr.row-rule th {
   var soundIsOn = readSound();
 
   function readSound() {
-    return (MP.store ? MP.store.get(SOUND_KEY, true) : true) !== false;
+    return (MP.store ? MP.store.get(SOUND_KEY, false) : false) === true;
   }
 
   /* The audio context has to be born inside a user gesture, so the pointer
@@ -6585,7 +6675,7 @@ tr.row-rule th {
     drawer.hidden = !show;
     var btn = keyEl('info');
     if (btn) {
-      btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+      btn.setAttribute('aria-expanded', show && (screenMode!=='learn'||MP.router.currentPanel()==='learn') ? 'true' : 'false');
       btn.classList.toggle('is-on', show);
     }
     if (show && MP.track) MP.track.event('drawer_opened', MP.router && MP.router.currentView ? MP.router.currentView() : '');
@@ -6786,7 +6876,7 @@ tr.row-rule th {
           app.stepWatch(parseInt(value, 10));
           tickSound();
           swapScreen();
-        } else if (tab === 'watch' && app.setWatchRange) {
+        } else if ((tab === 'watch' || tab === 'subject-range') && app.setWatchRange) {
           app.setWatchRange(parseInt(value, 10));
         }
       });
@@ -6963,8 +7053,8 @@ tr.row-rule th {
   /* What the screen is doing decides the row first. */
   var MODE_KEYS = {
     search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
-    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'INFO'], ['hold', 'HOLD']],
-    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
+    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'Explore charts'], ['hold', 'HOLD']],
+    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'Full explanation'], ['hold', 'HOLD']],
     welcome: [['data', 'DATA'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     probe: [['back', 'BACK'], ['ask', 'ASK'], ['none', ''], ['source', 'SOURCE'], ['hold', 'HOLD']],
     config: [['back', 'BACK'], ['none', ''], ['reset', 'RESET'], ['save', 'SAVE'], ['hold', 'HOLD']]
@@ -6990,7 +7080,7 @@ tr.row-rule th {
     mover: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     loser: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
-    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']]
+    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'Explore charts'], ['hold', 'HOLD']]
   };
 
   function keySet(mode, stop) {
@@ -7030,7 +7120,7 @@ tr.row-rule th {
       hold.setAttribute('aria-pressed', held ? 'true' : 'false');
     }
     var info = keyEl('info'), drawer = el('drawer');
-    if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden ? 'true' : 'false');
+    if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden && (screenMode!=='learn'||MP.router.currentPanel()==='learn') ? 'true' : 'false');
   }
 
   /* Where CANCEL and BACK land: the list on the watch stop, the explanation
@@ -7062,7 +7152,7 @@ tr.row-rule th {
     if (act === 'customize') { setScreen('config'); return; }
     if (act === 'save') { if (MP.app && MP.app.saveDialConfig) MP.app.saveDialConfig(); return; }
     if (act === 'reset') { if (MP.app && MP.app.resetDialConfig) MP.app.resetDialConfig(); return; }
-    if (act === 'info') { openDrawer(); markKeys(); return; }
+    if (act === 'info') { if(screenMode==='learn'){MP.router.overridePanel('learn');openDrawer(true);var heading=el('learnCard');if(heading){heading.setAttribute('tabindex','-1');heading.scrollIntoView({block:'start',behavior:'smooth'});heading.focus({preventScroll:true});}}else openDrawer(); markKeys(); return; }
     if (act === 'minmax') { minmaxPress(); return; }
     if (act === 'alert') { if (form && !form.hidden) closeEditor(); else openEditor(); return; }
     if (act === 'add') { setScreen('search'); return; }
@@ -7382,7 +7472,8 @@ tr.row-rule th {
     var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
     var avail = h - padTop - padBottom;
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
-    if (h1 > avail && w1 > FIT_MIN_W) {
+    /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
+    if (desktopLearning.matches && h1 > avail && w1 > FIT_MIN_W) {
       var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
       meter.style.width = w2 + 'px';
       var h2 = meter.offsetHeight;
@@ -8803,6 +8894,134 @@ tr.row-rule th {
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
+/* ==== src/lib/measurements.js ============================================= */
+/* Student-facing measurement panels. Calculations remain in stats/app; this
+ * module only describes and draws the supplied measurements. */
+(function (root) {
+  'use strict';
+  var MP = root.MP = root.MP || {};
+  var S = MP.stats, F = MP.fmt, G = MP.geom;
+  var esc = F.escapeHtml;
+  function paragraph(text, cls) { return '<p class="' + (cls || 'measurement-guide') + '">' + esc(text) + '</p>'; }
+  function pct(v) { return S.isNum(v) ? F.pct(v, 1) : 'Unavailable'; }
+  function number(v) { return S.isNum(v) ? F.ratio(v, 2) : 'Unavailable'; }
+  function period(dates) {
+    return dates && dates.length ? F.shortDate(dates[0]) + ' – ' + F.shortDate(dates[dates.length - 1]) : 'Dates unavailable';
+  }
+  function card(title, guide, body, takeaway) {
+    return '<article class="measurement-card"><h3>' + esc(title) + '</h3>' + paragraph(guide) + body +
+      (takeaway ? paragraph(takeaway, 'measurement-takeaway') : '') + '</article>';
+  }
+  function options(width, description) {
+    return { w: Math.max(220, Math.round(width || 560)), h: 260, readable: true,
+      pad: { l: 48, r: 16, t: 22, b: 36 }, description: description };
+  }
+  function chart(svg) { return '<div class="chartbox">' + svg + '</div>'; }
+  function details(body) { return '<details class="measurement-details"><summary>Calculation details</summary>' + body + '</details>'; }
+  function correlationText(v) {
+    if (!S.isNum(v)) return 'There is not enough variation to measure this relationship.';
+    var size = Math.abs(v);
+    if (size < 0.2) return 'Their daily changes show little linear relationship in this period.';
+    var strength = size < 0.5 ? 'a loose' : size < 0.8 ? 'a moderate' : 'a strong';
+    return 'Their daily changes show ' + strength + ' pattern of moving ' + (v < 0 ? 'in opposite directions' : 'together') + '.';
+  }
+  function volatilityText(mine, theirs, names) {
+    if (!S.isNum(mine) || !S.isNum(theirs)) return 'There is not enough history to compare their swings.';
+    if (Math.abs(mine - theirs) < 0.0005) return 'Their measured swings are about the same size.';
+    return (mine > theirs ? names.coinName : names.indexName) + ' had more variable daily changes over the latest 30 trading days.';
+  }
+  function drawdownText(dd) {
+    if (!dd || !S.isNum(dd.now) || !S.isNum(dd.max)) return 'There is not enough history to measure the decline.';
+    return (dd.now === 0 ? 'Currently at its previous high.' : 'Currently ' + pct(Math.abs(dd.now)) + ' below its previous high.') +
+      ' Deepest decline in this history: ' + pct(Math.abs(dd.max)) + '.';
+  }
+  function rolling(entries, dates, count) {
+    var tail = S.tail(entries || [], count);
+    return { values: tail.map(function (e) { return e.value; }), dates: tail.map(function (e) { return dates[e.index] || ''; }) };
+  }
+  function table(rows, title) {
+    return paragraph(title) + '<div class="table-scroll" tabindex="0" role="region" aria-label="' + esc(title) + '"><table class="data"><thead><tr>' +
+      '<th scope="col">Trading days requested</th><th scope="col">Correlation</th><th scope="col">Beta</th><th scope="col">R²</th><th scope="col">Days available</th>' +
+      '</tr></thead><tbody>' + (rows || []).map(function (r) {
+        return '<tr><th scope="row">' + r.window + '</th><td>' + number(r.correlation) + '</td><td>' + number(r.beta) + '</td><td>' + number(r.r2) + '</td><td>' + r.n + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function correlation(a, names, width) {
+    var c = a.coupling.filter(function (r) { return r.window === 90; })[0] || a.coupling[0];
+    var summary = paragraph(names.coinName + ' and ' + names.indexName, 'measurement-pair') +
+      paragraph('Relationship score: ' + number(c.correlation) + ' · ' + c.n + ' trading days' + (c.n < 90 ? ' available (90 requested)' : ''), 'measurement-score') +
+      paragraph(correlationText(c.correlation), 'measurement-takeaway');
+    var scatterDates = S.tail(a.dates, a.scatter.fit.n);
+    var hasFit = S.isNum(a.scatter.fit.slope) && S.isNum(a.scatter.fit.intercept);
+    var lineGuide = hasFit ? 'The gold line shows the overall pattern, not a prediction.' : 'There is not enough variation to draw an overall pattern line.';
+    var description = 'Each square is one shared trading day. Across: ' + names.indexName + '. Up: ' + names.coinName + '. Approximate daily changes in percent. ' + lineGuide;
+    var scatter = G.scatterFit(Object.assign(options(width, description), {
+      h: width < 480 ? 290 : 340, xs: a.scatter.xs, ys: a.scatter.ys, fit: a.scatter.fit,
+      pointColor: 'var(--gold)', fitColor: 'var(--gold)'
+    }));
+    var body = paragraph('Up / down: ' + names.coinName + ' · Approximate daily change (%)', 'measurement-axis') +
+      '<div class="measurement-quadrants"><span>' + esc(names.indexName + ' fell · ' + names.coinName + ' rose') + '</span><span>Both rose</span></div>' +
+      chart(scatter) +
+      '<div class="measurement-quadrants"><span>Both fell</span><span>' + esc(names.indexName + ' rose · ' + names.coinName + ' fell') + '</span></div>' +
+      paragraph('Left / right: ' + names.indexName + ' · Approximate daily change (%)', 'measurement-axis') +
+      '<div class="measurement-legend"><span>■ One trading day</span><span>' + (hasFit ? '━ Overall pattern (not a prediction)' : esc(lineGuide)) + '</span></div>' +
+      paragraph(period(scatterDates), 'measurement-period');
+    var scatterCard = card('Do these assets move together?', 'Each square is one day both markets traded. Right means the index rose; up means the other asset rose. Zero means no change.', body,
+      'Squares in “Both rose” or “Both fell” show days they moved in the same direction. Read the percentages on each axis: the two scales differ.');
+    var roll = rolling(a.rollCorr, a.dates, 180), latest = roll.values[roll.values.length - 1];
+    var history = card('Has their relationship changed?', 'Each point measures the previous 30 shared trading days. The score above uses up to 90 trading days, so it can differ.',
+      '<div class="measurement-scale"><span><b>+1</b> Move together</span><span><b>0</b> Little linear relationship</span><span><b>−1</b> Move oppositely</span></div>' +
+      chart(G.stepChart(Object.assign(options(width, 'Relationship over time, on a scale from minus one (opposite) to plus one (together). ' + correlationText(latest)), {
+        series: [{ values: roll.values, color: 'var(--c-idx)' }], yDomain: [-1, 1], yTicks: [-1, 0, 1], zeroLine: true,
+        yFmt: function (v) { return v > 0 ? '+1' : String(v).replace('-', '−'); }, xLabels: roll.dates.map(F.shortDate)
+      }))) + paragraph(period(roll.dates), 'measurement-period'),
+      'Latest 30-day score: ' + number(latest) + '. ' + correlationText(latest));
+    return summary + scatterCard + history + paragraph('Moving together does not prove that one asset causes the other to move.') + details(
+      paragraph('Correlation measures a linear relationship from −1 to +1; it is not the percentage of days that matched. The descriptions use the size of the score: below 0.2 is little relationship, below 0.5 loose, below 0.8 moderate, and 0.8 or above strong. These are reading guides, not universal cutoffs.') +
+      paragraph('Daily changes use log returns: ln(new close ÷ previous close). Multiplying these by 100 gives an approximation to ordinary percent changes, with larger differences on unusually large moves. Only dates shared by both assets are used; a weekend or holiday gap is included in the next shared return.') +
+      paragraph('The gold line is a least-squares fit through those log returns. Beta is its numerical slope: ' + number(a.scatter.fit.slope) + '. The axes use different scales, so the line’s angle alone does not measure beta. R² is the share of variation captured by this straight-line fit; it does not establish cause.') +
+      table(a.coupling, names.coinName + ' compared with ' + names.indexName) +
+      (a.qqqCoupling ? table(a.qqqCoupling, names.coinName + ' compared with Invesco QQQ Trust') : ''));
+  }
+  function volatility(a, names, width) {
+    var mine = rolling(a.coinVol, a.dates, 120), theirs = rolling(a.indexVol, a.dates, 120);
+    var description = names.coinName + ' is the solid gold line; ' + names.indexName + ' is the dashed blue line. Higher values mean more variable daily changes.';
+    return card('Which asset has had bigger swings?', 'Higher means daily changes have varied more. Each point uses the previous 30 shared trading days, expressed on a yearly scale (annualized). This is not a predicted yearly gain or loss.',
+      '<div class="measurement-legend"><span><i class="measurement-swatch"></i>' + esc(names.coinName) + ' · solid · ' + pct(a.currentCoinVol) +
+      '</span><span><i class="measurement-swatch dashed"></i>' + esc(names.indexName) + ' · dashed · ' + pct(a.currentIndexVol) + '</span></div>' +
+      paragraph('Yearly scale (%) · Latest values shown in the legend', 'measurement-axis') +
+      chart(G.stepChart(Object.assign(options(width, description), {
+        series: [{ values: mine.values, color: 'var(--gold)' }, { values: theirs.values, color: 'var(--c-idx)', dash: '7 4' }],
+        yDomain: [0, Math.max(0.01, Math.max.apply(null, mine.values.concat(theirs.values).filter(S.isNum)) * 1.1)],
+        yFmt: function (v) { return Number((v * 100).toPrecision(3)) + '%'; }, xLabels: mine.dates.map(F.shortDate)
+      }))) + paragraph(period(mine.dates), 'measurement-period'), volatilityText(a.currentCoinVol, a.currentIndexVol, names)) +
+      details(paragraph('Volatility is the sample standard deviation of 30 shared trading days of log returns, multiplied by √252 to express it on a yearly scale. Both lines use the same vertical scale. It measures variation, not the direction prices will move.'));
+  }
+  function drawdown(a, names, width) {
+    var low = Math.min(a.coinDd.max || 0, a.indexDd.max || 0);
+    var domain = [Math.min(low * 1.1, -0.02), 0];
+    var html = [[names.coinName, a.coinDd, 'var(--gold)'], [names.indexName, a.indexDd, 'var(--c-idx)']].map(function (entry) {
+      var dd = entry[1];
+      return card('How far below its previous high? — ' + entry[0], '0% means at its previous high. −20% means 20% below that high. Lower points show a deeper decline.',
+        paragraph('0% · At its previous high', 'measurement-axis') +
+        chart(G.underwaterChart(Object.assign(options(width, entry[0] + ': percentage below the highest earlier price in this history. ' + drawdownText(dd)), {
+          values: dd.series, color: entry[2], yDomain: domain, xLabels: dd.dates.map(F.shortDate)
+        }))) + paragraph(period(dd.dates) + ' · Both charts use the same percentage scale.', 'measurement-period'), drawdownText(dd));
+    }).join('');
+    var episodes = (a.coinEpisodes || []).map(function (e) { return { name: names.coinName, e: e }; })
+      .concat((a.indexEpisodes || []).map(function (e) { return { name: names.indexName, e: e }; })).sort(function (p, q) { return p.e.depth - q.e.depth; });
+    return html + details(paragraph('A previous high is the highest closing price reached so far within the available history, not necessarily an all-time high. Each asset uses its own trading dates.') +
+      (episodes.length ? '<div class="table-scroll" tabindex="0" role="region" aria-label="Decline periods"><table class="data"><thead><tr><th scope="col">Asset</th><th scope="col">Largest drop</th><th scope="col">Previous high date</th><th scope="col">Lowest point date</th><th scope="col">Back to previous high</th></tr></thead><tbody>' +
+        episodes.map(function (row) { var e = row.e; return '<tr><th scope="row">' + esc(row.name) + '</th><td>' + pct(Math.abs(e.depth)) + '</td><td>' + F.shortDate(e.peakDate) + '</td><td>' + F.shortDate(e.troughDate) + '</td><td>' + (e.ongoing ? 'Not yet' : F.shortDate(e.recoveryDate)) + '</td></tr>'; }).join('') + '</tbody></table></div>' : paragraph('No decline periods in this history.')));
+  }
+  function empty(pending) {
+    return paragraph(pending ? 'Loading price history…' : 'Not enough shared price history to draw these measurements. Choose another asset or comparison.', 'measurement-empty');
+  }
+  MP.measurements = { correlation: correlation, volatility: volatility, drawdown: drawdown, empty: empty,
+    correlationText: correlationText, volatilityText: volatilityText, drawdownText: drawdownText };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
 /* ==== src/lib/app.js ====================================================== */
 /* ============================================================================
  * app.js: state, data wiring, analytics assembly, rendering.
@@ -8835,8 +9054,6 @@ tr.row-rule th {
   var CORR_WINDOW = 30;
   var SCATTER_SESSIONS = 90;
   var COUPLING_WINDOWS = [30, 90, 252];
-  var VOL_CHART_POINTS = 120;
-  var CORR_CHART_POINTS = 180;
   var ANNUALIZE = S.TRADING_DAYS;
 
   var RANGE_LABELS = { 1: '24hr', 7: '1wk', 30: '1mo', 365: '1yr' };
@@ -9036,6 +9253,7 @@ tr.row-rule th {
   /* The meter's screen paints from app state; every renderer below ends by
    * asking it to repaint, so the LCD is never staler than the drawer. */
   function repaint() {
+    renderSubjectChart();
     checkAlerts();
     if (MP.meter && MP.meter.refresh) MP.meter.refresh();
   }
@@ -9367,8 +9585,8 @@ tr.row-rule th {
       text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: analyticsMode(stop),
       change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: 'VS 30 SESSIONS AGO', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
-      chartTitle: stop === 'vol' ? 'ROLLING 30-SESSION VOLATILITY' : stop === 'corr' ? 'ROLLING 90-SESSION CORRELATION' : stop === 'dd' ? 'DISTANCE BELOW THE RUNNING PEAK' : 'ROLLING BETA',
-      chartDetail: stop === 'vol' ? 'Annualized · matching trading sessions · through ' + a.windowTo : stop === 'corr' ? '−1 opposite · 0 little relationship · +1 together. Correlation is not causation.' : stop === 'dd' ? '0% is the peak. Lower points show a deeper decline.' : 'Calculated from matched returns.',
+      chartTitle: stop === 'vol' ? 'HOW MUCH HAVE DAILY CHANGES VARIED?' : stop === 'corr' ? 'HAS THEIR RELATIONSHIP CHANGED?' : stop === 'dd' ? 'HOW FAR BELOW ITS PREVIOUS HIGH?' : 'BETA OVER TIME',
+      chartDetail: stop === 'vol' ? 'Each point: previous 30 shared trading days, on a yearly scale. Not a predicted gain or loss. Through ' + a.windowTo : stop === 'corr' ? 'Each point: previous 30 shared trading days; main score: ' + c90.n + ' days. −1 opposite · 0 little linear relationship · +1 together.' : stop === 'dd' ? '0% is the previous high in this history. −20% means 20% below it.' : 'Each point: previous 30 shared trading days; main beta: 90 days.',
       empty: !S.isNum(value), ranges: false, coin: null
     };
   }
@@ -9402,20 +9620,14 @@ tr.row-rule th {
     if (INDEX_META[key]) {
       return quoteReading(key, 'INDEX', INDEX_META[key].name.toUpperCase(), '1D');
     }
-    if (validTicker(key)) {
-      /* stocks are read through the watch list, which already holds their
-       * closes; point it at the subject before reading */
-      var w = state.watch, at = w.list.indexOf(key);
-      if (at >= 0) w.index = at;
-      else return stockSubjectReading(key);
-      return watchReading();
-    }
+    if (validTicker(key)) return stockSubjectReading(key);
     return reading('btc');
   }
 
   /* A stock that is the subject but not on the watch list. */
   function stockSubjectReading(sym) {
-    var r = noReading('CLOSE', sym, '1mo');
+    var r = noReading('CLOSE', sym, sessionsLabel(state.watch.sessions));
+    r.tabs = {kind:'subject-range',label:'Chart range',options:WATCH_RANGES,value:state.watch.sessions};
     r.change.usd = true;
     r.ticker = sym;
     r.symbol = sym;
@@ -9434,7 +9646,7 @@ tr.row-rule th {
     r.empty = false;
     r.mode = sym + (last.date ? ' · ' + F.shortDate(last.date) : '');
     if (series && series.length > 1) {
-      var slice = S.tail(series, 22), first = slice[0].price;
+      var slice = S.tail(series, state.watch.sessions + 1), first = slice[0].price;
       r.spark = slice.map(function (p) { return p.price; });
       if (first > 0) {
         r.change.pct = (last.price / first - 1) * 100;
@@ -9451,9 +9663,26 @@ tr.row-rule th {
     var key = state.stats.coin;
     var label = statsCoinSymbol(key) || 'BTC';
     if (MP.meter && MP.meter.setStopLabel) MP.meter.setStopLabel('subject', label);
-    var panel = INDEX_META[key] ? 'markets' : validTicker(key) ? 'watch' : 'hero';
+    var panel = INDEX_META[key] ? 'markets' : validTicker(key) ? 'stockdetail' : 'hero';
     if (MP.router && MP.router.setPanel) MP.router.setPanel('subject', panel);
     return label;
+  }
+
+  function renderSubjectChart() {
+    var host = el('subjectChart'); if (!host) return;
+    var symbol = state.stats.coin;
+    if (!validTicker(symbol)) { host.innerHTML = ''; return; }
+    var row = stockRow(symbol), name = row && row.name || symbol;
+    var series = stockSeries(symbol), slice = series && S.tail(series, state.watch.sessions + 1);
+    if (!slice || slice.length < 2) { host.innerHTML = '<p>Price history is unavailable. Choose another company or retry the lesson.</p>'; return; }
+    var first = slice[0], last = slice[slice.length - 1], change = last.price / first.price - 1;
+    var title = name + ' · Closing prices';
+    var dates = F.shortDate(first.date) + ' to ' + F.shortDate(last.date);
+    var html = '<h3>' + F.escapeHtml(title) + '</h3><p>Each point is a closing price in US dollars. Use the chart ranges on the instrument or the lesson buttons to change the period.</p>' +
+      G.stepChart({w:Math.max(220,host.clientWidth || 560),h:260,readable:true,pad:{l:76,r:16,t:20,b:36},description:title+'. '+dates,
+        series:[{values:slice.map(function(p){return p.price;}),color:'var(--c-idx)'}],yFmt:function(v){return F.usd(v,0);},xLabels:slice.map(function(p){return F.shortDate(p.date);})}) +
+      '<p>' + dates + (slice.length < state.watch.sessions + 1 ? ' · Available history is shorter than the requested range.' : '') + '</p><p class="measurement-takeaway">Price return over this period: ' + F.signedPct(change,2) + '.</p>';
+    if (host.innerHTML !== html) host.innerHTML = html;
   }
 
   /* Which underlying view the subject position is standing in for. */
@@ -9469,7 +9698,7 @@ tr.row-rule th {
 
   function whatLine(stop) {
     /* SUBJECT says whatever the market it is pointing at would say */
-    if (stop === 'subject') return whatLine(subjectView());
+    if (stop === 'subject') return validTicker(state.stats.coin) ? 'This company’s closing price, and how much it changed over the selected period.' : whatLine(subjectView());
     if (stop === 'mover') stop = moverEndFor(stop);
     var w = WHAT_LINES[stop];
     if (typeof w === 'function') { try { return w(statsLabels()); } catch (e) { return ''; } }
@@ -9873,11 +10102,22 @@ tr.row-rule th {
     return null;
   }
 
+  function statsSubjectName(key) {
+    if (key === 'btc') return 'Bitcoin';
+    if (key === 'eth') return 'Ether';
+    if (key === 'crypto') { var mover = cryptoMover(); return mover && (mover.name || mover.symbol) || 'Selected cryptocurrency'; }
+    if (key === 'probe') return state.probe && (state.probe.name || state.probe.symbol) || 'Selected asset';
+    if (INDEX_META[key]) return key === 'ixic' ? 'Nasdaq Composite' : INDEX_META[key].name;
+    var row = stockRow(key);
+    return row && row.name || key;
+  }
+
   function statsLabels() {
     var idx = INDEX_META[state.stats.index] || INDEX_META.ixic;
     return {
       coinKey: state.stats.coin,
       coin: statsCoinSymbol(state.stats.coin) || 'BTC',
+      coinName: statsSubjectName(state.stats.coin),
       indexKey: idx.key,
       index: idx.code,
       indexShort: idx.short,
@@ -10191,133 +10431,40 @@ tr.row-rule th {
 
   /* The peak a fall began from and the low it reached, as indices into the
    * drawdown series, so the chart can show the drawdown happening. */
-  function ddMarks(dd, episodes) {
-    var deepest = (episodes || []).slice().sort(function (p, q) { return p.depth - q.depth; })[0];
-    if (!deepest || !dd || !dd.dates) return [];
-    var marks = [];
-    var pi = dd.dates.indexOf(deepest.peakDate), ti = dd.dates.indexOf(deepest.troughDate);
-    if (pi >= 0) marks.push({ index: pi, value: 0, label: 'peak ' + F.shortDate(deepest.peakDate) });
-    if (ti >= 0) marks.push({ index: ti, value: dd.series[ti], label: F.signedPct(deepest.depth, 0) });
-    return marks;
-  }
-
-  function datesForRolling(entries, dates, count) {
-    return S.tail(entries, count).map(function (e) { return dates[e.index] || ''; });
-  }
-
   function renderAnalytics() {
-    var a = state.analytics;
-    var L = a ? a.labels : statsLabels();
+    var a = state.analytics, labels = a ? a.labels : statsLabels();
+    var names = { coinName: labels.coinName || statsSubjectName(state.stats.coin),
+      indexName: labels.indexKey === 'ixic' || labels.index === '^IXIC' ? 'Nasdaq Composite' : labels.indexName || labels.index };
     setHtml('notice-history', noticeHtml(state.history.notice));
-    setText('volFoot', '30-session realized volatility, annualized. ' + L.coin + ' left, ' + L.index + ' right.');
-    setText('ddFootCoin', L.coin + ' / USD below running peak.');
-    setText('ddFootIndex', L.index + ' below running peak.');
     renderStatsPicker();
-
-    if (!a) {
-      var waiting = state.history.pending ? '—' : F.DASH;
-      setHtml('couplingStrip', strip([['Corr 90d', waiting], ['Beta 90d', waiting], ['R² 90d', waiting]]));
-      setHtml('volStrip', strip([[L.coin + ' 30d', waiting], [L.index + ' 30d', waiting], ['Ratio', waiting]]));
-      setHtml('ddStrip', strip([[L.coin + ' now', waiting], [L.coin + ' worst', waiting], [L.index + ' worst', waiting]]));
-      setHtml('chartScatter', ''); setText('scatterCaption', ''); setHtml('chartRollCorr', ''); setHtml('couplingTable', '');
-      setHtml('chartVol', ''); setHtml('chartDdBtc', ''); setHtml('chartDdIxic', ''); setHtml('ddTable', '');
-      repaint();
-      return;
-    }
-
-    /* coupling */
-    var c90 = a.coupling[1] || a.coupling[0];
-    setHtml('couplingStrip', strip([
-      ['Corr 90d', F.ratio(c90.correlation, 2), '', 'correlation', c90.correlation],
-      ['Beta 90d', F.ratio(c90.beta, 2), '', 'beta', c90.beta],
-      ['R² 90d', F.ratio(c90.r2, 2), '', 'r2', c90.r2]
-    ]));
-
-    var rows = a.coupling.map(function (c) {
-      return '<tr><th scope="row">' + c.window + 'd</th><td>' + F.ratio(c.correlation, 3) +
-        '</td><td>' + F.ratio(c.beta, 3) + '</td><td>' + F.ratio(c.r2, 3) +
-        '</td><td class="dim">' + c.n + '</td></tr>';
-    }).join('');
-    if (a.qqqCoupling) {
-      rows += '<tr class="row-rule"><th scope="row" colspan="5">vs QQQ</th></tr>';
-      rows += a.qqqCoupling.map(function (c) {
-        return '<tr><th scope="row">' + c.window + 'd</th><td>' + F.ratio(c.correlation, 3) +
-          '</td><td>' + F.ratio(c.beta, 3) + '</td><td>' + F.ratio(c.r2, 3) +
-          '</td><td class="dim">' + c.n + '</td></tr>';
-      }).join('');
-    }
-    setHtml('couplingTable',
-      '<table class="data"><thead><tr><th scope="col">Window</th><th scope="col">Corr</th>' +
-      '<th scope="col">Beta</th><th scope="col">R²</th><th scope="col">n</th></tr></thead><tbody>' +
-      rows + '</tbody></table>');
-
-    setHtml('chartScatter', G.scatterFit({
-      xs: a.scatter.xs, ys: a.scatter.ys, fit: a.scatter.fit,
-      w: 560, h: 320,
-      pointColor: 'var(--c-btc)', fitColor: 'var(--gold)',
-      xTitle: L.index, yTitle: L.coin
-    }));
-    setText('scatterCaption', 'Daily log returns, ' + a.scatter.fit.n + ' sessions. Slope β=' +
-      F.ratio(a.scatter.fit.slope, 2) + ', axes scaled independently.');
-
-    setHtml('chartRollCorr', G.stepChart({
-      series: [{ values: S.tail(a.rollCorr, CORR_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }],
-      w: 900, h: 170, yDomain: [-1, 1], zeroLine: true, tickCount: 4,
-      yFmt: function (v) { return v.toFixed(1); },
-      xLabels: datesForRolling(a.rollCorr, a.dates, CORR_CHART_POINTS).map(F.shortDate)
-    }));
-
-    /* volatility */
-    var volRatio = S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol) && a.currentIndexVol
-      ? a.currentCoinVol / a.currentIndexVol : NaN;
-    setHtml('volStrip', strip([
-      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0), '', 'volatility', a.currentCoinVol],
-      [L.index + ' 30d', F.pct(a.currentIndexVol, 0), '', 'volatility', a.currentIndexVol],
-      ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
-    ]));
-    setHtml('chartVol', G.columnChart({
-      series: [
-        { values: S.tail(a.coinVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-btc)' },
-        { values: S.tail(a.indexVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }
-      ],
-      w: 900, h: 190,
-      yFmt: function (v) { return (v * 100).toFixed(0) + '%'; },
-      xLabels: datesForRolling(a.coinVol, a.dates, VOL_CHART_POINTS).map(F.shortDate)
-    }));
-
-    /* drawdown */
-    setHtml('ddStrip', strip([
-      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg', 'drawdown', a.coinDd.now],
-      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg', 'drawdown', a.coinDd.max],
-      [L.index + ' worst', F.signedPct(a.indexDd.max, 1), 'neg']
-    ]));
-    setHtml('chartDdBtc', G.underwaterChart({
-      values: a.coinDd.series, w: 900, h: 150, color: 'var(--c-btc)',
-      marks: ddMarks(a.coinDd, a.coinEpisodes),
-      xLabels: a.coinDd.dates.map(F.shortDate)
-    }));
-    setHtml('chartDdIxic', G.underwaterChart({
-      values: a.indexDd.series, w: 900, h: 150, color: 'var(--c-idx)',
-      marks: ddMarks(a.indexDd, a.indexEpisodes),
-      xLabels: a.indexDd.dates.map(F.shortDate)
-    }));
-
-    var episodes = a.coinEpisodes.map(function (e) { return { code: L.coin, e: e }; })
-      .concat(a.indexEpisodes.map(function (e) { return { code: L.index, e: e }; }))
-      .sort(function (p, q) { return p.e.depth - q.e.depth; });
-
-    setHtml('ddTable', episodes.length
-      ? '<table class="data"><thead><tr><th scope="col">Asset</th><th scope="col">Depth</th>' +
-        '<th scope="col">Peak</th><th scope="col">Trough</th><th scope="col">Recovered</th>' +
-        '</tr></thead><tbody>' + episodes.map(function (r) {
-          return '<tr><th scope="row">' + F.escapeHtml(r.code) + '</th>' +
-            '<td class="neg">' + F.signedPct(r.e.depth, 1) + '</td>' +
-            '<td class="dim">' + F.shortDate(r.e.peakDate) + '</td>' +
-            '<td class="dim">' + F.shortDate(r.e.troughDate) + '</td>' +
-            '<td>' + (r.e.ongoing ? '<span class="tag">not yet</span>' : F.shortDate(r.e.recoveryDate)) + '</td></tr>';
-        }).join('') + '</tbody></table>'
-      : '');
+    [['measurementCorrelation', 'correlation'], ['measurementVolatility', 'volatility'], ['measurementDrawdown', 'drawdown']].forEach(function (entry) {
+      var host = document.getElementById(entry[0]);
+      if (!host) return;
+      var expanded = Array.prototype.map.call(host.querySelectorAll('details'), function (d) { return d.open; });
+      var focused = host.contains(document.activeElement) && document.activeElement.tagName === 'SUMMARY';
+      var width = host.clientWidth || 560;
+      host.innerHTML = a ? MP.measurements[entry[1]](a, names, width) : MP.measurements.empty(state.history.pending);
+      Array.prototype.forEach.call(host.querySelectorAll('details'), function (d, i) { d.open = !!expanded[i]; });
+      if (focused && host.querySelector('summary')) host.querySelector('summary').focus({ preventScroll: true });
+    });
+    renderMeasureCard(currentStop());
     repaint();
+  }
+
+  function watchMeasurementWidths() {
+    if (!root.ResizeObserver) return;
+    var widths = {}, frame;
+    var observer = new root.ResizeObserver(function (entries) {
+      var changed = false;
+      entries.forEach(function (entry) {
+        var width = Math.round(entry.contentRect.width);
+        if (width > 0 && widths[entry.target.id] !== width) { widths[entry.target.id] = width; changed = true; }
+      });
+      if (changed) { root.cancelAnimationFrame(frame); frame = root.requestAnimationFrame(renderAnalytics); }
+    });
+    ['measurementCorrelation', 'measurementVolatility', 'measurementDrawdown', 'subjectChart'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) observer.observe(el);
+    });
   }
 
   /* ---- history ------------------------------------------------------------ */
@@ -10471,7 +10618,7 @@ tr.row-rule th {
   }
 
   function stockRow(sym) {
-    return (sym && (state.stocks.rowsBy[sym] || catalogue.by[sym])) || null;
+    return (sym && (state.stocks.rowsBy[sym] || catalogue.by[sym] || state.stocks.files[sym])) || null;
   }
 
   function ensureMoverFiles() {
@@ -10525,10 +10672,10 @@ tr.row-rule th {
     loser: 'The largest five-session drop of the week, shown beside the gain so both ends are visible.',
     watch: 'The stocks you chose, at their last daily close. Closes, not live prices.',
     probe: 'Any coin you pick, on the same instruments as bitcoin.',
-    corr: 'Whether two things move together, and how strongly. Correlation near 1 is in step, near 0 is unrelated.',
+    corr: 'Whether two things move together, and how strongly. A score near +1 means moving together, near 0 means little linear relationship, and near −1 means moving oppositely.',
     vol: 'How violently the price has been moving lately, next to the index, so you can tell calm from turbulent.',
     dd: 'How far below its own peak the asset sits, which is what a buyer at the top would still be down.',
-    subject: 'The market you are looking at. Press DATA to point it at something else.',
+    subject: 'The market you are looking at. Choose an asset changes the subject; Explore charts shows its history.',
     investigate: 'Investigate what you were just looking at: what the figures show, what they could mean, and what they cannot tell you.',
     learn: 'The idea behind the figure you were just looking at, explained with that figure, and the session in three plain sentences.'
   };
@@ -10586,7 +10733,7 @@ tr.row-rule th {
     var sym = stop === 'watch' ? watchSymbol() : state.stats.coin;
     var series = sym ? stockSeries(sym) : null;
     if (!series || series.length < 2) return null;
-    var n = (stop==='watch'||state.watch.list.indexOf(sym)>=0) && S.isNum(state.watch.sessions) ? state.watch.sessions : 21;
+    var n = state.watch && S.isNum(state.watch.sessions) ? state.watch.sessions : 21;
     var slice = series.slice(-(n + 1));
     if (slice.length < 2) return null;
     var first = slice[0], last = slice[slice.length - 1];
@@ -11122,6 +11269,7 @@ tr.row-rule th {
     var stage = document.querySelector('.stage');
     if (stage) stage.setAttribute('inert', '');
     var go = el('introLearn') || el('introGo');
+    if (go && MP.guided) { var gs=MP.guided.state()||MP.lessons.read(MP.store.get("guidedLessons",null)); go.textContent=Object.keys(gs.progress).every(function(k){return gs.progress[k].complete;})?'Review lessons':Object.keys(gs.progress).some(function(k){var p=gs.progress[k];return p.stock||p.step||p.complete;})?'Continue experiment':'Start experiment'; }
     if (go) setTimeout(function () { try { go.focus({ preventScroll: true }); } catch (e) { go.focus(); } }, 0);
     return true;
   }
@@ -11151,7 +11299,9 @@ tr.row-rule th {
       if (MP.guided && MP.guided.startResume) MP.guided.startResume();
       else if (MP.meter) MP.meter.setScreen('search');
     });
-    var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
+    var about = el('aboutDialog'), aboutBtn = el('aboutBtn'), project = el('introProject');
+    if(project)project.addEventListener('click',function(){hideIntro();about.showModal();});
+    if(el('aboutTry'))el('aboutTry').addEventListener('click',function(){about.close();MP.guided.startResume();});
     if (about && aboutBtn) aboutBtn.addEventListener('click', function () { about.showModal(); });
     if (about) about.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
     if (how) how.addEventListener('click', function () { showIntro(true); });
@@ -11165,7 +11315,7 @@ tr.row-rule th {
        * focus to one. Keyboard focus stays inside the dialog either way. */
       else if (ev.key === 'Tab') {
         ev.preventDefault();
-        var stops = [learn, go].filter(Boolean);
+        var stops = [learn, go, project].filter(Boolean);
         if (!stops.length) return;
         var at = stops.indexOf(document.activeElement);
         var step = ev.shiftKey ? -1 : 1;
@@ -11502,6 +11652,7 @@ tr.row-rule th {
     if (!r) return;
     if (MP.track) MP.track.event('instrument_selected', e.kind);
     if (r.action === 'setCoin') setProbe(r.coin);
+    if (r.action === 'watch' && MP.guided) { var lesson=MP.guided.state(); if(lesson.active && lesson.active!=='mix'){MP.guided.selectCompany(r.symbol);return;} }
     if (r.action === 'watch') { addWatch(r.symbol); setStats({ coin: r.symbol }); ensureStock(r.symbol); r.stop = 'subject'; }
     if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
     if (MP.router) MP.router.go(r.stop);
@@ -11827,8 +11978,32 @@ tr.row-rule th {
     renderAnalytics();
   }
 
+  function studentNavigate(action) {
+    if (action === 'lessons') { if (MP.guided) MP.guided.openLibrary(); return; }
+    if (action === 'charts') {
+      MP.meter.setScreen('reading'); MP.router.overridePanel(null); MP.meter.openDrawer(true);
+      var view = document.querySelector('.view[data-panel="' + MP.router.currentPanel() + '"]');
+      var target = view || el('viewTitle');
+      if (target) { target.setAttribute('tabindex', '-1'); target.scrollIntoView({block:'start',behavior:'smooth'}); target.focus({preventScroll:true}); }
+      return;
+    }
+    MP.meter.setScreen(action === 'choose' ? 'search' : 'learn');
+    document.querySelector('.meter').scrollIntoView({block:'start',behavior:'smooth'});
+    if (action === 'explain') { var explain = el('lcdLearn'); if (explain) { explain.setAttribute('tabindex','-1'); explain.focus({preventScroll:true}); } }
+    if (action === 'choose') openSearch();
+  }
+  function wireStudentNav() {
+    var nav = el('studentNav'); if (!nav) return;
+    nav.addEventListener('click', function(e) { var b = e.target.closest('[data-student-action]'); if (b) studentNavigate(b.dataset.studentAction); });
+    if (root.ResizeObserver) new root.ResizeObserver(function(entries) {
+      document.documentElement.style.setProperty('--student-nav-height', Math.ceil(entries[0].target.getBoundingClientRect().height) + 'px');
+    }).observe(nav);
+  }
+
   /* ---- boot --------------------------------------------------------------- */
   function start() {
+    watchMeasurementWidths();
+    wireStudentNav();
     /* The meter subscribes to the router, so it must exist before the router
      * announces the first stop. */
     if (MP.meter) MP.meter.init();
@@ -12177,7 +12352,7 @@ tr.row-rule th {
   var MP=root.MP=root.MP||{};
   var lessons={
     returns:{title:'Price versus return',goal:'See how much a stock gained or lost.',
-      steps:['Choose a stock','Compare two chart ranges','Check your understanding'],
+      steps:['Inspect the company’s price','Compare two chart ranges','Check your understanding'],
       question:'Which number tells you how the stock performed?',
       answers:['Its price today.','Its percentage gain or loss over the period.','Its price compared with another stock.'],correct:1,
       explanation:'Return is the percentage gain or loss over a period. Price alone does not tell you that.'},
@@ -12225,7 +12400,47 @@ tr.row-rule th {
     if(before.holdings.every(function(h,i){return h.weight===now.holdings[i].weight;}))return 'Change the weights, then run the simulation again.';
     p.observations.second=now;p.done=true;return null;
   }
-  MP.lessons={definitions:lessons,blank:blank,read:read,start:start,next:next,answer:answer,recordMix:recordMix};
+  /* Validate candidates before the UI changes the subject or saved progress.
+   * The adapter reads the same histories/calculations as the instrument. */
+  function selectionLoader(adapter){
+    var generation=0, examples=['AAPL','MSFT','NVDA'];
+    async function candidate(symbol,id,run){
+      await adapter.ensureStock(symbol,true);
+      if(run!==generation)return null;
+      var series=adapter.stockSeries(symbol);
+      var minimum=id==='returns'?253:32;
+      if(!series||series.length<minimum)throw new Error(id==='returns'
+        ? 'This comparison needs a full year of closing prices. This company does not have enough available history.'
+        : 'There is not enough price history to measure this company yet.');
+      if(id==='risk'){
+        var history=adapter.history();
+        for(var index of ['ixic','spx']){
+          var a=adapter.analyticsFor(series,history[index],null);
+          if(a&&Number.isFinite(a.currentCoinVol)&&Number.isFinite(a.coinDd.now))return {symbol:symbol,series:series,index:index,analytics:a};
+        }
+        throw new Error('There is not enough shared history with Nasdaq or S&P 500 to measure this company yet.');
+      }
+      return {symbol:symbol,series:series};
+    }
+    return {
+      cancel:function(){generation++;},
+      load:async function(symbol,id){return candidate(symbol,id,++generation);},
+      example:async function(id){
+        var run=++generation;
+        for(var symbol of examples){
+          try{var result=await candidate(symbol,id,run);if(run!==generation)return null;if(result)return result;}catch(e){if(run!==generation)return null;}
+        }
+        throw new Error('None of the example companies has suitable data available right now. Retry when data is available.');
+      }
+    };
+  }
+  function acceptSelection(state,id,symbol,observations){
+    var p=state.progress[id];
+    if(!p||id==='mix'||p.stock===symbol)return false;
+    state.progress[id]=Object.assign(fresh(),{stock:symbol,done:true,observations:observations});return true;
+  }
+  MP.lessons={definitions:lessons,blank:blank,read:read,start:start,next:next,answer:answer,recordMix:recordMix,
+    selectionLoader:selectionLoader,acceptSelection:acceptSelection};
 })(typeof globalThis!=='undefined'?globalThis:this);
 
 
@@ -12233,7 +12448,7 @@ tr.row-rule th {
 /* Guided tasks stay in the open drawer as students use the instrument. */
 (function(root){
   'use strict';
-  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0;
+  var MP=root.MP=root.MP||{}, state, KEY='guidedLessons', request=0, loader, busy=false, failure=null, changing=false;
   function el(id){return document.getElementById(id);}
   function esc(s){return MP.fmt.escapeHtml(String(s));}
   function percent(n){return typeof n==='number'&&isFinite(n)?n.toFixed(2)+'%':'Unavailable';}
@@ -12276,10 +12491,10 @@ tr.row-rule th {
     if(state.active)return;
     var id=resumeId(),p=state.progress[id],l=MP.lessons.definitions[id],going=anyProgress();
     var allDone=order().every(function(k){return state.progress[k].complete;});
-    el('learnEntryGo').textContent=allDone?'Review lessons':going?'Continue learning':'Start learning';
-    el('learnEntryTitle').textContent=going?(allDone?'All three lessons complete':'Pick up where you left off'):'New here?';
+    el('learnEntryGo').textContent=allDone?'Review lessons':going?'Continue experiment':'Start experiment';
+    el('learnEntryTitle').textContent=going?(allDone?'All three lessons complete':'Pick up where you left off'):'Try your first market experiment · About 5 minutes.';
     el('learnEntryNote').textContent=allDone?'Review any lesson, or keep exploring the instrument.'
-      :going?l.title+' · step '+(p.step+1)+' of 3':'Three short lessons. About five minutes each.';
+      :going?l.title+' · step '+(p.step+1)+' of 3':'Does a stock’s price tell you how well it performed?';
   }
 
   /* ---- the dock -----------------------------------------------------------
@@ -12297,9 +12512,12 @@ tr.row-rule th {
       return '<li class="'+(p.complete||i<p.step?'is-done':i===p.step?'is-now':'')+'"></li>';}).join('');
     el('lessonDockStep').textContent=p.complete?'Lesson complete':'Step '+(p.step+1)+' of 3';
     el('lessonDockTask').textContent=p.complete?l.title:l.steps[p.step];
+    var context=p.observations.selection&&p.observations.selection.text?p.observations.selection.text.split(' · ')[0]:p.stock?companyName(p.stock)+' ('+p.stock+')':'';
+    var recorded=(MP.app.state.watch.sessions===252?p.observations.year:p.observations.month)||p.observations.selection||p.observations.price;
+    el('lessonDockContext').textContent=recorded&&recorded.text?(recorded.text.indexOf(context)===0?'':context+' · ')+recorded.text:context;
     var next=el('lessonDockNext');
     next.hidden=p.complete||p.step===2;
-    next.disabled=!p.done;
+    next.disabled=!p.done||busy;
   }
   function render(){
     library();entry();dock();var p=current(),host=el('lessonGuide');host.hidden=!p;if(!p)return;
@@ -12313,72 +12531,94 @@ tr.row-rule th {
       body='<p>'+(p.step===0?'Choose two stocks. Start with 50% each and run your mix.':'Change the weights and run again. Keep the same stocks and dates.')+'</p><button class="pill" type="button" data-lesson-action="portfolio">Open practice portfolio</button>'+pairComparison(p);
       if(p.step===0&&p.done)body+='<p>First simulation recorded. Continue before changing the weights.</p>';
     } else if(p.step===0){
-      body='<p>'+(state.active==='risk'?'Choose a stock to see its swings (VOL).':'Choose a stock to see its price.')+'</p><label for="lessonStockSearch">Stock name or symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a stock"><ul class="rows picks" id="lessonStockResults"></ul><ul>'+observations(p)+'</ul>';
+      body='<p>'+(state.active==='risk'?'Inspect how much this company’s daily changes have varied, then compare its decline from a high.':'Look at the company’s closing price. In the next step, compare how it performed over two periods.')+'</p><ul>'+observations(p)+'</ul>';
     } else if(state.active==='returns'){
-      body='<p>Tap both periods. How did '+esc(p.stock)+'’s return change?</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
-    } else {body='<p>See how far '+esc(p.stock)+' fell from its peak.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
+      body='<p>Compare '+esc(p.stock)+' over one month and one year. Use the buttons below to change the instrument’s chart.</p><div class="lesson-actions"><button class="pill" type="button" data-lesson-action="month">View 1 month</button><button class="pill" type="button" data-lesson-action="year">View 1 year</button></div><ul>'+observations(p)+'</ul>';
+    } else {body='<p>Now inspect DD for '+esc(p.stock)+'. Compare its fall from its peak with the volatility reading you just saw.</p><button class="pill" type="button" data-lesson-action="drawdown">View DD</button><ul>'+observations(p)+'</ul>';}
+    if(state.active!=='mix'){
+      body+='<div class="lesson-company"><button class="pill" type="button" data-lesson-action="change">'+(p.stock?'Change company':'Choose a company')+'</button></div>';
+      if(!p.stock&&!busy)body+='<button class="pill" type="button" data-lesson-action="example">Use an available example</button>';
+      if(changing)body+='<label for="lessonStockSearch">Company name or stock symbol</label><input id="lessonStockSearch" class="probe-search" type="search" autocomplete="off" placeholder="Search a company"><ul class="rows picks" id="lessonStockResults"></ul>';
+    }
+    if(failure)body+='<div class="lesson-recovery" role="group" aria-label="Recover lesson data"><button class="pill" type="button" data-lesson-action="retry">Retry</button><button class="pill" type="button" data-lesson-action="change">Choose another company</button><button class="pill" type="button" data-lesson-action="example">Use an available example</button></div>';
     el('lessonBody').innerHTML=body;
-    el('lessonNext').hidden=p.complete||p.step===2;el('lessonNext').disabled=!p.done;
+    el('lessonBody').setAttribute('aria-busy',String(busy));
+    el('lessonNext').hidden=p.complete||p.step===2;el('lessonNext').disabled=!p.done||busy;
     save();
   }
-  function showTask(){el('lessonGuide').scrollIntoView({block:'start',behavior:'instant'});el('lessonTitle').focus({preventScroll:true});}
-  function start(id,restart){request++;MP.lessons.start(state,id,restart);render();MP.meter.openDrawer(true);note('');showTask();}
-  function exit(){request++;state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('learnEntryGo')||el('guidedLessonsOpen');if(back)back.focus({preventScroll:true});}
-  function search(){var q=el('lessonStockSearch').value;el('lessonStockResults').innerHTML=MP.search.query(MP.app.stockChoices(),q,6).map(function(c){return '<li><button class="pick" type="button" data-lesson-stock="'+esc(c.symbol)+'">'+esc(c.symbol)+' — '+esc(c.name)+'</button></li>';}).join('')||'<li>No matching supported stocks.</li>';}
-  function selectStock(symbol){
-    var p=current(),id=state.active,run=++request;if(!p||p.step!==0||id==='mix')return;
-    if(!MP.app.stockChoices().some(function(c){return c.symbol===symbol;}))return;
-    if(MP.app.state.watch.list.length>=MP.watch.MAX&&!MP.app.isWatched(symbol))return note('WATCH is full. Choose a stock already on it, or remove one before adding another.');
-    note('Loading '+symbol+'…');
-    Promise.resolve(MP.app.ensureStock(symbol,true)).then(function(){
-      if(run!==request)return;
-      var series=MP.app.stockSeries(symbol);
-      if(!series||series.length<32)throw new Error('This lesson needs at least 32 daily closes. Try a stock with more available history.');
-      MP.app.addWatch(symbol);MP.app.setStats({coin:symbol});MP.app.setWatchRange(21);
-      p.stock=symbol;p.observations={};p.done=false;
-      if(id==='risk'){
-        MP.router.go('vol');MP.router.show('vol');var m=MP.app.learnMeasure('volatility','vol');
-        if(!m)throw new Error('VOL cannot be measured yet. Wait for daily history, then select the stock again.');
-        p.observations.vol={text:symbol+' · VOL: '+m.text+' annualized, over 30 sessions.'};
-      } else {MP.router.go('subject');MP.router.show('subject');p.observations.price={text:symbol+' · latest close: '+MP.fmt.usd(series[series.length-1].price,2)+' on '+series[series.length-1].date+'.'};}
-      p.done=true;MP.meter.openDrawer(true);render();note('Measurement ready. Inspect the instrument, then continue.');
-    }).catch(function(e){if(run===request)note(e.message);});
+  function cancelSelection(){request++;if(loader)loader.cancel();busy=false;failure=null;changing=false;}
+  function showTask(){
+    MP.meter.openDrawer(true);
+    el('lessonGuide').scrollIntoView({block:'start',behavior:'smooth'});
+    el('lessonTitle').focus({preventScroll:true});
   }
-  function inspect(action){
-    var p=current();if(!p||p.step!==1||!p.stock)return;
-    MP.app.setStats({coin:p.stock});
+  function start(id,restart){
+    cancelSelection();if(!MP.lessons.start(state,id,restart))return;
+    render();note('');showTask();
+    var p=current();
+    if(id!=='mix'&&!started(p))return selectStock(null);
+    if(p.stock&&!p.complete)return selectStock(p.stock);
+  }
+  function exit(){cancelSelection();state.active=null;render();save();MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);MP.meter.openDrawer(true);var back=el('learnEntryGo')||el('guidedLessonsOpen');if(back)back.focus({preventScroll:true});}
+  function openLibrary(){
+    cancelSelection();render();note('');
+    MP.router.overridePanel('lessons');MP.meter.openDrawer(true);
+    el('lessonLibrary').hidden=false;el('guidedLessonsOpen').setAttribute('aria-expanded','true');
+    el('lessonsTitle').scrollIntoView({block:'start',behavior:'smooth'});el('lessonsTitle').focus({preventScroll:true});
+  }
+  function search(){var q=el('lessonStockSearch').value;el('lessonStockResults').innerHTML=MP.search.query(MP.app.stockChoices(),q,6).map(function(c){return '<li><button class="pick" type="button" data-lesson-stock="'+esc(c.symbol)+'">'+esc(c.symbol)+' — '+esc(c.name)+'</button></li>';}).join('')||'<li>No matching companies. Try Apple, Microsoft, or NVIDIA.</li>';}
+  function companyName(symbol){var row=MP.app.stockRow(symbol),file=MP.app.state.stocks.files[symbol];return row&&row.name||file&&file.name||symbol;}
+  function showReading(p,index){
+    MP.app.setStats(Object.assign({coin:p.stock},index?{index:index}:{}));
+    MP.app.setWatchRange(p.observations.year?252:21);
+    var stop=state.active==='risk'?(p.step>0?'dd':'vol'):'subject';
+    MP.router.go(stop);MP.router.show(stop);MP.router.overridePanel(null);MP.meter.setScreen('reading');
+  }
+  async function selectStock(symbol,action){
+    var id=state.active,p=current(),run=++request;if(!p||id==='mix')return;
+    busy=true;failure=null;render();note(symbol?'Loading '+companyName(symbol)+'…':'Finding an example with enough history…');
+    try{
+      var candidate=await (symbol?loader.load(symbol,id):loader.example(id));
+      if(!candidate||run!==request||state.active!==id)return;
+      var series=candidate.series,last=series[series.length-1],name=companyName(candidate.symbol);
+      var obs={selection:{text:name+' ('+candidate.symbol+') · Historical closes: '+MP.fmt.shortDate(series[0].date)+' to '+MP.fmt.shortDate(last.date)+'.',index:candidate.index||null}};
+      if(id==='risk')obs.vol={text:name+' · Volatility: '+MP.fmt.pct(candidate.analytics.currentCoinVol,1)+' on a yearly scale, from the latest 30 shared trading days. Comparison: '+(candidate.index==='ixic'?'Nasdaq Composite':'S&P 500')+'.'};
+      else obs.price={text:name+' · Latest close: '+MP.fmt.usd(last.price,2)+' on '+MP.fmt.shortDate(last.date)+'.'};
+      var changed=MP.lessons.acceptSelection(state,id,candidate.symbol,obs);
+      p=current();if(p.step===0&&!p.done){Object.assign(p.observations,obs);p.done=true;}busy=false;changing=false;failure=null;
+      showReading(p,candidate.index);
+      if(action&&!changed&&p.step===1){inspectReady(action,candidate);return;}
+      render();note(changed?'Example ready. Inspect the price or measurement, then continue.':'Your company and recorded observations are restored.');showTask();
+    }catch(e){
+      if(run!==request||state.active!==id)return;
+      busy=false;failure={symbol:symbol,action:action};render();note(e.message+' Your lesson progress is unchanged.');showTask();
+    }
+  }
+  function inspectReady(action,candidate){
+    var p=current();
     if(state.active==='returns'){
       var n=action==='month'?21:252;MP.app.setWatchRange(n);MP.router.go('subject');MP.router.show('subject');
-      var series=MP.app.stockSeries(p.stock),slice=series&&series.slice(-(n+1));if(!slice||slice.length<3)return note('Closing prices are unavailable. Retry after they load.');
+      var slice=candidate.series.slice(-(n+1));
       var change=(slice[slice.length-1].price/slice[0].price-1)*100;
-      p.observations[action]={text:p.stock+' · '+(action==='month'?'1-month':'1-year')+' chart: '+percent(change)+' price return, '+slice[0].date+' to '+slice[slice.length-1].date+(slice.length<n+1?' (available history is shorter).':'.')};
+      p.observations[action]={text:companyName(p.stock)+' ('+p.stock+') · '+(action==='month'?'1-month':'1-year')+' chart: '+percent(change)+' price return, '+MP.fmt.shortDate(slice[0].date)+' to '+MP.fmt.shortDate(slice[slice.length-1].date)+'.'};
       p.done=!!(p.observations.month&&p.observations.year);
-    } else {
-      MP.router.go('dd');MP.router.show('dd');var m=MP.app.learnMeasure('drawdown','dd');if(!m)return note('Drawdown is unavailable. Wait for daily history and try again.');
-      p.observations.dd={text:p.stock+' · DD: '+m.text+' from its running peak.'};p.done=true;
+    }else{
+      MP.router.go('dd');MP.router.show('dd');
+      p.observations.dd={text:p.stock+' · Decline below its previous high: '+MP.fmt.signedPct(candidate.analytics.coinDd.now,1)+'.'};p.done=true;
     }
-    MP.meter.openDrawer(true);render();note(p.done?'Both measurements are recorded. Continue when you are ready.':'Inspect the other range to continue.');
+    render();note(p.done?'Both measurements are recorded. Continue when you are ready.':'Inspect the other range to continue.');showTask();
   }
+  function inspect(action){var p=current();if(!p||p.step!==1||!p.stock||busy)return;return selectStock(p.stock,action);}
   function init(){
-    state=MP.lessons.read(MP.store.get(KEY,null));render();
-    if(root.ResizeObserver)new ResizeObserver(function(entries){
-      document.documentElement.style.setProperty('--lesson-dock-space',(Math.ceil(entries[0].target.getBoundingClientRect().height)+20)+'px');
-    }).observe(el('lessonDock'));
-    el('guidedLessonsOpen').addEventListener('click',function(){var lib=el('lessonLibrary');lib.hidden=!lib.hidden;this.setAttribute('aria-expanded',String(!lib.hidden));});
+    state=MP.lessons.read(MP.store.get(KEY,null));
+    loader=MP.lessons.selectionLoader({ensureStock:MP.app.ensureStock,stockSeries:MP.app.stockSeries,history:function(){return MP.app.state.history;},analyticsFor:MP.app.analyticsFor});
+    render();
+    if(root.ResizeObserver){new root.ResizeObserver(function(entries){document.documentElement.style.setProperty('--lesson-dock-height',Math.ceil(entries[0].target.getBoundingClientRect().height)+'px');}).observe(el('lessonDock'));}
+    el('guidedLessonsOpen').addEventListener('click',openLibrary);
     /* The standing entry under the instrument, and the dock that follows the
      * reader down the page. Both act on the lesson they would resume. */
     var entryGo=el('learnEntryGo');
     if(entryGo)entryGo.addEventListener('click',function(){startResume();});
-    el('learnBelowBtn').addEventListener('click',function(){
-      MP.meter.openDrawer(true);
-      if(state.active){showTask();return;}
-      MP.router.go('learn');MP.router.show('learn');MP.router.overridePanel(null);
-      el('lessonLibrary').hidden=false;
-      var heading=el('guidedLessonsOpen');
-      heading.setAttribute('aria-expanded','true');
-      heading.scrollIntoView({block:'start',behavior:'instant'});
-      heading.focus({preventScroll:true});
-    });
     var taskBtn=el('lessonDockTaskBtn');
     if(taskBtn)taskBtn.addEventListener('click',function(){
       MP.meter.openDrawer(true);
@@ -12387,32 +12627,29 @@ tr.row-rule th {
     });
     var dockNext=el('lessonDockNext');
     if(dockNext)dockNext.addEventListener('click',function(){
-      if(MP.lessons.next(state)){request++;render();note('');MP.meter.openDrawer(true);showTask();}
+      if(!busy&&MP.lessons.next(state)){cancelSelection();render();note('');showTask();}
     });
     var dockExit=el('lessonDockExit');
     if(dockExit)dockExit.addEventListener('click',function(){exit();});
     el('lessonLibrary').addEventListener('click',function(e){var b=e.target.closest('[data-start-lesson]');if(b)start(b.dataset.startLesson,false);});
     el('lessonGuide').addEventListener('input',function(e){if(e.target.id==='lessonStockSearch')search();});
     el('lessonGuide').addEventListener('click',function(e){var stock=e.target.closest('[data-lesson-stock]');if(stock)return selectStock(stock.dataset.lessonStock);var b=e.target.closest('[data-lesson-action]');if(!b)return;var a=b.dataset.lessonAction;
+      if(a==='retry')return selectStock(failure&&failure.symbol,failure&&failure.action);
+      if(a==='example')return selectStock(null);
+      if(a==='change'){cancelSelection();changing=true;render();note('Choose a company. Your current work stays until its data is ready.');el('lessonStockSearch').focus();return;}
       if(a==='exit')return exit();if(a==='restart')return start(state.active,true);
       if(a==='instrument'){document.querySelector('.meter').scrollIntoView({block:'start',behavior:'smooth'});return;}
-      if(a==='next'){if(MP.lessons.next(state)){request++;render();note('');el('lessonTitle').focus({preventScroll:true});}return;}
+      if(a==='next'){if(!busy&&MP.lessons.next(state)){cancelSelection();render();note('');showTask();}return;}
       if(a==='portfolio'){MP.practice.open();return;}
       if(a==='month'||a==='year'||a==='drawdown')return inspect(a);
-      if(a==='library'){exit();el('lessonLibrary').hidden=false;el('guidedLessonsOpen').setAttribute('aria-expanded','true');return;}
-      if(a==='answer'){var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus({preventScroll:true});}
+      if(a==='library')return openLibrary();
+      if(a==='answer'){if(busy)return;var answer=el('lessonBody').querySelector('input[name="lessonAnswer"]:checked');if(!answer)return note('Choose an answer first.');var correct=MP.lessons.answer(state,Number(answer.value));render();note(correct?'Correct. Lesson completed.':'Read the explanation and try again.');el('lessonTitle').focus({preventScroll:true});}
     });
     document.addEventListener('practice:simulated',function(e){if(state.active!=='mix'||current().step>1)return;var message=MP.lessons.recordMix(state,e.detail);render();note(message||'Simulation recorded. Press Continue on the lesson bar when you are ready.');});
-    if(state.active)MP.meter.openDrawer(true);
+    if(state.active){MP.meter.openDrawer(true);if(!root.location.hash&&current().stock)selectStock(current().stock);}
   }
-  function startResume(){
-    if(order().every(function(id){return state.progress[id].complete;})){
-      exit();el('lessonLibrary').hidden=false;el('guidedLessonsOpen').setAttribute('aria-expanded','true');
-      el('guidedLessonsOpen').scrollIntoView({block:'start',behavior:'instant'});el('guidedLessonsOpen').focus({preventScroll:true});return;
-    }
-    start(resumeId(),false);
-  }
-  MP.guided={state:function(){return state;},start:start,startResume:startResume,exit:exit,resumeId:resumeId};
+  function startResume(){if(order().every(function(id){return state.progress[id].complete;}))return openLibrary();start(resumeId(),false);}
+  MP.guided={state:function(){return state;},start:start,startResume:startResume,exit:exit,resumeId:resumeId,openLibrary:openLibrary,selectCompany:selectStock};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })(typeof globalThis!=='undefined'?globalThis:this);
 

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Price versus return workshop | Multimeter</title>
+<meta name="description" content="A printable 15-minute workshop for beginners: compare historical stock prices and returns with Multimeter.">
+<link rel="icon" href="icons/icon.svg">
+<style>
+/* @inject styles.css */
+</style>
+<style>
+body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 system-ui,sans-serif;margin:0}
+.workshop main{max-width:850px;margin:auto;padding:32px 24px 64px}
+.workshop h1{font-size:clamp(30px,5vw,46px);line-height:1.15;margin:20px 0}
+.workshop h2{font-size:25px;line-height:1.3;margin:0 0 16px}.workshop h3{font-size:19px;margin:20px 0 8px}
+.workshop p{margin:12px 0}.workshop a{color:#77edbb;text-decoration:underline;text-underline-offset:4px}
+.workshop a:focus-visible,.workshop button:focus-visible{outline:3px solid #77edbb;outline-offset:4px}
+.workshop nav{display:flex;gap:16px;flex-wrap:wrap}.workshop nav a,.workshop button{display:inline-block;padding:10px 14px;min-height:44px}
+.workshop button{font:inherit;color:inherit;background:#222a34;border:1px solid #8896a6;border-radius:6px;cursor:pointer}
+.workshop section{margin-top:28px;padding-top:28px;border-top:1px solid #566272}.workshop ul,.workshop ol{padding-left:24px}
+.workshop .eyebrow{color:#77edbb;font-weight:700}.workshop .note{border-left:3px solid #77edbb;padding-left:16px}
+.workshop table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:16px}.workshop th,.workshop td{border:1px solid #8896a6;padding:12px;text-align:left;vertical-align:top;overflow-wrap:anywhere}.workshop td{height:64px}.workshop th:first-child{width:24%}
+.workshop .write-line{min-height:50px;border-bottom:1px solid #8896a6}.workshop .time{display:block;color:#a9d9c5;font-size:16px}
+@media(max-width:440px){.workshop main{padding:20px 16px 40px}.workshop th,.workshop td{padding:8px}.workshop table{font-size:14px}}
+@media print{
+ @page{margin:16mm}
+ body.workshop{background:white!important;color:black!important;font:11pt/1.45 Arial,sans-serif}
+ .workshop main{max-width:none;padding:0}.workshop nav,.workshop .print-control{display:none!important}
+ .workshop a,.workshop .eyebrow,.workshop .time{color:black!important}.workshop h1{font-size:25pt}.workshop h2{font-size:17pt}.workshop h3{font-size:13pt}
+ .workshop section{margin-top:18pt;padding-top:14pt;border-color:#777}.workshop h2,.workshop h3{break-after:avoid}
+ .workshop li,.workshop tr,.workshop .note{break-inside:avoid}.workshop table{font-size:10pt}.workshop th,.workshop td{border-color:#777}
+ .workshop .worksheet,.workshop .answers{break-before:page}.workshop .write-line{min-height:32pt}
+}
+</style>
+</head>
+<body class="workshop">
+<main>
+<nav aria-label="Workshop navigation"><a href="index.html">Open Multimeter</a><a href="#worksheet">Student worksheet</a><a href="#answers">Facilitator answers</a></nav>
+<header><div class="page-wordmark"><!-- @inject wordmark --></div><p class="eyebrow">15-MINUTE WORKSHOP · BEGINNERS</p>
+<h1>Does a stock’s price tell you how well it performed?</h1>
+<p>Compare one company over two periods, then explain the difference between its share price and its price return. No finance experience is needed.</p>
+<button class="print-control" type="button" onclick="window.print()">Print workshop and worksheet</button></header>
+<section aria-labelledby="prepare"><h2 id="prepare">Before the session</h2>
+<ul><li>Use one phone or computer per student or pair, with internet access. No account is required. Have paper ready, or print the worksheet below.</li>
+<li>Open Multimeter and check that <b>Price versus return</b> loads before participants arrive. The starter tries Apple, then Microsoft, then NVIDIA, and requires at least 253 closing prices. Use the company and actual dates displayed; values can change as data updates.</li>
+<li>For new learners, choose <b>Start experiment</b>. For returning learners, choose <b>Lessons</b> and open <b>Price versus return</b> to resume. Use saved observations for steps already finished, or deliberately choose <b>Restart lesson</b> for a fresh run: it clears that lesson’s saved work. If the lesson is complete, discuss the saved observations and do the worksheet questions, or restart to repeat the on-screen activity. Opening the library does not reset progress.</li>
+<li>Tell participants: “We are investigating historical prices, not choosing investments.” Keep the answer notes out of view until the discussion.</li></ul></section>
+<section aria-labelledby="run"><h2 id="run">Lead the session</h2>
+<h3><span class="time">0–2 minutes · Predict</span>Start with a question</h3>
+<p>“If one company’s share costs more than another’s, does that mean it performed better?” Give everyone time to write or tell a partner why. Collect a few explanations without revealing the answer.</p>
+<h3><span class="time">2–7 minutes · Explore</span>Compare the same company over two periods</h3>
+<ol><li>Start or resume <b>Price versus return</b>. In step 1, record the company, latest closing price, and its date. Choose <b>Continue</b>.</li>
+<li>In step 2, choose <b>View 1 month</b>. Record the dates and percentage price return in the worksheet. Choose <b>Explore charts</b> to see the history, then <b>Back to task</b> to return.</li>
+<li>Choose <b>View 1 year</b> and record that range’s dates and return. Keep the same company for both readings. Returns may be positive, negative, or zero.</li>
+<li>If the meaning is unclear, choose <b>Explain this</b> for the current measurement, then <b>Back to task</b>. This differs from <b>PROBE</b>, which answers questions about available figures. Leave the final lesson question for the understanding check.</li></ol>
+<p class="note">If you choose <b>Change company</b>, wait until its history is validated, then repeat both readings. A successful company change resets this lesson’s company-dependent observations.</p>
+<h3><span class="time">7–11 minutes · Discuss</span>Ask participants to explain their evidence</h3>
+<ul><li>What does the closing price tell you? What extra information does the percentage return give you?</li><li>Why can the same company have different returns over a month and a year? Refer to your actual dates, even if the returns happen to be equal.</li><li>What can these readings tell you about the past? What can they not tell you about tomorrow or the path between the two dates?</li></ul>
+<h3><span class="time">11–14 minutes · Check understanding</span>Try an independent explanation</h3>
+<p>Choose <b>Continue</b> and complete the lesson’s final question. Before discussing answers together, ask each participant to answer worksheet questions 1 and 2 in their own words. A correct multiple-choice answer alone is not proof of understanding.</p>
+<h3><span class="time">14–15 minutes · Reflect</span>Find the next improvement</h3>
+<p>Ask: “What became clearer?” and “Which instruction or control was confusing?” Note where help was needed. Invite participants to use <b>FEEDBACK</b> if they wish.</p></section>
+<section aria-labelledby="recovery"><h2 id="recovery">If the data will not load</h2>
+<p>Use <b>Retry</b>, <b>Choose another company</b>, or <b>Use an available example</b>. Valid existing observations stay in place until replacement data passes validation. Do not call an incomplete history a full year.</p>
+<p>If no valid example loads, move to the explicitly hypothetical $50-to-$55 question below. Leave the live-data fields blank and mark “Live activity could not be completed.” Do not present the hypothetical example as a real company’s history.</p></section>
+<section class="worksheet" id="worksheet" aria-labelledby="worksheet-title"><p class="eyebrow">STUDENT WORKSHEET · MULTIMETER</p><h2 id="worksheet-title">Price versus return</h2>
+<p>Prediction: Does a higher share price mean better performance? Why?</p><div class="write-line"></div>
+<p>Company and symbol: __________________________________</p><p>Latest closing price: ______________ &nbsp; Date: ______________</p>
+<table><caption>Record the actual dates and returns shown in your lesson.</caption><thead><tr><th scope="col">Chart range</th><th scope="col">Start and end dates</th><th scope="col">Price return (%)</th></tr></thead><tbody><tr><th scope="row">1 month</th><td></td><td></td></tr><tr><th scope="row">1 year</th><td></td><td></td></tr></tbody></table>
+<p>What does comparing these readings show? Mention the period in your explanation.</p><div class="write-line"></div>
+<p><b>1.</b> A hypothetical share rises from $50 to $55. What is its percentage price return? Explain how you know.</p><div class="write-line"></div>
+<p><b>2.</b> Another share costs $200. Does that alone prove it performed better? What information would you need?</p><div class="write-line"></div>
+<p><b>Testing version:</b> <!-- @inject revision --><br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
+<p>Session status: □ Live activity completed &nbsp; □ Live activity could not be completed</p>
+<p>Multimeter: multimtr.com · Historical price changes are not predictions.</p></section>
+<section class="answers" id="answers" aria-labelledby="answers-title"><p class="eyebrow">FACILITATOR ONLY · DISCUSS AFTER INDEPENDENT ANSWERS</p><h2 id="answers-title">Answers and observation notes</h2>
+<p><b>Share price:</b> The closing price is the price of one share at that close. By itself, it does not describe how the price changed over a period.</p>
+<p><b>Price return:</b> Compare the ending price with the starting price: (ending price − starting price) ÷ starting price × 100. A $50-to-$55 change is $5 ÷ $50 × 100 = <b>10%</b>.</p>
+<p><b>The $200 share:</b> You need its starting and ending prices over the same comparison period. A larger dollar price alone cannot establish better performance.</p>
+<p><b>Month versus year:</b> Different starting dates can produce different returns, even when the ending date is the same. If values match, that does not make the periods interchangeable. Neither result describes every fluctuation along the way or predicts future returns. This exercise measures price return, not total return including dividends.</p>
+<p><b>What to listen for:</b> Can the participant name the company and dates, distinguish dollars from percentages, explain the 10% calculation, and reject a comparison based on share price alone? If not, revisit the starting-price denominator or period before moving on.</p>
+<h3>Record what actually happened</h3><p>Note the session date, participant count, whether the live activity loaded, which steps required help, and explanations that revealed confusion. Separate independent answers from answers given after coaching. A small workshop provides useful observations, not proof of broad effectiveness.</p>
+<p>Record a proposed improvement and what you would check next time. Request permission before publishing a participant’s quote or identifying information. This guide does not claim that a workshop or student testing has already taken place.</p></section>
+</main>
+</body>
+</html>

@@ -251,7 +251,7 @@
   var soundIsOn = readSound();
 
   function readSound() {
-    return (MP.store ? MP.store.get(SOUND_KEY, true) : true) !== false;
+    return (MP.store ? MP.store.get(SOUND_KEY, false) : false) === true;
   }
 
   /* The audio context has to be born inside a user gesture, so the pointer
@@ -556,7 +556,7 @@
     drawer.hidden = !show;
     var btn = keyEl('info');
     if (btn) {
-      btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+      btn.setAttribute('aria-expanded', show && (screenMode!=='learn'||MP.router.currentPanel()==='learn') ? 'true' : 'false');
       btn.classList.toggle('is-on', show);
     }
     if (show && MP.track) MP.track.event('drawer_opened', MP.router && MP.router.currentView ? MP.router.currentView() : '');
@@ -757,7 +757,7 @@
           app.stepWatch(parseInt(value, 10));
           tickSound();
           swapScreen();
-        } else if (tab === 'watch' && app.setWatchRange) {
+        } else if ((tab === 'watch' || tab === 'subject-range') && app.setWatchRange) {
           app.setWatchRange(parseInt(value, 10));
         }
       });
@@ -934,8 +934,8 @@
   /* What the screen is doing decides the row first. */
   var MODE_KEYS = {
     search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
-    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'INFO'], ['hold', 'HOLD']],
-    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']],
+    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'Explore charts'], ['hold', 'HOLD']],
+    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'Full explanation'], ['hold', 'HOLD']],
     welcome: [['data', 'DATA'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     probe: [['back', 'BACK'], ['ask', 'ASK'], ['none', ''], ['source', 'SOURCE'], ['hold', 'HOLD']],
     config: [['back', 'BACK'], ['none', ''], ['reset', 'RESET'], ['save', 'SAVE'], ['hold', 'HOLD']]
@@ -961,7 +961,7 @@
     mover: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     loser: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
-    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'INFO'], ['hold', 'HOLD']]
+    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'Explore charts'], ['hold', 'HOLD']]
   };
 
   function keySet(mode, stop) {
@@ -1001,7 +1001,7 @@
       hold.setAttribute('aria-pressed', held ? 'true' : 'false');
     }
     var info = keyEl('info'), drawer = el('drawer');
-    if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden ? 'true' : 'false');
+    if (info) info.setAttribute('aria-expanded', drawer && !drawer.hidden && (screenMode!=='learn'||MP.router.currentPanel()==='learn') ? 'true' : 'false');
   }
 
   /* Where CANCEL and BACK land: the list on the watch stop, the explanation
@@ -1033,7 +1033,7 @@
     if (act === 'customize') { setScreen('config'); return; }
     if (act === 'save') { if (MP.app && MP.app.saveDialConfig) MP.app.saveDialConfig(); return; }
     if (act === 'reset') { if (MP.app && MP.app.resetDialConfig) MP.app.resetDialConfig(); return; }
-    if (act === 'info') { openDrawer(); markKeys(); return; }
+    if (act === 'info') { if(screenMode==='learn'){MP.router.overridePanel('learn');openDrawer(true);var heading=el('learnCard');if(heading){heading.setAttribute('tabindex','-1');heading.scrollIntoView({block:'start',behavior:'smooth'});heading.focus({preventScroll:true});}}else openDrawer(); markKeys(); return; }
     if (act === 'minmax') { minmaxPress(); return; }
     if (act === 'alert') { if (form && !form.hidden) closeEditor(); else openEditor(); return; }
     if (act === 'add') { setScreen('search'); return; }
@@ -1353,7 +1353,8 @@
     var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
     var avail = h - padTop - padBottom;
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
-    if (h1 > avail && w1 > FIT_MIN_W) {
+    /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
+    if (desktopLearning.matches && h1 > avail && w1 > FIT_MIN_W) {
       var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
       meter.style.width = w2 + 'px';
       var h2 = meter.offsetHeight;

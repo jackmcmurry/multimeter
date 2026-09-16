@@ -45,6 +45,7 @@ $libOrder = @(
     'src/lib/watch.js',
     'src/lib/search.js',
     'src/lib/spotlight.js',
+    'src/lib/measurements.js',
     'src/lib/app.js',
     'src/lib/portfolio.js',
     'src/lib/portfolio-ui.js',
@@ -97,17 +98,22 @@ function Write-Text([string]$relative, [string]$text) {
 
 $template = Read-Text 'src/index.template.html'
 $findingsTemplate = Read-Text 'src/findings.template.html'
+$workshopTemplate = Read-Text 'src/workshop.template.html'
 $css = Read-Text 'src/styles.css'
 $wordmark = (Read-Text 'src/wordmark.svg').Trim()
 $wordmarkJson = ConvertTo-Json -InputObject $wordmark -Compress
+$revisionSha = [System.Security.Cryptography.SHA256]::Create()
+$revisionInput = ($template + $css + $workshopTemplate + $wordmark + (Join-Sources $libOrder)).Replace([string][char]13, "")
+$revision = "student-" + (($revisionSha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($revisionInput)) | ForEach-Object { $_.ToString("x2") }) -join "").Substring(0,12)
 function Apply-Brand([string]$page) {
-    return $page.Replace('<!-- @inject wordmark -->', $wordmark).Replace('"__MULTIMETER_WORDMARK__"', $wordmarkJson)
+    return $page.Replace('<!-- @inject revision -->', $revision).Replace('<!-- @inject wordmark -->', $wordmark).Replace('"__MULTIMETER_WORDMARK__"', $wordmarkJson)
 }
 $logo = $wordmark.Replace('viewBox="0 0 694 104"', 'width="1041" height="216" viewBox="-30 -20 754 144"').Replace('currentColor', '#2ee59d').Replace('<g fill="none"', '<rect x="-30" y="-20" width="754" height="144" fill="#24282e"/><g fill="none"')
 Write-Text 'docs/multimeter-logo.svg' $logo | Out-Null
 
 $cssMarker = '/* @inject styles.css */'
 $libMarker = '/* @inject lib */'
+if ($workshopTemplate.IndexOf($cssMarker) -lt 0) { throw 'workshop template is missing the CSS marker' }
 
 foreach ($t in @(@('index', $template), @('findings', $findingsTemplate))) {
     if ($t[1].IndexOf($cssMarker) -lt 0) { throw "$($t[0]) template is missing the CSS marker" }
@@ -122,6 +128,9 @@ Write-Output "release  docs/index.html              $releaseKb KB  ($($libOrder.
 $findingsPage = Apply-Brand ($findingsTemplate.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources $findingsOrder)))
 $findingsKb = Write-Text 'docs/findings.html' $findingsPage
 Write-Output "findings docs/findings.html           $findingsKb KB  ($($findingsOrder.Count) modules)"
+$workshopPage = Apply-Brand ($workshopTemplate.Replace($cssMarker, $css))
+$workshopKb = Write-Text 'docs/workshop.html' $workshopPage
+Write-Output "workshop docs/workshop.html           $workshopKb KB"
 
 # ---- installable shell -----------------------------------------------------
 # The service worker's cache name carries a hash of everything it serves, so
@@ -129,7 +138,7 @@ Write-Output "findings docs/findings.html           $findingsKb KB  ($($findings
 $swTemplate = Read-Text 'src/sw.template.js'
 $manifest = Read-Text 'src/manifest.webmanifest'
 $sha = [System.Security.Cryptography.SHA256]::Create()
-$digest = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($release + $findingsPage + $swTemplate + $manifest))
+$digest = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($release + $findingsPage + $workshopPage + $swTemplate + $manifest))
 $version = (($digest | ForEach-Object { $_.ToString('x2') }) -join '').Substring(0, 12)
 $sw = $swTemplate.Replace('/* @version */', $version)
 Write-Text 'docs/sw.js' $sw | Out-Null
@@ -139,10 +148,12 @@ Write-Output "sw       docs/sw.js                   version $version"
 # ---- debug -----------------------------------------------------------------
 if (-not $ReleaseOnly) {
     $debug = Apply-Brand ($template.Replace($cssMarker, $css).Replace($libMarker, (Join-Sources ($libOrder + $debugOrder))))
+    Write-Text 'dist/multimeter-logo.svg' $logo | Out-Null
     Write-Text 'dist/brand-social.html' (Apply-Brand (Read-Text 'src/social.template.html')) | Out-Null
     $debugKb = Write-Text 'dist/multimeter.debug.html' $debug
     Write-Output "debug    dist/multimeter.debug.html   $debugKb KB  (+ data job, tests, synthetic render)"
     Write-Text 'dist/findings.html' $findingsPage | Out-Null
+    Write-Text 'dist/workshop.html' ($workshopPage.Replace('href="index.html"', 'href="multimeter.debug.html"')) | Out-Null
 
     $distData = Join-Path $here 'dist/data'
     if (-not (Test-Path $distData)) { New-Item -ItemType Directory -Path $distData | Out-Null }
@@ -164,7 +175,7 @@ if (-not $ReleaseOnly) {
 
 # ---- sanity checks ---------------------------------------------------------
 $problems = @()
-$bundles = @{ 'release' = $release; 'findings' = $findingsPage }
+$bundles = @{ 'release' = $release; 'findings' = $findingsPage; 'workshop' = $workshopPage }
 foreach ($name in $bundles.Keys) {
     $b = $bundles[$name]
     if ($b.IndexOf('@inject') -ge 0) { $problems += "an inject marker survived into the $name bundle" }

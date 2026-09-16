@@ -4,7 +4,7 @@
   var MP=root.MP=root.MP||{};
   var lessons={
     returns:{title:'Price versus return',goal:'See how much a stock gained or lost.',
-      steps:['Choose a stock','Compare two chart ranges','Check your understanding'],
+      steps:['Inspect the company’s price','Compare two chart ranges','Check your understanding'],
       question:'Which number tells you how the stock performed?',
       answers:['Its price today.','Its percentage gain or loss over the period.','Its price compared with another stock.'],correct:1,
       explanation:'Return is the percentage gain or loss over a period. Price alone does not tell you that.'},
@@ -52,5 +52,45 @@
     if(before.holdings.every(function(h,i){return h.weight===now.holdings[i].weight;}))return 'Change the weights, then run the simulation again.';
     p.observations.second=now;p.done=true;return null;
   }
-  MP.lessons={definitions:lessons,blank:blank,read:read,start:start,next:next,answer:answer,recordMix:recordMix};
+  /* Validate candidates before the UI changes the subject or saved progress.
+   * The adapter reads the same histories/calculations as the instrument. */
+  function selectionLoader(adapter){
+    var generation=0, examples=['AAPL','MSFT','NVDA'];
+    async function candidate(symbol,id,run){
+      await adapter.ensureStock(symbol,true);
+      if(run!==generation)return null;
+      var series=adapter.stockSeries(symbol);
+      var minimum=id==='returns'?253:32;
+      if(!series||series.length<minimum)throw new Error(id==='returns'
+        ? 'This comparison needs a full year of closing prices. This company does not have enough available history.'
+        : 'There is not enough price history to measure this company yet.');
+      if(id==='risk'){
+        var history=adapter.history();
+        for(var index of ['ixic','spx']){
+          var a=adapter.analyticsFor(series,history[index],null);
+          if(a&&Number.isFinite(a.currentCoinVol)&&Number.isFinite(a.coinDd.now))return {symbol:symbol,series:series,index:index,analytics:a};
+        }
+        throw new Error('There is not enough shared history with Nasdaq or S&P 500 to measure this company yet.');
+      }
+      return {symbol:symbol,series:series};
+    }
+    return {
+      cancel:function(){generation++;},
+      load:async function(symbol,id){return candidate(symbol,id,++generation);},
+      example:async function(id){
+        var run=++generation;
+        for(var symbol of examples){
+          try{var result=await candidate(symbol,id,run);if(run!==generation)return null;if(result)return result;}catch(e){if(run!==generation)return null;}
+        }
+        throw new Error('None of the example companies has suitable data available right now. Retry when data is available.');
+      }
+    };
+  }
+  function acceptSelection(state,id,symbol,observations){
+    var p=state.progress[id];
+    if(!p||id==='mix'||p.stock===symbol)return false;
+    state.progress[id]=Object.assign(fresh(),{stock:symbol,done:true,observations:observations});return true;
+  }
+  MP.lessons={definitions:lessons,blank:blank,read:read,start:start,next:next,answer:answer,recordMix:recordMix,
+    selectionLoader:selectionLoader,acceptSelection:acceptSelection};
 })(typeof globalThis!=='undefined'?globalThis:this);

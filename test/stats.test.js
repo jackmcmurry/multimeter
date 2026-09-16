@@ -936,7 +936,7 @@
       eq('the watch row offers ADD and REMOVE', M.keySet('list')[1][1] + ',' + M.keySet('list')[2][1], 'ADD,REMOVE');
       eq('search offers a way out', M.keySet('search')[0][1], 'CANCEL');
       eq('an explanation offers a way back', M.keySet('learn')[0][1], 'BACK');
-      eq('an explanation offers a way down', M.keySet('learn')[1][1], 'DEEPER');
+      eq('an explanation offers a way down', M.keySet('learn')[1][1], 'MORE DETAIL');
       eq('the welcome offers the search', M.keySet('welcome')[0][1], 'DATA');
 
       /* the middle keys follow the stop; the first, second and last do not */

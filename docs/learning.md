@@ -1,6 +1,10 @@
 # Learn by doing
 
-Open **WATCH**, then **INFO**, and choose **Practice portfolio**. Add 1–5 supported US stocks, set positive starting weights totaling 100%, and run the simulation. **Use equal weights** divides the allocation for you. Choose 1 month, 3 months, or 1 year to inspect another period.
+For a first activity, open Multimeter and choose **Start experiment**. Returning learners can choose **Lessons → Price versus return** to resume.
+
+Teaching a group? Use the [15-minute workshop guide and printable worksheet](workshop.html). It includes preparation, timed activities, discussion prompts, facilitator answers, and a place to record actual student observations.
+
+Turn to **WATCH**, choose **Explore charts**, and open **Practice portfolio**. Add 1–5 supported US stocks, set positive starting weights totaling 100%, and run the simulation. **Use equal weights** divides the allocation for you. Choose 1 month, 3 months, or 1 year to inspect another period.
 
 The model invests a hypothetical $10,000 at the first shared closing date, including fractional shares, and holds those quantities throughout the displayed period. It reports ending value, price return, annualized volatility and maximum drawdown. The actual date range and each holding’s latest available close appear with the result. Short histories and missing dates are identified. If any holding has no usable prices, the simulation stops instead of omitting it. Daily volatility is unavailable when the holdings have mismatched trading dates.
 
@@ -8,15 +12,17 @@ This is a price-history exercise, not a record of real holdings. There are no de
 
 ## Guided lessons
 
-Choose **Start learning** in the welcome screen or in the learning bar. Desktop browsers and the installed desktop app show a compact learning sidebar on the right; phones keep the entry below the instrument. Returning students can choose **Continue learning**; after all three lessons are complete, **Review lessons** opens the lesson list. You can also open **LEARN → INFO → Guided lessons**. The existing explanation of your selected measurement stays available.
+Choose **Lessons** in the navigation above the meter to open the activity library without changing your selected asset or resetting your active lesson. **Explain this** opens the concept behind your current measurement; **PROBE** answers questions about the available figures.
 
-- **Price versus return:** choose a stock, compare its 1-month and 1-year chart ranges, then answer what measures performance over a period.
+- **Price versus return:** Start experiment selects Apple, Microsoft, or NVIDIA with at least 253 available closing prices; you can change the company. Compare its 1-month and 1-year chart ranges, then answer what measures performance over a period.
 - **Volatility versus drawdown:** inspect VOL and DD for the same stock, then distinguish variability from a decline below a peak.
 - **Build a mix:** simulate two stocks, change their weights while keeping assets and dates fixed, then compare the historical measurements.
 
-Each lesson has three steps and a question with explanatory feedback. The right sidebar on desktop, or the bottom bar on phones, keeps the current step visible; **Show task** returns to the full instructions. **Show instrument above** takes you back to the screen. **Exit lesson** keeps your progress; **Resume** continues it. **Restart lesson** clears that lesson’s progress. Progress is saved locally and does not require an account or an AI service.
+Each lesson has three steps and a question with explanatory feedback. The full guide remains in the drawer. The current task stays in a sidebar on desktop and a bottom bar on phones. **Show instrument above** takes you back to the screen. **Back to task** returns to the lesson. **Choose an asset** opens and focuses search; **Explore charts** opens the current reading’s details. **Exit lesson** keeps your progress; **Resume** continues it. **Restart lesson** clears that lesson’s progress. Lesson companies do not take up watch-list slots. A failed load offers **Retry**, **Choose another company**, and **Use an available example**. Your selection and observations remain unchanged until replacement history passes validation; choosing a different company then restarts only that lesson’s company-dependent steps. Volatility examples require usable shared history with Nasdaq or S&P 500. If no example is available, the lesson waits for retry instead of inventing data.
 
-PROBE offers questions supported by the loaded measurements, plus an explanation of why correlation does not establish cause. Unsupported custom questions offer supported alternatives. These explanations run locally.
+PROBE offers questions supported by the loaded measurements. Its explanations run locally.
+
+Progress is saved locally and does not require an account or an AI service.
 
 ## Student testing tasks
 

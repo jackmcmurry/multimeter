@@ -29,8 +29,6 @@
   var CORR_WINDOW = 30;
   var SCATTER_SESSIONS = 90;
   var COUPLING_WINDOWS = [30, 90, 252];
-  var VOL_CHART_POINTS = 120;
-  var CORR_CHART_POINTS = 180;
   var ANNUALIZE = S.TRADING_DAYS;
 
   var RANGE_LABELS = { 1: '24hr', 7: '1wk', 30: '1mo', 365: '1yr' };
@@ -230,6 +228,7 @@
   /* The meter's screen paints from app state; every renderer below ends by
    * asking it to repaint, so the LCD is never staler than the drawer. */
   function repaint() {
+    renderSubjectChart();
     checkAlerts();
     if (MP.meter && MP.meter.refresh) MP.meter.refresh();
   }
@@ -561,8 +560,8 @@
       text: text, value: shown, dp: dp, unit: ANALYTICS_UNIT[stop], mode: analyticsMode(stop),
       change: { pct: NaN, abs: NaN, delta: deltaBack(series, CORR_WINDOW) * scale, suffix: suffix, label: 'VS 30 SESSIONS AGO', dp: dp },
       spark: S.tail(series, SPARK_POINTS),
-      chartTitle: stop === 'vol' ? 'ROLLING 30-SESSION VOLATILITY' : stop === 'corr' ? 'ROLLING 90-SESSION CORRELATION' : stop === 'dd' ? 'DISTANCE BELOW THE RUNNING PEAK' : 'ROLLING BETA',
-      chartDetail: stop === 'vol' ? 'Annualized · matching trading sessions · through ' + a.windowTo : stop === 'corr' ? '−1 opposite · 0 little relationship · +1 together. Correlation is not causation.' : stop === 'dd' ? '0% is the peak. Lower points show a deeper decline.' : 'Calculated from matched returns.',
+      chartTitle: stop === 'vol' ? 'HOW MUCH HAVE DAILY CHANGES VARIED?' : stop === 'corr' ? 'HAS THEIR RELATIONSHIP CHANGED?' : stop === 'dd' ? 'HOW FAR BELOW ITS PREVIOUS HIGH?' : 'BETA OVER TIME',
+      chartDetail: stop === 'vol' ? 'Each point: previous 30 shared trading days, on a yearly scale. Not a predicted gain or loss. Through ' + a.windowTo : stop === 'corr' ? 'Each point: previous 30 shared trading days; main score: ' + c90.n + ' days. −1 opposite · 0 little linear relationship · +1 together.' : stop === 'dd' ? '0% is the previous high in this history. −20% means 20% below it.' : 'Each point: previous 30 shared trading days; main beta: 90 days.',
       empty: !S.isNum(value), ranges: false, coin: null
     };
   }
@@ -596,20 +595,14 @@
     if (INDEX_META[key]) {
       return quoteReading(key, 'INDEX', INDEX_META[key].name.toUpperCase(), '1D');
     }
-    if (validTicker(key)) {
-      /* stocks are read through the watch list, which already holds their
-       * closes; point it at the subject before reading */
-      var w = state.watch, at = w.list.indexOf(key);
-      if (at >= 0) w.index = at;
-      else return stockSubjectReading(key);
-      return watchReading();
-    }
+    if (validTicker(key)) return stockSubjectReading(key);
     return reading('btc');
   }
 
   /* A stock that is the subject but not on the watch list. */
   function stockSubjectReading(sym) {
-    var r = noReading('CLOSE', sym, '1mo');
+    var r = noReading('CLOSE', sym, sessionsLabel(state.watch.sessions));
+    r.tabs = {kind:'subject-range',label:'Chart range',options:WATCH_RANGES,value:state.watch.sessions};
     r.change.usd = true;
     r.ticker = sym;
     r.symbol = sym;
@@ -628,7 +621,7 @@
     r.empty = false;
     r.mode = sym + (last.date ? ' · ' + F.shortDate(last.date) : '');
     if (series && series.length > 1) {
-      var slice = S.tail(series, 22), first = slice[0].price;
+      var slice = S.tail(series, state.watch.sessions + 1), first = slice[0].price;
       r.spark = slice.map(function (p) { return p.price; });
       if (first > 0) {
         r.change.pct = (last.price / first - 1) * 100;
@@ -645,9 +638,26 @@
     var key = state.stats.coin;
     var label = statsCoinSymbol(key) || 'BTC';
     if (MP.meter && MP.meter.setStopLabel) MP.meter.setStopLabel('subject', label);
-    var panel = INDEX_META[key] ? 'markets' : validTicker(key) ? 'watch' : 'hero';
+    var panel = INDEX_META[key] ? 'markets' : validTicker(key) ? 'stockdetail' : 'hero';
     if (MP.router && MP.router.setPanel) MP.router.setPanel('subject', panel);
     return label;
+  }
+
+  function renderSubjectChart() {
+    var host = el('subjectChart'); if (!host) return;
+    var symbol = state.stats.coin;
+    if (!validTicker(symbol)) { host.innerHTML = ''; return; }
+    var row = stockRow(symbol), name = row && row.name || symbol;
+    var series = stockSeries(symbol), slice = series && S.tail(series, state.watch.sessions + 1);
+    if (!slice || slice.length < 2) { host.innerHTML = '<p>Price history is unavailable. Choose another company or retry the lesson.</p>'; return; }
+    var first = slice[0], last = slice[slice.length - 1], change = last.price / first.price - 1;
+    var title = name + ' · Closing prices';
+    var dates = F.shortDate(first.date) + ' to ' + F.shortDate(last.date);
+    var html = '<h3>' + F.escapeHtml(title) + '</h3><p>Each point is a closing price in US dollars. Use the chart ranges on the instrument or the lesson buttons to change the period.</p>' +
+      G.stepChart({w:Math.max(220,host.clientWidth || 560),h:260,readable:true,pad:{l:76,r:16,t:20,b:36},description:title+'. '+dates,
+        series:[{values:slice.map(function(p){return p.price;}),color:'var(--c-idx)'}],yFmt:function(v){return F.usd(v,0);},xLabels:slice.map(function(p){return F.shortDate(p.date);})}) +
+      '<p>' + dates + (slice.length < state.watch.sessions + 1 ? ' · Available history is shorter than the requested range.' : '') + '</p><p class="measurement-takeaway">Price return over this period: ' + F.signedPct(change,2) + '.</p>';
+    if (host.innerHTML !== html) host.innerHTML = html;
   }
 
   /* Which underlying view the subject position is standing in for. */
@@ -663,7 +673,7 @@
 
   function whatLine(stop) {
     /* SUBJECT says whatever the market it is pointing at would say */
-    if (stop === 'subject') return whatLine(subjectView());
+    if (stop === 'subject') return validTicker(state.stats.coin) ? 'This company’s closing price, and how much it changed over the selected period.' : whatLine(subjectView());
     if (stop === 'mover') stop = moverEndFor(stop);
     var w = WHAT_LINES[stop];
     if (typeof w === 'function') { try { return w(statsLabels()); } catch (e) { return ''; } }
@@ -1067,11 +1077,22 @@
     return null;
   }
 
+  function statsSubjectName(key) {
+    if (key === 'btc') return 'Bitcoin';
+    if (key === 'eth') return 'Ether';
+    if (key === 'crypto') { var mover = cryptoMover(); return mover && (mover.name || mover.symbol) || 'Selected cryptocurrency'; }
+    if (key === 'probe') return state.probe && (state.probe.name || state.probe.symbol) || 'Selected asset';
+    if (INDEX_META[key]) return key === 'ixic' ? 'Nasdaq Composite' : INDEX_META[key].name;
+    var row = stockRow(key);
+    return row && row.name || key;
+  }
+
   function statsLabels() {
     var idx = INDEX_META[state.stats.index] || INDEX_META.ixic;
     return {
       coinKey: state.stats.coin,
       coin: statsCoinSymbol(state.stats.coin) || 'BTC',
+      coinName: statsSubjectName(state.stats.coin),
       indexKey: idx.key,
       index: idx.code,
       indexShort: idx.short,
@@ -1385,133 +1406,40 @@
 
   /* The peak a fall began from and the low it reached, as indices into the
    * drawdown series, so the chart can show the drawdown happening. */
-  function ddMarks(dd, episodes) {
-    var deepest = (episodes || []).slice().sort(function (p, q) { return p.depth - q.depth; })[0];
-    if (!deepest || !dd || !dd.dates) return [];
-    var marks = [];
-    var pi = dd.dates.indexOf(deepest.peakDate), ti = dd.dates.indexOf(deepest.troughDate);
-    if (pi >= 0) marks.push({ index: pi, value: 0, label: 'peak ' + F.shortDate(deepest.peakDate) });
-    if (ti >= 0) marks.push({ index: ti, value: dd.series[ti], label: F.signedPct(deepest.depth, 0) });
-    return marks;
-  }
-
-  function datesForRolling(entries, dates, count) {
-    return S.tail(entries, count).map(function (e) { return dates[e.index] || ''; });
-  }
-
   function renderAnalytics() {
-    var a = state.analytics;
-    var L = a ? a.labels : statsLabels();
+    var a = state.analytics, labels = a ? a.labels : statsLabels();
+    var names = { coinName: labels.coinName || statsSubjectName(state.stats.coin),
+      indexName: labels.indexKey === 'ixic' || labels.index === '^IXIC' ? 'Nasdaq Composite' : labels.indexName || labels.index };
     setHtml('notice-history', noticeHtml(state.history.notice));
-    setText('volFoot', '30-session realized volatility, annualized. ' + L.coin + ' left, ' + L.index + ' right.');
-    setText('ddFootCoin', L.coin + ' / USD below running peak.');
-    setText('ddFootIndex', L.index + ' below running peak.');
     renderStatsPicker();
-
-    if (!a) {
-      var waiting = state.history.pending ? '—' : F.DASH;
-      setHtml('couplingStrip', strip([['Corr 90d', waiting], ['Beta 90d', waiting], ['R² 90d', waiting]]));
-      setHtml('volStrip', strip([[L.coin + ' 30d', waiting], [L.index + ' 30d', waiting], ['Ratio', waiting]]));
-      setHtml('ddStrip', strip([[L.coin + ' now', waiting], [L.coin + ' worst', waiting], [L.index + ' worst', waiting]]));
-      setHtml('chartScatter', ''); setText('scatterCaption', ''); setHtml('chartRollCorr', ''); setHtml('couplingTable', '');
-      setHtml('chartVol', ''); setHtml('chartDdBtc', ''); setHtml('chartDdIxic', ''); setHtml('ddTable', '');
-      repaint();
-      return;
-    }
-
-    /* coupling */
-    var c90 = a.coupling[1] || a.coupling[0];
-    setHtml('couplingStrip', strip([
-      ['Corr 90d', F.ratio(c90.correlation, 2), '', 'correlation', c90.correlation],
-      ['Beta 90d', F.ratio(c90.beta, 2), '', 'beta', c90.beta],
-      ['R² 90d', F.ratio(c90.r2, 2), '', 'r2', c90.r2]
-    ]));
-
-    var rows = a.coupling.map(function (c) {
-      return '<tr><th scope="row">' + c.window + 'd</th><td>' + F.ratio(c.correlation, 3) +
-        '</td><td>' + F.ratio(c.beta, 3) + '</td><td>' + F.ratio(c.r2, 3) +
-        '</td><td class="dim">' + c.n + '</td></tr>';
-    }).join('');
-    if (a.qqqCoupling) {
-      rows += '<tr class="row-rule"><th scope="row" colspan="5">vs QQQ</th></tr>';
-      rows += a.qqqCoupling.map(function (c) {
-        return '<tr><th scope="row">' + c.window + 'd</th><td>' + F.ratio(c.correlation, 3) +
-          '</td><td>' + F.ratio(c.beta, 3) + '</td><td>' + F.ratio(c.r2, 3) +
-          '</td><td class="dim">' + c.n + '</td></tr>';
-      }).join('');
-    }
-    setHtml('couplingTable',
-      '<table class="data"><thead><tr><th scope="col">Window</th><th scope="col">Corr</th>' +
-      '<th scope="col">Beta</th><th scope="col">R²</th><th scope="col">n</th></tr></thead><tbody>' +
-      rows + '</tbody></table>');
-
-    setHtml('chartScatter', G.scatterFit({
-      xs: a.scatter.xs, ys: a.scatter.ys, fit: a.scatter.fit,
-      w: 560, h: 320,
-      pointColor: 'var(--c-btc)', fitColor: 'var(--gold)',
-      xTitle: L.index, yTitle: L.coin
-    }));
-    setText('scatterCaption', 'Daily log returns, ' + a.scatter.fit.n + ' sessions. Slope β=' +
-      F.ratio(a.scatter.fit.slope, 2) + ', axes scaled independently.');
-
-    setHtml('chartRollCorr', G.stepChart({
-      series: [{ values: S.tail(a.rollCorr, CORR_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }],
-      w: 900, h: 170, yDomain: [-1, 1], zeroLine: true, tickCount: 4,
-      yFmt: function (v) { return v.toFixed(1); },
-      xLabels: datesForRolling(a.rollCorr, a.dates, CORR_CHART_POINTS).map(F.shortDate)
-    }));
-
-    /* volatility */
-    var volRatio = S.isNum(a.currentCoinVol) && S.isNum(a.currentIndexVol) && a.currentIndexVol
-      ? a.currentCoinVol / a.currentIndexVol : NaN;
-    setHtml('volStrip', strip([
-      [L.coin + ' 30d', F.pct(a.currentCoinVol, 0), '', 'volatility', a.currentCoinVol],
-      [L.index + ' 30d', F.pct(a.currentIndexVol, 0), '', 'volatility', a.currentIndexVol],
-      ['Ratio', S.isNum(volRatio) ? F.ratio(volRatio, 1) + '×' : F.DASH]
-    ]));
-    setHtml('chartVol', G.columnChart({
-      series: [
-        { values: S.tail(a.coinVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-btc)' },
-        { values: S.tail(a.indexVol, VOL_CHART_POINTS).map(function (e) { return e.value; }), color: 'var(--c-idx)' }
-      ],
-      w: 900, h: 190,
-      yFmt: function (v) { return (v * 100).toFixed(0) + '%'; },
-      xLabels: datesForRolling(a.coinVol, a.dates, VOL_CHART_POINTS).map(F.shortDate)
-    }));
-
-    /* drawdown */
-    setHtml('ddStrip', strip([
-      [L.coin + ' now', F.signedPct(a.coinDd.now, 1), 'neg', 'drawdown', a.coinDd.now],
-      [L.coin + ' worst', F.signedPct(a.coinDd.max, 1), 'neg', 'drawdown', a.coinDd.max],
-      [L.index + ' worst', F.signedPct(a.indexDd.max, 1), 'neg']
-    ]));
-    setHtml('chartDdBtc', G.underwaterChart({
-      values: a.coinDd.series, w: 900, h: 150, color: 'var(--c-btc)',
-      marks: ddMarks(a.coinDd, a.coinEpisodes),
-      xLabels: a.coinDd.dates.map(F.shortDate)
-    }));
-    setHtml('chartDdIxic', G.underwaterChart({
-      values: a.indexDd.series, w: 900, h: 150, color: 'var(--c-idx)',
-      marks: ddMarks(a.indexDd, a.indexEpisodes),
-      xLabels: a.indexDd.dates.map(F.shortDate)
-    }));
-
-    var episodes = a.coinEpisodes.map(function (e) { return { code: L.coin, e: e }; })
-      .concat(a.indexEpisodes.map(function (e) { return { code: L.index, e: e }; }))
-      .sort(function (p, q) { return p.e.depth - q.e.depth; });
-
-    setHtml('ddTable', episodes.length
-      ? '<table class="data"><thead><tr><th scope="col">Asset</th><th scope="col">Depth</th>' +
-        '<th scope="col">Peak</th><th scope="col">Trough</th><th scope="col">Recovered</th>' +
-        '</tr></thead><tbody>' + episodes.map(function (r) {
-          return '<tr><th scope="row">' + F.escapeHtml(r.code) + '</th>' +
-            '<td class="neg">' + F.signedPct(r.e.depth, 1) + '</td>' +
-            '<td class="dim">' + F.shortDate(r.e.peakDate) + '</td>' +
-            '<td class="dim">' + F.shortDate(r.e.troughDate) + '</td>' +
-            '<td>' + (r.e.ongoing ? '<span class="tag">not yet</span>' : F.shortDate(r.e.recoveryDate)) + '</td></tr>';
-        }).join('') + '</tbody></table>'
-      : '');
+    [['measurementCorrelation', 'correlation'], ['measurementVolatility', 'volatility'], ['measurementDrawdown', 'drawdown']].forEach(function (entry) {
+      var host = document.getElementById(entry[0]);
+      if (!host) return;
+      var expanded = Array.prototype.map.call(host.querySelectorAll('details'), function (d) { return d.open; });
+      var focused = host.contains(document.activeElement) && document.activeElement.tagName === 'SUMMARY';
+      var width = host.clientWidth || 560;
+      host.innerHTML = a ? MP.measurements[entry[1]](a, names, width) : MP.measurements.empty(state.history.pending);
+      Array.prototype.forEach.call(host.querySelectorAll('details'), function (d, i) { d.open = !!expanded[i]; });
+      if (focused && host.querySelector('summary')) host.querySelector('summary').focus({ preventScroll: true });
+    });
+    renderMeasureCard(currentStop());
     repaint();
+  }
+
+  function watchMeasurementWidths() {
+    if (!root.ResizeObserver) return;
+    var widths = {}, frame;
+    var observer = new root.ResizeObserver(function (entries) {
+      var changed = false;
+      entries.forEach(function (entry) {
+        var width = Math.round(entry.contentRect.width);
+        if (width > 0 && widths[entry.target.id] !== width) { widths[entry.target.id] = width; changed = true; }
+      });
+      if (changed) { root.cancelAnimationFrame(frame); frame = root.requestAnimationFrame(renderAnalytics); }
+    });
+    ['measurementCorrelation', 'measurementVolatility', 'measurementDrawdown', 'subjectChart'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) observer.observe(el);
+    });
   }
 
   /* ---- history ------------------------------------------------------------ */
@@ -1665,7 +1593,7 @@
   }
 
   function stockRow(sym) {
-    return (sym && (state.stocks.rowsBy[sym] || catalogue.by[sym])) || null;
+    return (sym && (state.stocks.rowsBy[sym] || catalogue.by[sym] || state.stocks.files[sym])) || null;
   }
 
   function ensureMoverFiles() {
@@ -1719,10 +1647,10 @@
     loser: 'The largest five-session drop of the week, shown beside the gain so both ends are visible.',
     watch: 'The stocks you chose, at their last daily close. Closes, not live prices.',
     probe: 'Any coin you pick, on the same instruments as bitcoin.',
-    corr: 'Whether two things move together, and how strongly. Correlation near 1 is in step, near 0 is unrelated.',
+    corr: 'Whether two things move together, and how strongly. A score near +1 means moving together, near 0 means little linear relationship, and near −1 means moving oppositely.',
     vol: 'How violently the price has been moving lately, next to the index, so you can tell calm from turbulent.',
     dd: 'How far below its own peak the asset sits, which is what a buyer at the top would still be down.',
-    subject: 'The market you are looking at. Press DATA to point it at something else.',
+    subject: 'The market you are looking at. Choose an asset changes the subject; Explore charts shows its history.',
     investigate: 'Investigate what you were just looking at: what the figures show, what they could mean, and what they cannot tell you.',
     learn: 'The idea behind the figure you were just looking at, explained with that figure, and the session in three plain sentences.'
   };
@@ -1780,7 +1708,7 @@
     var sym = stop === 'watch' ? watchSymbol() : state.stats.coin;
     var series = sym ? stockSeries(sym) : null;
     if (!series || series.length < 2) return null;
-    var n = (stop==='watch'||state.watch.list.indexOf(sym)>=0) && S.isNum(state.watch.sessions) ? state.watch.sessions : 21;
+    var n = state.watch && S.isNum(state.watch.sessions) ? state.watch.sessions : 21;
     var slice = series.slice(-(n + 1));
     if (slice.length < 2) return null;
     var first = slice[0], last = slice[slice.length - 1];
@@ -2316,6 +2244,7 @@
     var stage = document.querySelector('.stage');
     if (stage) stage.setAttribute('inert', '');
     var go = el('introLearn') || el('introGo');
+    if (go && MP.guided) { var gs=MP.guided.state()||MP.lessons.read(MP.store.get("guidedLessons",null)); go.textContent=Object.keys(gs.progress).every(function(k){return gs.progress[k].complete;})?'Review lessons':Object.keys(gs.progress).some(function(k){var p=gs.progress[k];return p.stock||p.step||p.complete;})?'Continue experiment':'Start experiment'; }
     if (go) setTimeout(function () { try { go.focus({ preventScroll: true }); } catch (e) { go.focus(); } }, 0);
     return true;
   }
@@ -2345,7 +2274,9 @@
       if (MP.guided && MP.guided.startResume) MP.guided.startResume();
       else if (MP.meter) MP.meter.setScreen('search');
     });
-    var about = el('aboutDialog'), aboutBtn = el('aboutBtn');
+    var about = el('aboutDialog'), aboutBtn = el('aboutBtn'), project = el('introProject');
+    if(project)project.addEventListener('click',function(){hideIntro();about.showModal();});
+    if(el('aboutTry'))el('aboutTry').addEventListener('click',function(){about.close();MP.guided.startResume();});
     if (about && aboutBtn) aboutBtn.addEventListener('click', function () { about.showModal(); });
     if (about) about.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
     if (how) how.addEventListener('click', function () { showIntro(true); });
@@ -2359,7 +2290,7 @@
        * focus to one. Keyboard focus stays inside the dialog either way. */
       else if (ev.key === 'Tab') {
         ev.preventDefault();
-        var stops = [learn, go].filter(Boolean);
+        var stops = [learn, go, project].filter(Boolean);
         if (!stops.length) return;
         var at = stops.indexOf(document.activeElement);
         var step = ev.shiftKey ? -1 : 1;
@@ -2696,6 +2627,7 @@
     if (!r) return;
     if (MP.track) MP.track.event('instrument_selected', e.kind);
     if (r.action === 'setCoin') setProbe(r.coin);
+    if (r.action === 'watch' && MP.guided) { var lesson=MP.guided.state(); if(lesson.active && lesson.active!=='mix'){MP.guided.selectCompany(r.symbol);return;} }
     if (r.action === 'watch') { addWatch(r.symbol); setStats({ coin: r.symbol }); ensureStock(r.symbol); r.stop = 'subject'; }
     if (MP.meter) MP.meter.setScreen(r.stop === 'watch' ? 'list' : 'reading');
     if (MP.router) MP.router.go(r.stop);
@@ -3021,8 +2953,32 @@
     renderAnalytics();
   }
 
+  function studentNavigate(action) {
+    if (action === 'lessons') { if (MP.guided) MP.guided.openLibrary(); return; }
+    if (action === 'charts') {
+      MP.meter.setScreen('reading'); MP.router.overridePanel(null); MP.meter.openDrawer(true);
+      var view = document.querySelector('.view[data-panel="' + MP.router.currentPanel() + '"]');
+      var target = view || el('viewTitle');
+      if (target) { target.setAttribute('tabindex', '-1'); target.scrollIntoView({block:'start',behavior:'smooth'}); target.focus({preventScroll:true}); }
+      return;
+    }
+    MP.meter.setScreen(action === 'choose' ? 'search' : 'learn');
+    document.querySelector('.meter').scrollIntoView({block:'start',behavior:'smooth'});
+    if (action === 'explain') { var explain = el('lcdLearn'); if (explain) { explain.setAttribute('tabindex','-1'); explain.focus({preventScroll:true}); } }
+    if (action === 'choose') openSearch();
+  }
+  function wireStudentNav() {
+    var nav = el('studentNav'); if (!nav) return;
+    nav.addEventListener('click', function(e) { var b = e.target.closest('[data-student-action]'); if (b) studentNavigate(b.dataset.studentAction); });
+    if (root.ResizeObserver) new root.ResizeObserver(function(entries) {
+      document.documentElement.style.setProperty('--student-nav-height', Math.ceil(entries[0].target.getBoundingClientRect().height) + 'px');
+    }).observe(nav);
+  }
+
   /* ---- boot --------------------------------------------------------------- */
   function start() {
+    watchMeasurementWidths();
+    wireStudentNav();
     /* The meter subscribes to the router, so it must exist before the router
      * announces the first stop. */
     if (MP.meter) MP.meter.init();
