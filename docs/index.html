@@ -63,10 +63,8 @@
  * ========================================================================== */
 
 :root {
-  --lesson-dock-space: 172px;
-  --learning-rail-width: 124px;
-  --student-nav-height: 60px;
-  --lesson-dock-height: 132px;
+  --student-controls-height: 160px;
+  --utility-footer-height: 64px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
   --meter-mint-rgb: 46, 229, 157;
@@ -191,7 +189,7 @@ body.has-dock #measureCard { display: none; }
 /* ---- the way in for a new student --------------------------------------- */
 /* Three additions, all serving one problem: a student who opens this page
  * having been told nothing. The intro leads with learning; the entry bar
- * under the instrument is the standing way back in; the dock keeps the
+ * beneath the navigation is the standing way back in; the strip keeps the
  * current step on screen while the instrument is being used. Green accents
  * here follow --holster, which is Meter Mint on the default skin and keeps
  * the skin picker working. */
@@ -247,15 +245,7 @@ body.has-dock #measureCard { display: none; }
 .learn-entry-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 
 /* ---- the lesson dock ----------------------------------------------------- */
-.lesson-dock {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 40;
-  background: var(--card);
-  border-top: 2px solid var(--holster);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-}
+.lesson-dock { padding: 10px 12px; border-top: 1px solid var(--rule); }
 .lesson-dock-inner {
   width: min(100%, 960px);
   margin: 0 auto;
@@ -276,14 +266,10 @@ body.has-dock #measureCard { display: none; }
 .lesson-dock-next { background: var(--holster); color: var(--lcd-dk); }
 .lesson-dock-next:hover:not([disabled]) { background: var(--holster-lt); color: var(--lcd-dk); }
 .lesson-dock-next[disabled] { background: var(--cell); color: var(--dim); }
-/* nothing at the end of the page may hide behind the dock */
-body.has-dock .stage { padding-bottom: calc(var(--lesson-dock-height) + 24px); }
-html { scroll-padding-top: calc(var(--student-nav-height) + 24px); }
-body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
 .student-nav {
-  position: sticky; top: 8px; z-index: 45; width: min(100%, 960px);
+  width: 100%;
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
-  padding: 8px; margin-bottom: 16px; border: 1px solid var(--rule);
+  padding: 8px; margin: 0; border: 0;
   background: var(--card); border-radius: 10px;
 }
 .student-nav button { min-height: 44px; border: 1px solid var(--rule); background: var(--cell); color: var(--text); font: 600 15px var(--f-body); padding: 10px; cursor: pointer; }
@@ -293,7 +279,6 @@ body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
 .learn-entry-text span, .lesson-guide, .lesson-card { font-size: 16px; }
 .lesson-company, .lesson-recovery { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
 .lesson-guide .pill, .lesson-card .pill { min-height: 44px; font-size: 14px; }
-.lesson-guide, .view, .meter { scroll-margin-top: calc(var(--student-nav-height) + 24px); scroll-margin-bottom: calc(var(--lesson-dock-height) + 24px); }
 @media (max-width: 600px) {
   .student-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); top: 4px; gap: 6px; padding: 6px; }
 }
@@ -338,7 +323,6 @@ body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
   .lesson-dock-text { flex-basis: 100%; order: 2; }
   .lesson-dock-actions { flex-basis: 100%; order: 3; }
   .lesson-dock-actions .pill { flex: 1 1 auto; text-align: center; }
-  body.has-dock .stage { padding-bottom: calc(var(--lesson-dock-height) + 24px); }
   .measure-card { padding: 13px 14px; }
   .measure-grid { gap: 11px 14px; }
 }
@@ -878,21 +862,10 @@ body {
 .drawer-head .muted { font-size: 12px; }
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
-.quick-tools {
-  width: min(100%, var(--meter-w));
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  margin: -8px auto 0;
-  padding: 0 4px;
-}
-.quick-tools .pill { min-height: 38px; }
-.quick-tools .learn-jump { margin-right: auto; color: var(--meter-mint); }
-@media (max-width: 600px) {
-  .quick-tools { justify-content: stretch; gap: 6px; padding: 0; }
-  .quick-tools .pill { flex: 1 1 0; padding: 9px 6px; font-size: 11px; }
-}
+/* Utility actions are always visible in a reserved viewport footer. */
+.quick-tools { position:fixed; inset:auto 0 0; z-index:46; display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:8px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)); background:var(--bg); border-top:1px solid var(--rule); }
+.quick-tools .pill { min-height:44px; font-size:12px; }
+@media(max-width:600px) { .quick-tools { gap:4px; padding-left:6px; padding-right:6px; } .quick-tools .pill { flex:1 1 0; padding:8px 4px; font-size:11px; } }
 .drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #measureCard,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
@@ -1067,29 +1040,6 @@ body {
 }
 
 /* ---- hero (the weekly-pick panels) --------------------------------------- */
-/* One compact learning rail, shared by browser and installed desktop app.
- * Reserve its width, never its height, so the screen keeps its full height. */
-@media (min-width: 860px) and (min-aspect-ratio: 6/5) {
-  .stage { padding-right: 152px; }
-  body.has-dock .stage { padding-bottom: 48px; }
-  html:has(body.has-dock) { scroll-padding-bottom: 20px; }
-  .learn-entry, .lesson-dock {
-    position: fixed; top: max(16px, env(safe-area-inset-top)); right: 12px;
-    bottom: auto; left: auto; width: var(--learning-rail-width, 124px); max-height: calc(100dvh - 32px);
-    overflow-y: auto; padding: 12px 10px; gap: 10px;
-    border: 1px solid var(--rule); border-left: 2px solid var(--holster);
-    border-radius: 8px; background: var(--card); box-shadow: none; z-index: 40;
-  }
-  .learn-entry-text { flex: 1 1 100%; }
-  .learn-entry-text b { font-size: 12px; }
-  .learn-entry-text span { display: block; margin-top: 6px; font-size: 11px; }
-  .learn-entry-go { width: 100%; padding: 10px 6px; font-size: 12px; letter-spacing: 0; clip-path: none; border-radius: 4px; }
-  .lesson-dock-inner { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
-  .lesson-dock-text { flex: 0 0 auto; }
-  .lesson-dock-text span { font-size: 12px; }
-  .lesson-dock-actions { flex-direction: column; gap: 8px; }
-  .lesson-dock-actions .pill { width: 100%; padding: 10px 4px; }
-}
 
 .hero { margin-bottom: 14px; }
 .hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
@@ -2136,14 +2086,36 @@ tr.row-rule th {
 .head-right { flex-shrink:0; }
 .brand { max-width:calc(100% - 150px); }
 .key[data-act="info"] { font-size:clamp(10px, 2.4vw, 12px); white-space:normal; line-height:1.2; }
-#lessonDockContext { display:block; font-size:14px; line-height:1.4; overflow-wrap:anywhere; }
-html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) + 16px); }
-@media (min-width:860px) and (min-aspect-ratio:6/5) {
-  .learn-entry-text b,.learn-entry-text span,.learn-entry-go,.lesson-dock-text span { font-size:14px; }
-  html:has(body.has-dock) { scroll-padding-bottom:20px; }
-}
 
 .view a, dialog a { color:var(--holster); text-decoration:underline; text-underline-offset:3px; }
+
+/* One navigation surface; lesson state shares its normal document layout. */
+.student-controls { position:sticky; top:0; z-index:45; width:min(100%,960px); background:var(--card); border:1px solid var(--rule); border-radius:10px; max-height:calc(100dvh - var(--utility-footer-height) - 120px); overflow-y:auto; flex-shrink:0; }
+.student-controls .learn-entry { width:100%; padding:8px 12px; margin:0; border:0; border-top:1px solid var(--rule); border-radius:0; gap:8px 16px; }
+.student-controls .learn-entry-text { flex:1 1 260px; }
+.student-controls .learn-entry-text b { font-size:14px; }
+.student-controls .learn-entry-text span { font-size:14px; }
+.student-controls .learn-entry-go { font-size:13px; }
+.student-controls .lesson-dock { position:static; width:100%; margin:0; background:transparent; box-shadow:none; }
+.student-controls .lesson-dock-text { flex:1 1 220px; }
+.student-controls .lesson-dock-text b { font-size:12px; }
+.student-controls .lesson-dock-text span { font-size:14px; }
+.stage, body.has-dock .stage { padding-bottom:calc(var(--utility-footer-height) + 24px); }
+html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-height) + 16px); scroll-padding-bottom:calc(var(--utility-footer-height) + 16px); }
+.lesson-guide,.view,.meter { scroll-margin-top:16px; scroll-margin-bottom:16px; }
+@media(max-width:600px) {
+ .student-controls .lesson-pips { display:none; }
+ .student-controls .lesson-dock-inner { gap:6px; }
+ .student-controls .lesson-dock { padding:6px 10px; }
+ .student-controls .lesson-dock-text { flex-basis:100%; display:flex; align-items:baseline; gap:8px; }
+ .student-controls .lesson-dock-text b { flex-shrink:0; font-size:11px; }
+ .student-controls .lesson-dock-text span { font-size:13px; }
+ .student-controls .lesson-dock-actions { width:100%; gap:6px; }
+ .student-controls .lesson-dock-actions .pill { flex:1 1 0; padding:8px 4px; }
+ .student-controls .learn-entry-text span { display:none; }
+ .student-controls .learn-entry-text { flex:1 1 160px; }
+ .student-controls .learn-entry-go { width:auto; padding:8px; }
+}
 
 </style>
 </head>
@@ -2189,12 +2161,35 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
 </div>
 
 <main class="stage">
+  <div class="student-controls" id="studentControls">
   <nav class="student-nav" id="studentNav" aria-label="Explore and learn">
     <button type="button" data-student-action="choose">Choose an asset</button>
     <button type="button" data-student-action="charts">Explore charts</button>
     <button type="button" data-student-action="explain">Explain this</button>
     <button type="button" data-student-action="lessons">Lessons</button>
   </nav>
+  <div class="learn-entry" id="learnEntry" hidden>
+    <div class="learn-entry-text">
+      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
+      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
+    </div>
+    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
+  </div>
+<div class="lesson-dock" id="lessonDock" hidden>
+  <div class="lesson-dock-inner">
+    <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
+    <div class="lesson-dock-text">
+      <b id="lessonDockStep">Step 1 of 3</b>
+      <span id="lessonDockTask"></span>
+    </div>
+    <div class="lesson-dock-actions">
+      <button type="button" class="pill" id="lessonDockTaskBtn">Back to task</button>
+      <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
+      <button type="button" class="pill" id="lessonDockExit">Exit</button>
+    </div>
+  </div>
+</div>
+  </div>
 
   <!-- ================= THE METER ================= -->
   <div class="meter">
@@ -2405,23 +2400,10 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
     </div>
   </div>
 
-  <nav class="quick-tools" aria-label="Multimeter help and sharing">
-    <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
-    <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
-    <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
-  </nav>
 
-  <!-- The one obvious way in for a student who has not been told anything.
-       Reads "Start learning" until progress exists, then "Continue learning"
-       and the step it would resume at. Sits under the instrument so the
-       instrument stays the thing you look at first. -->
-  <div class="learn-entry" id="learnEntry" hidden>
-    <div class="learn-entry-text">
-      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
-      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
-    </div>
-    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
-  </div>
+
+
+
 
   <!-- ================= DETAIL DRAWER ================= -->
   <div class="drawer" id="drawer" hidden>
@@ -2610,7 +2592,7 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the bar at the bottom; <b>Back to task</b> returns to its instructions.</p>
+      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the strip beneath the navigation; <b>Back to task</b> returns to its instructions.</p>
       <p>On the instrument, <b>DATA</b> opens search and <b>LEARN</b> explains the current measurement. <b>INDEX</b> switches the comparison on CORR, VOL and DD; <b>PROBE</b> opens questions about those readings. Other keys change with the screen: read their current labels. Clicking the display also opens the details.</p>
       <p><b>HOLD</b> freezes the display. <b>REL</b> shows changes from the reading you captured. <b>MIN/MAX</b> tracks readings while enabled; alerts notify you of a level crossing while the page is open. These tools are optional. Settings and lesson progress are kept in this browser when storage is available.</p>
 
@@ -2644,6 +2626,11 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
 
     <p class="prov" id="drawerProv"></p>
   </div>
+  <nav class="quick-tools" id="utilityFooter" aria-label="Multimeter help and sharing">
+    <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
+    <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
+    <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
+  </nav>
 </main>
 
 <!-- The lesson's current step, kept on screen while the student works the
@@ -2681,7 +2668,7 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-77f5a652195f</code></p>
+  <p class="muted">Testing version: <code>student-d3928d9c9f28</code></p>
 </dialog>
 
 <script>
@@ -7353,10 +7340,10 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
     }
     root.addEventListener('resize', queueFit);
     desktopLearning.addEventListener('change', queueFit);
-    var learningEntry = el('learnEntry');
-    if (learningEntry && root.ResizeObserver) new ResizeObserver(function () {
-      if (desktopLearning.matches) queueFit();
-    }).observe(learningEntry);
+    if (root.ResizeObserver) {
+      var layoutObserver = new root.ResizeObserver(queueFit);
+      ['studentControls', 'utilityFooter'].forEach(function(id){var node=el(id);if(node)layoutObserver.observe(node);});
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
   }
 
@@ -7439,7 +7426,7 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
   }
 
   /* ---- fitting the window ------------------------------------------------- */
-  var FIT_MIN_W = 300;   /* narrower than this and the dial is too small to turn; scroll instead */
+  var FIT_READABLE_W = 900; /* Keep desktop controls legible; scroll if height is limited. */
   var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
@@ -7457,43 +7444,35 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
      * bottom padding hanging past the fold, so the page scrolled by exactly
      * that much on a laptop. */
     var stage = meter.parentNode;
-    var entry = el('learnEntry');
-    /* The right sidebar follows the instrument in keyboard/reading order.
-     * Phones use the same order with the entry below the instrument. */
-    if (entry && stage) {
-      var focus = document.activeElement;
-      var restoreFocus = entry.contains(focus);
-      var beforeEntry = stage.querySelector('.quick-tools') || meter;
-      if (beforeEntry.nextElementSibling !== entry) stage.insertBefore(entry, beforeEntry.nextSibling);
-      if (restoreFocus && document.activeElement !== focus) focus.focus({ preventScroll: true });
-    }
     var cs = stage ? root.getComputedStyle(stage) : null;
     var padTop = cs ? parseFloat(cs.paddingTop) || 0 : 0;
     var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
-    var avail = h - padTop - padBottom;
+    var controls=el('studentControls'), footer=el('utilityFooter');
+    var controlsHeight=controls?Math.ceil(controls.getBoundingClientRect().height):0;
+    var footerHeight=footer?Math.ceil(footer.getBoundingClientRect().height):0;
+    document.documentElement.style.setProperty('--student-controls-height',controlsHeight+'px');
+    document.documentElement.style.setProperty('--utility-footer-height',footerHeight+'px');
+    var gap=cs?parseFloat(cs.rowGap)||0:0;
+    var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - gap;
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
+    var readableMinimum = Math.min(w1, FIT_READABLE_W);
     /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
-    if (desktopLearning.matches && h1 > avail && w1 > FIT_MIN_W) {
-      var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
+    if (desktopLearning.matches && h1 > avail && w1 > readableMinimum) {
+      var w2 = Math.max(readableMinimum, Math.round(w1 * 0.6));
       meter.style.width = w2 + 'px';
       var h2 = meter.offsetHeight;
       var slope = w1 > w2 ? (h1 - h2) / (w1 - w2) : 0;
       w = slope > 0 ? Math.floor(w2 + (avail - h2) / slope) : w1;
-      w = Math.max(FIT_MIN_W, Math.min(w1, w));
+      w = Math.max(readableMinimum, Math.min(w1, w));
       meter.style.width = w + 'px';
       var over = meter.offsetHeight - avail;
-      if (over > 0 && slope > 0 && w > FIT_MIN_W) {
-        w = Math.max(FIT_MIN_W, Math.floor(w - over / slope) - 2);
+      if (over > 0 && slope > 0 && w > readableMinimum) {
+        w = Math.max(readableMinimum, Math.floor(w - over / slope) - 2);
         meter.style.width = w + 'px';
       }
     }
     document.documentElement.style.setProperty('--meter-w', w + 'px');
-    /* Let the sidebar use spare space without resizing the instrument.
-     * Keep a 40px gap whenever the available margin permits it. */
-    if (desktopLearning.matches) {
-      var railRoom = document.documentElement.clientWidth - meter.getBoundingClientRect().right - 12 - 40;
-      document.documentElement.style.setProperty('--learning-rail-width', Math.max(124, Math.min(220, Math.floor(railRoom))) + 'px');
-    }
+
   }
 
   MP.meter = {
@@ -11995,9 +11974,7 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
   function wireStudentNav() {
     var nav = el('studentNav'); if (!nav) return;
     nav.addEventListener('click', function(e) { var b = e.target.closest('[data-student-action]'); if (b) studentNavigate(b.dataset.studentAction); });
-    if (root.ResizeObserver) new root.ResizeObserver(function(entries) {
-      document.documentElement.style.setProperty('--student-nav-height', Math.ceil(entries[0].target.getBoundingClientRect().height) + 'px');
-    }).observe(nav);
+
   }
 
   /* ---- boot --------------------------------------------------------------- */
@@ -12470,8 +12447,8 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
   }
   /* ---- the way in ---------------------------------------------------------
    * A student arriving with no instructions needs one obvious next action.
-   * The entry bar under the instrument is it: "Start learning" until any
-   * progress exists, then "Continue learning" and where they left off. */
+   * The entry beneath navigation reads "Start experiment" until any
+   * progress exists, then "Continue experiment" and where they left off. */
   function order(){return Object.keys(MP.lessons.definitions);}
   function started(p){return !!(p&&(p.step>0||p.complete||p.stock||p.observations&&Object.keys(p.observations).length));}
   function resumeId(){
@@ -12512,9 +12489,6 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
       return '<li class="'+(p.complete||i<p.step?'is-done':i===p.step?'is-now':'')+'"></li>';}).join('');
     el('lessonDockStep').textContent=p.complete?'Lesson complete':'Step '+(p.step+1)+' of 3';
     el('lessonDockTask').textContent=p.complete?l.title:l.steps[p.step];
-    var context=p.observations.selection&&p.observations.selection.text?p.observations.selection.text.split(' · ')[0]:p.stock?companyName(p.stock)+' ('+p.stock+')':'';
-    var recorded=(MP.app.state.watch.sessions===252?p.observations.year:p.observations.month)||p.observations.selection||p.observations.price;
-    el('lessonDockContext').textContent=recorded&&recorded.text?(recorded.text.indexOf(context)===0?'':context+' · ')+recorded.text:context;
     var next=el('lessonDockNext');
     next.hidden=p.complete||p.step===2;
     next.disabled=!p.done||busy;
@@ -12613,9 +12587,8 @@ html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) +
     state=MP.lessons.read(MP.store.get(KEY,null));
     loader=MP.lessons.selectionLoader({ensureStock:MP.app.ensureStock,stockSeries:MP.app.stockSeries,history:function(){return MP.app.state.history;},analyticsFor:MP.app.analyticsFor});
     render();
-    if(root.ResizeObserver){new root.ResizeObserver(function(entries){document.documentElement.style.setProperty('--lesson-dock-height',Math.ceil(entries[0].target.getBoundingClientRect().height)+'px');}).observe(el('lessonDock'));}
     el('guidedLessonsOpen').addEventListener('click',openLibrary);
-    /* The standing entry under the instrument, and the dock that follows the
+    /* The standing entry beneath navigation, and the task strip that follows the
      * reader down the page. Both act on the lesson they would resume. */
     var entryGo=el('learnEntryGo');
     if(entryGo)entryGo.addEventListener('click',function(){startResume();});

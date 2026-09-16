@@ -72,12 +72,35 @@
 </div>
 
 <main class="stage">
+  <div class="student-controls" id="studentControls">
   <nav class="student-nav" id="studentNav" aria-label="Explore and learn">
     <button type="button" data-student-action="choose">Choose an asset</button>
     <button type="button" data-student-action="charts">Explore charts</button>
     <button type="button" data-student-action="explain">Explain this</button>
     <button type="button" data-student-action="lessons">Lessons</button>
   </nav>
+  <div class="learn-entry" id="learnEntry" hidden>
+    <div class="learn-entry-text">
+      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
+      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
+    </div>
+    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
+  </div>
+<div class="lesson-dock" id="lessonDock" hidden>
+  <div class="lesson-dock-inner">
+    <ol class="lesson-pips" id="lessonPips" aria-hidden="true"></ol>
+    <div class="lesson-dock-text">
+      <b id="lessonDockStep">Step 1 of 3</b>
+      <span id="lessonDockTask"></span>
+    </div>
+    <div class="lesson-dock-actions">
+      <button type="button" class="pill" id="lessonDockTaskBtn">Back to task</button>
+      <button type="button" class="pill lesson-dock-next" id="lessonDockNext">Continue</button>
+      <button type="button" class="pill" id="lessonDockExit">Exit</button>
+    </div>
+  </div>
+</div>
+  </div>
 
   <!-- ================= THE METER ================= -->
   <div class="meter">
@@ -272,23 +295,10 @@
     </div>
   </div>
 
-  <nav class="quick-tools" aria-label="Multimeter help and sharing">
-    <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
-    <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
-    <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
-  </nav>
 
-  <!-- The one obvious way in for a student who has not been told anything.
-       Reads "Start learning" until progress exists, then "Continue learning"
-       and the step it would resume at. Sits under the instrument so the
-       instrument stays the thing you look at first. -->
-  <div class="learn-entry" id="learnEntry" hidden>
-    <div class="learn-entry-text">
-      <b id="learnEntryTitle">Try your first market experiment · About 5 minutes.</b>
-      <span id="learnEntryNote">Does a stock’s price tell you how well it performed?</span>
-    </div>
-    <button type="button" class="learn-entry-go" id="learnEntryGo">Start experiment</button>
-  </div>
+
+
+
 
   <!-- ================= DETAIL DRAWER ================= -->
   <div class="drawer" id="drawer" hidden>
@@ -477,7 +487,7 @@
       <p><b>CORR</b>: the selected coin against the selected index over the last 90 sessions, with beta and R² in the drawer. <b>VOL</b>: that coin's realized volatility over 30 sessions, annualized. <b>DD</b>: how far it is below its running peak. The pair is bitcoin and the Nasdaq Composite until you change it at the top of those panels. Any coin's daily closes come from its one-year CoinGecko chart.</p>
 
       <h2>Keys</h2>
-      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the bar at the bottom; <b>Back to task</b> returns to its instructions.</p>
+      <p>The dial’s LEARN position opens the same contextual explanation as <b>Explain this</b>. <b>More detail</b> adds technical context; <b>Full explanation</b> opens the longer guide. The navigation above the meter always offers <b>Choose an asset</b>, <b>Explore charts</b>, <b>Explain this</b>, and <b>Lessons</b>. You do not need to learn the instrument keys to start an activity. The current lesson stays in the strip beneath the navigation; <b>Back to task</b> returns to its instructions.</p>
       <p>On the instrument, <b>DATA</b> opens search and <b>LEARN</b> explains the current measurement. <b>INDEX</b> switches the comparison on CORR, VOL and DD; <b>PROBE</b> opens questions about those readings. Other keys change with the screen: read their current labels. Clicking the display also opens the details.</p>
       <p><b>HOLD</b> freezes the display. <b>REL</b> shows changes from the reading you captured. <b>MIN/MAX</b> tracks readings while enabled; alerts notify you of a level crossing while the page is open. These tools are optional. Settings and lesson progress are kept in this browser when storage is available.</p>
 
@@ -511,6 +521,11 @@
 
     <p class="prov" id="drawerProv"></p>
   </div>
+  <nav class="quick-tools" id="utilityFooter" aria-label="Multimeter help and sharing">
+    <button type="button" class="pill" id="howBtn" title="What Multimeter is, and how to use it">HOW IT WORKS</button>
+    <button type="button" class="pill" id="feedbackBtn" title="Tell us what confused you">FEEDBACK</button>
+    <button type="button" class="pill share" id="shareBtn" title="Share this reading as a picture">SHARE</button>
+  </nav>
 </main>
 
 <!-- The lesson's current step, kept on screen while the student works the

@@ -1234,10 +1234,10 @@
     }
     root.addEventListener('resize', queueFit);
     desktopLearning.addEventListener('change', queueFit);
-    var learningEntry = el('learnEntry');
-    if (learningEntry && root.ResizeObserver) new ResizeObserver(function () {
-      if (desktopLearning.matches) queueFit();
-    }).observe(learningEntry);
+    if (root.ResizeObserver) {
+      var layoutObserver = new root.ResizeObserver(queueFit);
+      ['studentControls', 'utilityFooter'].forEach(function(id){var node=el(id);if(node)layoutObserver.observe(node);});
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
   }
 
@@ -1320,7 +1320,7 @@
   }
 
   /* ---- fitting the window ------------------------------------------------- */
-  var FIT_MIN_W = 300;   /* narrower than this and the dial is too small to turn; scroll instead */
+  var FIT_READABLE_W = 900; /* Keep desktop controls legible; scroll if height is limited. */
   var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
@@ -1338,43 +1338,35 @@
      * bottom padding hanging past the fold, so the page scrolled by exactly
      * that much on a laptop. */
     var stage = meter.parentNode;
-    var entry = el('learnEntry');
-    /* The right sidebar follows the instrument in keyboard/reading order.
-     * Phones use the same order with the entry below the instrument. */
-    if (entry && stage) {
-      var focus = document.activeElement;
-      var restoreFocus = entry.contains(focus);
-      var beforeEntry = stage.querySelector('.quick-tools') || meter;
-      if (beforeEntry.nextElementSibling !== entry) stage.insertBefore(entry, beforeEntry.nextSibling);
-      if (restoreFocus && document.activeElement !== focus) focus.focus({ preventScroll: true });
-    }
     var cs = stage ? root.getComputedStyle(stage) : null;
     var padTop = cs ? parseFloat(cs.paddingTop) || 0 : 0;
     var padBottom = cs ? parseFloat(cs.paddingBottom) || 0 : 0;
-    var avail = h - padTop - padBottom;
+    var controls=el('studentControls'), footer=el('utilityFooter');
+    var controlsHeight=controls?Math.ceil(controls.getBoundingClientRect().height):0;
+    var footerHeight=footer?Math.ceil(footer.getBoundingClientRect().height):0;
+    document.documentElement.style.setProperty('--student-controls-height',controlsHeight+'px');
+    document.documentElement.style.setProperty('--utility-footer-height',footerHeight+'px');
+    var gap=cs?parseFloat(cs.rowGap)||0:0;
+    var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - gap;
     var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
+    var readableMinimum = Math.min(w1, FIT_READABLE_W);
     /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
-    if (desktopLearning.matches && h1 > avail && w1 > FIT_MIN_W) {
-      var w2 = Math.max(FIT_MIN_W, Math.round(w1 * 0.6));
+    if (desktopLearning.matches && h1 > avail && w1 > readableMinimum) {
+      var w2 = Math.max(readableMinimum, Math.round(w1 * 0.6));
       meter.style.width = w2 + 'px';
       var h2 = meter.offsetHeight;
       var slope = w1 > w2 ? (h1 - h2) / (w1 - w2) : 0;
       w = slope > 0 ? Math.floor(w2 + (avail - h2) / slope) : w1;
-      w = Math.max(FIT_MIN_W, Math.min(w1, w));
+      w = Math.max(readableMinimum, Math.min(w1, w));
       meter.style.width = w + 'px';
       var over = meter.offsetHeight - avail;
-      if (over > 0 && slope > 0 && w > FIT_MIN_W) {
-        w = Math.max(FIT_MIN_W, Math.floor(w - over / slope) - 2);
+      if (over > 0 && slope > 0 && w > readableMinimum) {
+        w = Math.max(readableMinimum, Math.floor(w - over / slope) - 2);
         meter.style.width = w + 'px';
       }
     }
     document.documentElement.style.setProperty('--meter-w', w + 'px');
-    /* Let the sidebar use spare space without resizing the instrument.
-     * Keep a 40px gap whenever the available margin permits it. */
-    if (desktopLearning.matches) {
-      var railRoom = document.documentElement.clientWidth - meter.getBoundingClientRect().right - 12 - 40;
-      document.documentElement.style.setProperty('--learning-rail-width', Math.max(124, Math.min(220, Math.floor(railRoom))) + 'px');
-    }
+
   }
 
   MP.meter = {

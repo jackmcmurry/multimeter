@@ -1,13 +1,13 @@
 # Student-testing release
 
-Testing version: **student-77f5a652195f**. This identifier also appears in About the project and on the workshop worksheet. Record it with the session date; market snapshots can update independently.
+Testing version: **student-d3928d9c9f28**. This identifier also appears in About the project and on the workshop worksheet. Record it with the session date; market snapshots can update independently.
 
 ## Implementation verification
 
 - Build checks and 35 Node tests passed: period accuracy, chart edge cases, lesson validation, failures, cancellation, saved progress, portfolio and PROBE behavior.
-- Existing browser suite: 490 checks passed.
+- Existing browser suite: 490 checks passed. Layout regression checks cover inactive, loading, active, completed, resumed, and long-task states while scrolled to the top and bottom (108 desktop checks and 96 phone checks passed).
 - Manual browser checks: fresh entry, starter selection, keyboard navigation, About-to-activity link, library without reset, both comparison ranges, company changes, completion, returning activity, and persisted sound preference.
-- Desktop, 360px and 390px layouts inspected. Narrow-layout reflow equivalent to 200% desktop zoom checked; native browser zoom was not available through the preview controls.
+- Shared navigation and lesson strip, persistent utility footer, readable meter sizing, and refreshed README screenshots verified at desktop and laptop sizes. Desktop, 360px and 390px layouts inspected. Narrow-layout reflow equivalent to 200% desktop zoom checked; native browser zoom was not available through the preview controls.
 - Phone chart axis text measured at 14px; no document horizontal overflow. Workshop links and print rules inspected. A physical printed copy has not been checked.
 
 ## Student evidence still needed

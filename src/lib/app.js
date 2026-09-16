@@ -2970,9 +2970,7 @@
   function wireStudentNav() {
     var nav = el('studentNav'); if (!nav) return;
     nav.addEventListener('click', function(e) { var b = e.target.closest('[data-student-action]'); if (b) studentNavigate(b.dataset.studentAction); });
-    if (root.ResizeObserver) new root.ResizeObserver(function(entries) {
-      document.documentElement.style.setProperty('--student-nav-height', Math.ceil(entries[0].target.getBoundingClientRect().height) + 'px');
-    }).observe(nav);
+
   }
 
   /* ---- boot --------------------------------------------------------------- */

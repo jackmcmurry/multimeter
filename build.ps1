@@ -69,6 +69,7 @@ $debugOrder = @(
     'src/lib/universe.js',
     'src/lib/pipeline.js',
     'test/stats.test.js',
+    'test/layout.browser.js',
     'test/data.test.js',
     'src/lib/debug.js'
 )

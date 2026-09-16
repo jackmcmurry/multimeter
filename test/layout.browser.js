@@ -1,0 +1,27 @@
+/* Browser geometry checks, included only in the debug build. */
+(function(root){
+ 'use strict';var MP=root.MP=root.MP||{};
+ async function run(){
+  var failures=[],passed=0;function check(name,ok){if(ok)passed++;else failures.push(name);}
+  var el=function(id){return document.getElementById(id);},rect=function(id){return el(id).getBoundingClientRect();};
+  var entry=el('learnEntry'),dock=el('lessonDock'),next=el('lessonDockNext'),task=el('lessonDockTask'),step=el('lessonDockStep');
+  var saved={entry:entry.hidden,dock:dock.hidden,next:next.hidden,disabled:next.disabled,task:task.textContent,step:step.textContent,y:scrollY};
+  var scenarios=[['inactive',false,'Start experiment'],['active',true,'Compare two chart ranges'],['loading',true,'Loading company history…'],['completed',true,'Price versus return'],['resumed',true,'Compare two chart ranges'],['long task',true,'Compare volatility and drawdown for the selected company']];
+  try {for(var scenario of scenarios){
+   entry.hidden=scenario[1];dock.hidden=!scenario[1];next.hidden=scenario[0]==='completed';next.disabled=scenario[0]==='loading';task.textContent=scenario[2];step.textContent=scenario[0]==='completed'?'Lesson complete':'Step 1 of 3';
+   MP.meter.fitToWindow();await new Promise(function(r){requestAnimationFrame(function(){requestAnimationFrame(r);});});
+   for(var bottom of [false,true]){window.scrollTo(0,bottom?document.documentElement.scrollHeight:0);await new Promise(requestAnimationFrame);
+    var prefix=scenario[0]+(bottom?' scrolled':' top'),nav=rect('studentNav'),controls=rect('studentControls'),foot=rect('utilityFooter'),strip=rect(scenario[1]?'lessonDock':'learnEntry');
+    check(prefix+': nav and task do not overlap',nav.bottom<=strip.top+1);
+    check(prefix+': header and footer do not overlap',controls.bottom<=foot.top+1);
+    check(prefix+': no horizontal overflow',document.documentElement.scrollWidth<=innerWidth+1);
+    check(prefix+': footer remains at viewport bottom',Math.abs(foot.bottom-innerHeight)<=2);
+    ['howBtn','feedbackBtn','shareBtn'].forEach(function(id){var r=rect(id);check(prefix+': '+id+' visible and touchable',r.top>=0&&r.bottom<=innerHeight+2&&r.left>=0&&r.right<=innerWidth+1&&r.height>=43);});
+    if(matchMedia('(min-width:860px) and (min-aspect-ratio:6/5)').matches)check(prefix+': meter stays readable',document.querySelector('.meter').getBoundingClientRect().width>=Math.min(900,innerWidth-40)-2);
+    check(prefix+': footer space reserved',parseFloat(getComputedStyle(document.querySelector('.stage')).paddingBottom)>=foot.height);
+   }
+  }}finally{entry.hidden=saved.entry;dock.hidden=saved.dock;next.hidden=saved.next;next.disabled=saved.disabled;task.textContent=saved.task;step.textContent=saved.step;MP.meter.fitToWindow();window.scrollTo(0,saved.y);}
+  return {passed:passed,failed:failures.length,failures:failures};
+ }
+ MP.layoutTest={run:run};
+})(globalThis);

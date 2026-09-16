@@ -58,10 +58,8 @@
  * ========================================================================== */
 
 :root {
-  --lesson-dock-space: 172px;
-  --learning-rail-width: 124px;
-  --student-nav-height: 60px;
-  --lesson-dock-height: 132px;
+  --student-controls-height: 160px;
+  --utility-footer-height: 64px;
   /* Meter Mint — #2EE59D — Multimeter's signature brand color. */
   --meter-mint: #2EE59D;
   --meter-mint-rgb: 46, 229, 157;
@@ -186,7 +184,7 @@ body.has-dock #measureCard { display: none; }
 /* ---- the way in for a new student --------------------------------------- */
 /* Three additions, all serving one problem: a student who opens this page
  * having been told nothing. The intro leads with learning; the entry bar
- * under the instrument is the standing way back in; the dock keeps the
+ * beneath the navigation is the standing way back in; the strip keeps the
  * current step on screen while the instrument is being used. Green accents
  * here follow --holster, which is Meter Mint on the default skin and keeps
  * the skin picker working. */
@@ -242,15 +240,7 @@ body.has-dock #measureCard { display: none; }
 .learn-entry-go:focus-visible { outline: 2px solid var(--holster); outline-offset: 3px; }
 
 /* ---- the lesson dock ----------------------------------------------------- */
-.lesson-dock {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 40;
-  background: var(--card);
-  border-top: 2px solid var(--holster);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-}
+.lesson-dock { padding: 10px 12px; border-top: 1px solid var(--rule); }
 .lesson-dock-inner {
   width: min(100%, 960px);
   margin: 0 auto;
@@ -271,14 +261,10 @@ body.has-dock #measureCard { display: none; }
 .lesson-dock-next { background: var(--holster); color: var(--lcd-dk); }
 .lesson-dock-next:hover:not([disabled]) { background: var(--holster-lt); color: var(--lcd-dk); }
 .lesson-dock-next[disabled] { background: var(--cell); color: var(--dim); }
-/* nothing at the end of the page may hide behind the dock */
-body.has-dock .stage { padding-bottom: calc(var(--lesson-dock-height) + 24px); }
-html { scroll-padding-top: calc(var(--student-nav-height) + 24px); }
-body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
 .student-nav {
-  position: sticky; top: 8px; z-index: 45; width: min(100%, 960px);
+  width: 100%;
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
-  padding: 8px; margin-bottom: 16px; border: 1px solid var(--rule);
+  padding: 8px; margin: 0; border: 0;
   background: var(--card); border-radius: 10px;
 }
 .student-nav button { min-height: 44px; border: 1px solid var(--rule); background: var(--cell); color: var(--text); font: 600 15px var(--f-body); padding: 10px; cursor: pointer; }
@@ -288,7 +274,6 @@ body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
 .learn-entry-text span, .lesson-guide, .lesson-card { font-size: 16px; }
 .lesson-company, .lesson-recovery { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
 .lesson-guide .pill, .lesson-card .pill { min-height: 44px; font-size: 14px; }
-.lesson-guide, .view, .meter { scroll-margin-top: calc(var(--student-nav-height) + 24px); scroll-margin-bottom: calc(var(--lesson-dock-height) + 24px); }
 @media (max-width: 600px) {
   .student-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); top: 4px; gap: 6px; padding: 6px; }
 }
@@ -333,7 +318,6 @@ body.has-dock { scroll-padding-bottom: calc(var(--lesson-dock-height) + 16px); }
   .lesson-dock-text { flex-basis: 100%; order: 2; }
   .lesson-dock-actions { flex-basis: 100%; order: 3; }
   .lesson-dock-actions .pill { flex: 1 1 auto; text-align: center; }
-  body.has-dock .stage { padding-bottom: calc(var(--lesson-dock-height) + 24px); }
   .measure-card { padding: 13px 14px; }
   .measure-grid { gap: 11px 14px; }
 }
@@ -873,21 +857,10 @@ body {
 .drawer-head .muted { font-size: 12px; }
 .drawer-tools { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 600px) { .drawer-head, .drawer-tools { flex-wrap: wrap; } .drawer-tools { gap: 8px; } }
-.quick-tools {
-  width: min(100%, var(--meter-w));
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  margin: -8px auto 0;
-  padding: 0 4px;
-}
-.quick-tools .pill { min-height: 38px; }
-.quick-tools .learn-jump { margin-right: auto; color: var(--meter-mint); }
-@media (max-width: 600px) {
-  .quick-tools { justify-content: stretch; gap: 6px; padding: 0; }
-  .quick-tools .pill { flex: 1 1 0; padding: 9px 6px; font-size: 11px; }
-}
+/* Utility actions are always visible in a reserved viewport footer. */
+.quick-tools { position:fixed; inset:auto 0 0; z-index:46; display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:8px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)); background:var(--bg); border-top:1px solid var(--rule); }
+.quick-tools .pill { min-height:44px; font-size:12px; }
+@media(max-width:600px) { .quick-tools { gap:4px; padding-left:6px; padding-right:6px; } .quick-tools .pill { flex:1 1 0; padding:8px 4px; font-size:11px; } }
 .drawer:has([data-panel="portfolio"]:not([hidden])) #viewNote,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #measureCard,
 .drawer:has([data-panel="portfolio"]:not([hidden])) #drawerProv,
@@ -1062,29 +1035,6 @@ body {
 }
 
 /* ---- hero (the weekly-pick panels) --------------------------------------- */
-/* One compact learning rail, shared by browser and installed desktop app.
- * Reserve its width, never its height, so the screen keeps its full height. */
-@media (min-width: 860px) and (min-aspect-ratio: 6/5) {
-  .stage { padding-right: 152px; }
-  body.has-dock .stage { padding-bottom: 48px; }
-  html:has(body.has-dock) { scroll-padding-bottom: 20px; }
-  .learn-entry, .lesson-dock {
-    position: fixed; top: max(16px, env(safe-area-inset-top)); right: 12px;
-    bottom: auto; left: auto; width: var(--learning-rail-width, 124px); max-height: calc(100dvh - 32px);
-    overflow-y: auto; padding: 12px 10px; gap: 10px;
-    border: 1px solid var(--rule); border-left: 2px solid var(--holster);
-    border-radius: 8px; background: var(--card); box-shadow: none; z-index: 40;
-  }
-  .learn-entry-text { flex: 1 1 100%; }
-  .learn-entry-text b { font-size: 12px; }
-  .learn-entry-text span { display: block; margin-top: 6px; font-size: 11px; }
-  .learn-entry-go { width: 100%; padding: 10px 6px; font-size: 12px; letter-spacing: 0; clip-path: none; border-radius: 4px; }
-  .lesson-dock-inner { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
-  .lesson-dock-text { flex: 0 0 auto; }
-  .lesson-dock-text span { font-size: 12px; }
-  .lesson-dock-actions { flex-direction: column; gap: 8px; }
-  .lesson-dock-actions .pill { width: 100%; padding: 10px 4px; }
-}
 
 .hero { margin-bottom: 14px; }
 .hero-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
@@ -2131,14 +2081,36 @@ tr.row-rule th {
 .head-right { flex-shrink:0; }
 .brand { max-width:calc(100% - 150px); }
 .key[data-act="info"] { font-size:clamp(10px, 2.4vw, 12px); white-space:normal; line-height:1.2; }
-#lessonDockContext { display:block; font-size:14px; line-height:1.4; overflow-wrap:anywhere; }
-html:has(body.has-dock) { scroll-padding-bottom:calc(var(--lesson-dock-height) + 16px); }
-@media (min-width:860px) and (min-aspect-ratio:6/5) {
-  .learn-entry-text b,.learn-entry-text span,.learn-entry-go,.lesson-dock-text span { font-size:14px; }
-  html:has(body.has-dock) { scroll-padding-bottom:20px; }
-}
 
 .view a, dialog a { color:var(--holster); text-decoration:underline; text-underline-offset:3px; }
+
+/* One navigation surface; lesson state shares its normal document layout. */
+.student-controls { position:sticky; top:0; z-index:45; width:min(100%,960px); background:var(--card); border:1px solid var(--rule); border-radius:10px; max-height:calc(100dvh - var(--utility-footer-height) - 120px); overflow-y:auto; flex-shrink:0; }
+.student-controls .learn-entry { width:100%; padding:8px 12px; margin:0; border:0; border-top:1px solid var(--rule); border-radius:0; gap:8px 16px; }
+.student-controls .learn-entry-text { flex:1 1 260px; }
+.student-controls .learn-entry-text b { font-size:14px; }
+.student-controls .learn-entry-text span { font-size:14px; }
+.student-controls .learn-entry-go { font-size:13px; }
+.student-controls .lesson-dock { position:static; width:100%; margin:0; background:transparent; box-shadow:none; }
+.student-controls .lesson-dock-text { flex:1 1 220px; }
+.student-controls .lesson-dock-text b { font-size:12px; }
+.student-controls .lesson-dock-text span { font-size:14px; }
+.stage, body.has-dock .stage { padding-bottom:calc(var(--utility-footer-height) + 24px); }
+html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-height) + 16px); scroll-padding-bottom:calc(var(--utility-footer-height) + 16px); }
+.lesson-guide,.view,.meter { scroll-margin-top:16px; scroll-margin-bottom:16px; }
+@media(max-width:600px) {
+ .student-controls .lesson-pips { display:none; }
+ .student-controls .lesson-dock-inner { gap:6px; }
+ .student-controls .lesson-dock { padding:6px 10px; }
+ .student-controls .lesson-dock-text { flex-basis:100%; display:flex; align-items:baseline; gap:8px; }
+ .student-controls .lesson-dock-text b { flex-shrink:0; font-size:11px; }
+ .student-controls .lesson-dock-text span { font-size:13px; }
+ .student-controls .lesson-dock-actions { width:100%; gap:6px; }
+ .student-controls .lesson-dock-actions .pill { flex:1 1 0; padding:8px 4px; }
+ .student-controls .learn-entry-text span { display:none; }
+ .student-controls .learn-entry-text { flex:1 1 160px; }
+ .student-controls .learn-entry-go { width:auto; padding:8px; }
+}
 
 </style>
 </head>

@@ -25,11 +25,11 @@ Open **Lessons** for the activity library. Build a hypothetical stock mix in **W
   <tr>
     <td align="center" valign="top">
       <img src="docs/screenshot-desktop.png" width="640"
-           alt="Desktop Multimeter with visible beginner navigation, Apple’s one-month price chart, and the active lesson sidebar.">
+           alt="Desktop Multimeter with visible beginner navigation, Apple’s one-month price chart, and the compact lesson strip beneath navigation.">
     </td>
     <td align="center" valign="top">
       <img src="docs/screenshot-phone.png" width="178"
-           alt="Phone Multimeter with navigation in two columns, Apple’s one-month price chart, and the persistent lesson task bar.">
+           alt="Phone Multimeter with navigation in two columns, Apple’s one-month price chart, and the persistent bottom utility buttons.">
     </td>
   </tr>
 </table>

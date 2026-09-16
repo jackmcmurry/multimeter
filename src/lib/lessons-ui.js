@@ -23,8 +23,8 @@
   }
   /* ---- the way in ---------------------------------------------------------
    * A student arriving with no instructions needs one obvious next action.
-   * The entry bar under the instrument is it: "Start learning" until any
-   * progress exists, then "Continue learning" and where they left off. */
+   * The entry beneath navigation reads "Start experiment" until any
+   * progress exists, then "Continue experiment" and where they left off. */
   function order(){return Object.keys(MP.lessons.definitions);}
   function started(p){return !!(p&&(p.step>0||p.complete||p.stock||p.observations&&Object.keys(p.observations).length));}
   function resumeId(){
@@ -65,9 +65,6 @@
       return '<li class="'+(p.complete||i<p.step?'is-done':i===p.step?'is-now':'')+'"></li>';}).join('');
     el('lessonDockStep').textContent=p.complete?'Lesson complete':'Step '+(p.step+1)+' of 3';
     el('lessonDockTask').textContent=p.complete?l.title:l.steps[p.step];
-    var context=p.observations.selection&&p.observations.selection.text?p.observations.selection.text.split(' · ')[0]:p.stock?companyName(p.stock)+' ('+p.stock+')':'';
-    var recorded=(MP.app.state.watch.sessions===252?p.observations.year:p.observations.month)||p.observations.selection||p.observations.price;
-    el('lessonDockContext').textContent=recorded&&recorded.text?(recorded.text.indexOf(context)===0?'':context+' · ')+recorded.text:context;
     var next=el('lessonDockNext');
     next.hidden=p.complete||p.step===2;
     next.disabled=!p.done||busy;
@@ -166,9 +163,8 @@
     state=MP.lessons.read(MP.store.get(KEY,null));
     loader=MP.lessons.selectionLoader({ensureStock:MP.app.ensureStock,stockSeries:MP.app.stockSeries,history:function(){return MP.app.state.history;},analyticsFor:MP.app.analyticsFor});
     render();
-    if(root.ResizeObserver){new root.ResizeObserver(function(entries){document.documentElement.style.setProperty('--lesson-dock-height',Math.ceil(entries[0].target.getBoundingClientRect().height)+'px');}).observe(el('lessonDock'));}
     el('guidedLessonsOpen').addEventListener('click',openLibrary);
-    /* The standing entry under the instrument, and the dock that follows the
+    /* The standing entry beneath navigation, and the task strip that follows the
      * reader down the page. Both act on the lesson they would resume. */
     var entryGo=el('learnEntryGo');
     if(entryGo)entryGo.addEventListener('click',function(){startResume();});
