@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+<title id="title">Two ways to explore the dial</title><desc id="desc">W and D, or up and right arrows, move forward one dial position. A and S, or left and down arrows, move backward. Typing in search does not move the dial.</desc>
+<rect width="1200" height="440" rx="20" fill="#090d11"/>
+<g font-family="Arial, sans-serif" text-anchor="middle">
+<text x="600" y="62" font-size="30" font-weight="700" fill="#2ee59d">Explore the dial with your keyboard</text>
+<text x="600" y="99" font-size="18" fill="#abb7c1">One key press. One dial position.</text>
+<g fill="#252c34" stroke="#4b5865" stroke-width="2">
+<rect x="254" y="135" width="70" height="70" rx="9"/><rect x="174" y="215" width="70" height="70" rx="9"/><rect x="254" y="215" width="70" height="70" rx="9"/><rect x="334" y="215" width="70" height="70" rx="9"/>
+<rect x="874" y="135" width="70" height="70" rx="9"/><rect x="794" y="215" width="70" height="70" rx="9"/><rect x="874" y="215" width="70" height="70" rx="9"/><rect x="954" y="215" width="70" height="70" rx="9"/>
+</g>
+<g fill="#edf4f1" font-size="31" font-weight="700"><text x="289" y="181">W</text><text x="209" y="261">A</text><text x="289" y="261">S</text><text x="369" y="261">D</text><text x="909" y="181">↑</text><text x="829" y="261">←</text><text x="909" y="261">↓</text><text x="989" y="261">→</text></g>
+<circle cx="600" cy="216" r="73" fill="#20272d" stroke="#2ee59d" stroke-width="3"/><circle cx="600" cy="216" r="55" fill="#12191e"/><path d="M600 216 626 178" stroke="#2ee59d" stroke-width="9" stroke-linecap="round"/>
+<text x="289" y="325" fill="#2ee59d" font-size="19">W / D forward · A / S back</text><text x="909" y="325" fill="#2ee59d" font-size="19">↑ / → forward · ← / ↓ back</text>
+<text x="600" y="391" fill="#a0abb5" font-size="17">You can also click or drag the dial. Typing in search keeps the dial still.</text>
+</g></svg>

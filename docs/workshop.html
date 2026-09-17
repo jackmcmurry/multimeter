@@ -1368,8 +1368,10 @@ tr.row-rule th {
 }
 .dial-hint.is-on { opacity: 1; }
 .dial-keyboard-hint { margin:6px 0 0; text-align:center; color:var(--dim); font:11px/1.4 var(--f-body); }
-.dial-keyboard-hint b { color:var(--text); font-weight:600; }
-@media (pointer:coarse) { .dial-keyboard-hint { display:none; } }
+.keyboard-banner { position:absolute; top:0; left:50%; transform:translateX(-50%); margin:0; width:max-content; max-width:100%; color:var(--dim); font:10px/14px var(--f-body); text-align:center; pointer-events:none; }
+.keyboard-banner b { color:var(--meter-mint); font-weight:600; }
+@media (max-width:480px) { .keyboard-banner { font-size:9px; line-height:10px; } }
+@media (pointer:coarse) { .dial-keyboard-hint,.keyboard-banner { display:none; } }
 
 /* ---- the screen as a workspace -------------------------------------------- */
 /* Search and the watch list take over the screen without changing its size,
@@ -2195,7 +2197,7 @@ body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 syst
 <p>What does comparing these readings show? Mention the period in your explanation.</p><div class="write-line"></div>
 <p><b>1.</b> A hypothetical share rises from $50 to $55. What is its percentage price return? Explain how you know.</p><div class="write-line"></div>
 <p><b>2.</b> Another share costs $200. Does that alone prove it performed better? What information would you need?</p><div class="write-line"></div>
-<p><b>Testing version:</b> student-c50ea17e98da<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
+<p><b>Testing version:</b> student-29f7fa297f22<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
 <p>Session status: □ Live activity completed &nbsp; □ Live activity could not be completed</p>
 <p>Multimeter: multimtr.com · Historical price changes are not predictions.</p></section>
 <section class="answers" id="answers" aria-labelledby="answers-title"><p class="eyebrow">FACILITATOR ONLY · DISCUSS AFTER INDEPENDENT ANSWERS</p><h2 id="answers-title">Answers and observation notes</h2>

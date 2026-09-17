@@ -47,6 +47,7 @@
 </style>
 </head>
 <body>
+<p class="keyboard-banner">Use <b>WASD</b> or <b>arrow keys</b> to explore the dial.</p>
 
 <!-- First visit: what this is, in about fifteen seconds. The instrument stays
      visible behind it, because the instrument is the explanation. -->
@@ -272,7 +273,7 @@
              politely, because until now a screen reader heard the position
              change but never what the position was for. -->
         <p class="dial-caption" id="dialCaption" aria-live="polite"></p>
-        <p class="dial-keyboard-hint">Use <b>WASD</b> or <b>arrow keys</b> to explore the dial.</p>
+        <p class="dial-keyboard-hint" aria-hidden="true">&nbsp;</p>
 
         <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">

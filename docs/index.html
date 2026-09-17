@@ -1404,8 +1404,10 @@ tr.row-rule th {
 }
 .dial-hint.is-on { opacity: 1; }
 .dial-keyboard-hint { margin:6px 0 0; text-align:center; color:var(--dim); font:11px/1.4 var(--f-body); }
-.dial-keyboard-hint b { color:var(--text); font-weight:600; }
-@media (pointer:coarse) { .dial-keyboard-hint { display:none; } }
+.keyboard-banner { position:absolute; top:0; left:50%; transform:translateX(-50%); margin:0; width:max-content; max-width:100%; color:var(--dim); font:10px/14px var(--f-body); text-align:center; pointer-events:none; }
+.keyboard-banner b { color:var(--meter-mint); font-weight:600; }
+@media (max-width:480px) { .keyboard-banner { font-size:9px; line-height:10px; } }
+@media (pointer:coarse) { .dial-keyboard-hint,.keyboard-banner { display:none; } }
 
 /* ---- the screen as a workspace -------------------------------------------- */
 /* Search and the watch list take over the screen without changing its size,
@@ -2155,6 +2157,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 </style>
 </head>
 <body>
+<p class="keyboard-banner">Use <b>WASD</b> or <b>arrow keys</b> to explore the dial.</p>
 
 <!-- First visit: what this is, in about fifteen seconds. The instrument stays
      visible behind it, because the instrument is the explanation. -->
@@ -2412,7 +2415,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
              politely, because until now a screen reader heard the position
              change but never what the position was for. -->
         <p class="dial-caption" id="dialCaption" aria-live="polite"></p>
-        <p class="dial-keyboard-hint">Use <b>WASD</b> or <b>arrow keys</b> to explore the dial.</p>
+        <p class="dial-keyboard-hint" aria-hidden="true">&nbsp;</p>
 
         <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -2684,7 +2687,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-c50ea17e98da</code></p>
+  <p class="muted">Testing version: <code>student-29f7fa297f22</code></p>
 </dialog>
 
 <script>

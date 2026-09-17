@@ -34,6 +34,10 @@ Open **Explore → Lessons** for the activity library. Build a hypothetical stoc
   </tr>
 </table>
 
+<img src="docs/keyboard-controls.svg" width="840" alt="Keyboard guide: W or D and up or right arrows move forward; A or S and left or down arrows move backward through the dial.">
+
+Use **WASD** or the **arrow keys** to explore the dial, one position per press. You can also click or drag it. Typing in search leaves the dial still.
+
 ## About the project
 
 I'm Jack McMurry, a student at Emory. I built Multimeter with help from Claude Code and Codex to make market concepts easier to explore through something hands-on.

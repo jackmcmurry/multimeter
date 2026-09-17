@@ -1359,8 +1359,10 @@ tr.row-rule th {
 }
 .dial-hint.is-on { opacity: 1; }
 .dial-keyboard-hint { margin:6px 0 0; text-align:center; color:var(--dim); font:11px/1.4 var(--f-body); }
-.dial-keyboard-hint b { color:var(--text); font-weight:600; }
-@media (pointer:coarse) { .dial-keyboard-hint { display:none; } }
+.keyboard-banner { position:absolute; top:0; left:50%; transform:translateX(-50%); margin:0; width:max-content; max-width:100%; color:var(--dim); font:10px/14px var(--f-body); text-align:center; pointer-events:none; }
+.keyboard-banner b { color:var(--meter-mint); font-weight:600; }
+@media (max-width:480px) { .keyboard-banner { font-size:9px; line-height:10px; } }
+@media (pointer:coarse) { .dial-keyboard-hint,.keyboard-banner { display:none; } }
 
 /* ---- the screen as a workspace -------------------------------------------- */
 /* Search and the watch list take over the screen without changing its size,
