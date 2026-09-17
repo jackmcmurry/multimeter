@@ -1020,7 +1020,7 @@ body {
 /* Stacked, the meter needs about 1.4px of height per pixel of width, so on a
  * laptop screen it could only fit by shrinking to a sliver. Side by side it
  * fits the height at a generous width. */
-@media (min-width: 860px) and (min-aspect-ratio: 6/5) {
+@media (min-width: 601px) and (min-aspect-ratio: 4/5) {
   .meter { --meter-max: 1240px; }
   .shell {
     display: grid;
@@ -2678,7 +2678,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-b2536a966587</code></p>
+  <p class="muted">Testing version: <code>student-deea7d43ee07</code></p>
 </dialog>
 
 <script>
@@ -7441,7 +7441,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 
   /* ---- fitting the window ------------------------------------------------- */
   var FIT_MIN_W = 240;
-  var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
+  var desktopLearning = root.matchMedia('(min-width: 601px) and (min-aspect-ratio: 4/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
    * window's height with no scrolling. The meter's height is (almost exactly)

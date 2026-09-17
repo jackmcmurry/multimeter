@@ -1,6 +1,6 @@
 # Student-testing release
 
-Testing version: **student-b2536a966587**. This identifier also appears in About the project and on the workshop worksheet. Record it with the session date; market snapshots can update independently.
+Testing version: **student-deea7d43ee07**. This identifier also appears in About the project and on the workshop worksheet. Record it with the session date; market snapshots can update independently.
 
 ## Implementation verification
 
@@ -11,7 +11,7 @@ Testing version: **student-b2536a966587**. This identifier also appears in About
 - Clean opening view, explicit lesson resume, Explore centered above OFF, persistent utility footer, complete-meter viewport fitting, and refreshed README screenshots verified at desktop and laptop sizes. Desktop, 360px and 390px layouts inspected. Narrow-layout reflow equivalent to 200% desktop zoom checked; native browser zoom was not available through the preview controls.
 - Phone chart axis text measured at 14px; no document horizontal overflow. Workshop links and print rules inspected. A physical printed copy has not been checked.
 
-- Full instrument bounds and Explore alignment checked at 1280×600, 1280×720, 1366×768, 360×800, and 390×844. The keys, dial, status and outer meter border clear the utility footer on entry.
+- Full instrument bounds and Explore alignment checked at 639×632, 1280×600, 1280×720, 1366×768, 360×800, and 390×844. The keys, dial, status and outer meter border clear the utility footer on entry.
 
 ## Student evidence still needed
 

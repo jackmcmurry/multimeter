@@ -1325,7 +1325,7 @@
 
   /* ---- fitting the window ------------------------------------------------- */
   var FIT_MIN_W = 240;
-  var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
+  var desktopLearning = root.matchMedia('(min-width: 601px) and (min-aspect-ratio: 4/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
    * window's height with no scrolling. The meter's height is (almost exactly)
