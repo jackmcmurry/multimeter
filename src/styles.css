@@ -1358,6 +1358,9 @@ tr.row-rule th {
   transition: opacity 400ms ease;
 }
 .dial-hint.is-on { opacity: 1; }
+.dial-keyboard-hint { margin:6px 0 0; text-align:center; color:var(--dim); font:11px/1.4 var(--f-body); }
+.dial-keyboard-hint b { color:var(--text); font-weight:600; }
+@media (pointer:coarse) { .dial-keyboard-hint { display:none; } }
 
 /* ---- the screen as a workspace -------------------------------------------- */
 /* Search and the watch list take over the screen without changing its size,

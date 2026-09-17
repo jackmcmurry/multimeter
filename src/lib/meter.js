@@ -499,9 +499,15 @@
     }, { passive: false });
   }
 
+  function dialKey(ev) {
+    var k = ev.key;
+    return ({ w: 'ArrowUp', a: 'ArrowLeft', s: 'ArrowDown', d: 'ArrowRight' })[k.toLowerCase()] || k;
+  }
+
   function wireKeys(knob) {
     knob.addEventListener('keydown', function (ev) {
-      var k = ev.key;
+      if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.isComposing) return;
+      var k = dialKey(ev);
       primeAudio();
       touchedDial();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
@@ -525,11 +531,12 @@
    * rest of the visit. */
   function wireGlobalKeys() {
     document.addEventListener('keydown', function (ev) {
-      var k = ev.key;
+      if (ev.defaultPrevented || ev.isComposing) return;
+      var k = dialKey(ev);
       if (k !== 'ArrowRight' && k !== 'ArrowUp' && k !== 'ArrowLeft' && k !== 'ArrowDown' && k !== 'Home' && k !== 'End') return;
       if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
       var target = ev.target;
-      if (target && (target.matches('input, textarea, select, [contenteditable="true"]') || target.closest('dialog[open]'))) return;
+      if (target && (target.matches('input, textarea, select') || target.isContentEditable || target.closest('dialog[open], [role="dialog"], [role="combobox"]'))) return;
       primeAudio();
       touchedDial();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);

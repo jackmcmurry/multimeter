@@ -1403,6 +1403,9 @@ tr.row-rule th {
   transition: opacity 400ms ease;
 }
 .dial-hint.is-on { opacity: 1; }
+.dial-keyboard-hint { margin:6px 0 0; text-align:center; color:var(--dim); font:11px/1.4 var(--f-body); }
+.dial-keyboard-hint b { color:var(--text); font-weight:600; }
+@media (pointer:coarse) { .dial-keyboard-hint { display:none; } }
 
 /* ---- the screen as a workspace -------------------------------------------- */
 /* Search and the watch list take over the screen without changing its size,
@@ -2175,6 +2178,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 </g>
 </svg></h2>
     <p class="intro-lead">Explore real market history. Learn what the numbers mean.</p>
+    <p>Use WASD or the arrow keys to explore the dial. You can also click or drag it.</p>
     <p>Try your first market experiment · About 5 minutes.</p>
     <p>Does a stock’s price tell you how well it performed?</p>
     <ol class="intro-loop">
@@ -2408,6 +2412,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
              politely, because until now a screen reader heard the position
              change but never what the position was for. -->
         <p class="dial-caption" id="dialCaption" aria-live="polite"></p>
+        <p class="dial-keyboard-hint">Use <b>WASD</b> or <b>arrow keys</b> to explore the dial.</p>
 
         <button type="button" class="dial-settings" id="dialSettings" aria-label="Customize dial" title="Customize dial">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -2679,7 +2684,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-d56c61be8778</code></p>
+  <p class="muted">Testing version: <code>student-c50ea17e98da</code></p>
 </dialog>
 
 <script>
@@ -6616,9 +6621,15 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     }, { passive: false });
   }
 
+  function dialKey(ev) {
+    var k = ev.key;
+    return ({ w: 'ArrowUp', a: 'ArrowLeft', s: 'ArrowDown', d: 'ArrowRight' })[k.toLowerCase()] || k;
+  }
+
   function wireKeys(knob) {
     knob.addEventListener('keydown', function (ev) {
-      var k = ev.key;
+      if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.isComposing) return;
+      var k = dialKey(ev);
       primeAudio();
       touchedDial();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
@@ -6642,11 +6653,12 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
    * rest of the visit. */
   function wireGlobalKeys() {
     document.addEventListener('keydown', function (ev) {
-      var k = ev.key;
+      if (ev.defaultPrevented || ev.isComposing) return;
+      var k = dialKey(ev);
       if (k !== 'ArrowRight' && k !== 'ArrowUp' && k !== 'ArrowLeft' && k !== 'ArrowDown' && k !== 'Home' && k !== 'End') return;
       if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
       var target = ev.target;
-      if (target && (target.matches('input, textarea, select, [contenteditable="true"]') || target.closest('dialog[open]'))) return;
+      if (target && (target.matches('input, textarea, select') || target.isContentEditable || target.closest('dialog[open], [role="dialog"], [role="combobox"]'))) return;
       primeAudio();
       touchedDial();
       if (k === 'ArrowRight' || k === 'ArrowUp') step(1);
