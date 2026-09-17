@@ -1368,6 +1368,17 @@
     }
     document.documentElement.style.setProperty('--meter-w', w + 'px');
 
+    /* Align the dial menu with the header at every desktop fit size, while
+     * retaining its horizontal center and the dial's reserved space. */
+    var explore = document.querySelector('.explore-control'), about = el('aboutBtn');
+    if (explore && about) {
+      explore.style.transform = 'none';
+      if (desktopLearning.matches) {
+        var er = explore.getBoundingClientRect(), ar = about.getBoundingClientRect();
+        explore.style.transform = 'translateY(' + (ar.top + ar.height / 2 - er.top - er.height / 2) + 'px)';
+      }
+    }
+
   }
 
   MP.meter = {
