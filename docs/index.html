@@ -424,8 +424,8 @@ body {
 .page-wordmark { display: block; width: min(320px, 100%); color: var(--brand); margin: 0 0 24px; }
 .intro-title .wordmark { max-width: 360px; }
 @media print { .page-wordmark { color: #000 !important; width: 240px; } }
-.head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
+/* Logo and header controls share one vertical center. */
+.head-right { transform: none; }
 
 /* the model number is equipment labelling, not a second brand */
 .model {
@@ -2679,7 +2679,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-da6bcaf172c5</code></p>
+  <p class="muted">Testing version: <code>student-d56c61be8778</code></p>
 </dialog>
 
 <script>

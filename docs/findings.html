@@ -419,8 +419,8 @@ body {
 .page-wordmark { display: block; width: min(320px, 100%); color: var(--brand); margin: 0 0 24px; }
 .intro-title .wordmark { max-width: 360px; }
 @media print { .page-wordmark { color: #000 !important; width: 240px; } }
-.head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
+/* Logo and header controls share one vertical center. */
+.head-right { transform: none; }
 
 /* the model number is equipment labelling, not a second brand */
 .model {

@@ -388,8 +388,8 @@ body {
 .page-wordmark { display: block; width: min(320px, 100%); color: var(--brand); margin: 0 0 24px; }
 .intro-title .wordmark { max-width: 360px; }
 @media print { .page-wordmark { color: #000 !important; width: 240px; } }
-.head { --wordmark-rise: clamp(5px, .55vw, 7px); }
-.head-right { transform: translateY(calc(-1 * var(--wordmark-rise))); }
+/* Logo and header controls share one vertical center. */
+.head-right { transform: none; }
 
 /* the model number is equipment labelling, not a second brand */
 .model {
@@ -2192,7 +2192,7 @@ body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 syst
 <p>What does comparing these readings show? Mention the period in your explanation.</p><div class="write-line"></div>
 <p><b>1.</b> A hypothetical share rises from $50 to $55. What is its percentage price return? Explain how you know.</p><div class="write-line"></div>
 <p><b>2.</b> Another share costs $200. Does that alone prove it performed better? What information would you need?</p><div class="write-line"></div>
-<p><b>Testing version:</b> student-da6bcaf172c5<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
+<p><b>Testing version:</b> student-d56c61be8778<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
 <p>Session status: □ Live activity completed &nbsp; □ Live activity could not be completed</p>
 <p>Multimeter: multimtr.com · Historical price changes are not predictions.</p></section>
 <section class="answers" id="answers" aria-labelledby="answers-title"><p class="eyebrow">FACILITATOR ONLY · DISCUSS AFTER INDEPENDENT ANSWERS</p><h2 id="answers-title">Answers and observation notes</h2>
