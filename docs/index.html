@@ -354,7 +354,7 @@ body {
 /* ---- the meter body ------------------------------------------------------ */
 /* The width the fit settles on (meter.js fitToWindow) is echoed here so the
  * drawer can match it. */
-:root { --meter-w: 900px; }
+:root { --meter-w: 900px; --fit-dial-size:180px; }
 .meter { --meter-max: 900px; width: min(100%, var(--meter-max)); }
 .face { min-width: 0; }
 /* The keys size against the face they sit on, not the window. Side by side
@@ -2119,14 +2119,34 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 
 /* Compact navigation stays inside the instrument; dormant lessons reserve no space. */
 .student-controls[hidden], .explore-menu[hidden] { display:none; }
-.explore-control { position:relative; display:inline-flex; }
+.explore-control { position:relative; z-index:12; display:flex; justify-content:center; width:max-content; margin:0 auto 6px; }
 .explore-toggle { min-height:44px; padding:8px 12px; border:1px solid var(--rule); border-radius:6px; background:var(--cell); color:var(--text); font:600 15px var(--f-body); cursor:pointer; }
-.explore-menu { position:absolute; left:0; top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
+.explore-menu { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
 .explore-menu button { min-height:44px; padding:10px 12px; text-align:left; background:var(--cell); border:1px solid var(--rule); color:var(--text); font:500 16px var(--f-body); cursor:pointer; }
 .explore-menu button:hover { border-color:var(--holster); }
 .explore-toggle:focus-visible,.explore-menu button:focus-visible { outline:2px solid var(--holster); outline-offset:2px; }
 .head:has(.explore-control) { position:relative; z-index:10; flex-wrap:wrap; gap:10px; }
 .head-right:has(.explore-control) { flex-wrap:wrap; gap:10px; }
+
+/* Keep the complete stacked instrument in the first phone viewport. */
+@media (max-width:600px) {
+ .shell { padding:10px 12px; }
+ .head { padding-bottom:6px; }
+ .lcd { padding:8px 10px; --price-size:30px; }
+ .lcd-chart { height:100px; aspect-ratio:auto; margin-top:4px; }
+ .lcd-chart:has(.measurement-chart) { height:140px; }
+ .lcd-chart > .chart { height:100%; }
+ .lcd-readout { margin-top:6px; padding-top:6px; }
+ .lcd-foot { margin-top:4px; }
+ .lcd-minmax.is-idle,.lcd-ranges.is-idle { display:none; }
+ .lcd-ranges { margin-top:6px; }
+ .keys { margin-top:8px; }
+ .face-dial .dial { width:min(100%,var(--fit-dial-size,180px)); margin:0 auto; }
+ .face-dial .jacks { padding-top:6px; }
+ .face-dial .status { flex-direction:row; gap:10px; }
+ .dial-caption { margin-top:2px; }
+ .explore-control { margin-bottom:0; }
+}
 
 </style>
 </head>
@@ -2214,16 +2234,6 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 </g>
 </svg></span>
           <span class="head-right">
-            <span class="explore-control">
-              <button type="button" class="explore-toggle" id="exploreToggle" aria-expanded="false" aria-controls="studentNav">Explore</button>
-              <nav class="explore-menu" id="studentNav" aria-label="Explore and learn" hidden>
-                <button type="button" data-student-action="start" id="exploreStart">Start experiment</button>
-                <button type="button" data-student-action="choose">Choose an asset</button>
-                <button type="button" data-student-action="charts">Explore charts</button>
-                <button type="button" data-student-action="explain">Explain this</button>
-                <button type="button" data-student-action="lessons">Lessons</button>
-              </nav>
-            </span>
             <span class="skin-picker">
               <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
@@ -2374,6 +2384,17 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 
         </div>
         <div class="face face-dial">
+            <span class="explore-control">
+              <button type="button" class="explore-toggle" id="exploreToggle" aria-expanded="false" aria-controls="studentNav">Explore</button>
+              <nav class="explore-menu" id="studentNav" aria-label="Explore and learn" hidden>
+                <button type="button" data-student-action="start" id="exploreStart">Start experiment</button>
+                <button type="button" data-student-action="choose">Choose an asset</button>
+                <button type="button" data-student-action="charts">Explore charts</button>
+                <button type="button" data-student-action="explain">Explain this</button>
+                <button type="button" data-student-action="lessons">Lessons</button>
+              </nav>
+            </span>
+
 
         <div class="dial" id="dial">
           <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="12" aria-valuenow="1"></div>
@@ -2586,7 +2607,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. Open Explore in the meter header for these actions: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
+      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. Open Explore above the dial for these actions: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
       <p>You can also turn the dial by dragging it, using the mouse wheel, or pressing its arrow keys. Coin quotes are requested about once a minute. Stock and index snapshots can be delayed; use the dates shown with a reading to tell what period it describes. Measurements use historical closing prices.</p>
 
       <h2>Dial</h2>
@@ -2657,7 +2678,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   <h2>Current limitations</h2>
   <p>This is a prototype.<br>Stock data uses published snapshots and may be delayed.<br>Nothing here is investment advice.</p>
   <p class="about-definitions">CORR means correlation between assets; DD means drawdown from a peak.</p>
-  <p class="muted">Testing version: <code>student-c21af0194798</code></p>
+  <p class="muted">Testing version: <code>student-b2536a966587</code></p>
 </dialog>
 
 <script>
@@ -7333,6 +7354,10 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
       var layoutObserver = new root.ResizeObserver(queueFit);
       ['studentControls', 'utilityFooter'].forEach(function(id){var node=el(id);if(node)layoutObserver.observe(node);});
     }
+    if(root.MutationObserver){
+      var contentObserver=new root.MutationObserver(queueFit);
+      ['lcd','dialCaption'].forEach(function(id){var node=el(id);if(node)contentObserver.observe(node,{childList:true,subtree:true,characterData:true});});
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
   }
 
@@ -7415,7 +7440,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   }
 
   /* ---- fitting the window ------------------------------------------------- */
-  var FIT_READABLE_W = 900; /* Keep desktop controls legible; scroll if height is limited. */
+  var FIT_MIN_W = 240;
   var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
@@ -7429,6 +7454,7 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     var h = root.innerHeight;
     if (!meter || !h) return;
     meter.style.width = '';
+    meter.style.setProperty('--fit-dial-size','180px');
     /* Both paddings, not just the top: counting only the top left the stage's
      * bottom padding hanging past the fold, so the page scrolled by exactly
      * that much on a laptop. */
@@ -7443,22 +7469,18 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
     document.documentElement.style.setProperty('--utility-footer-height',footerHeight+'px');
     var gap=cs?parseFloat(cs.rowGap)||0:0;
     var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - (controlsHeight ? gap : 0);
-    var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
-    var readableMinimum = Math.min(w1, FIT_READABLE_W);
-    /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
-    if (desktopLearning.matches && h1 > avail && w1 > readableMinimum) {
-      var w2 = Math.max(readableMinimum, Math.round(w1 * 0.6));
-      meter.style.width = w2 + 'px';
-      var h2 = meter.offsetHeight;
-      var slope = w1 > w2 ? (h1 - h2) / (w1 - w2) : 0;
-      w = slope > 0 ? Math.floor(w2 + (avail - h2) / slope) : w1;
-      w = Math.max(readableMinimum, Math.min(w1, w));
-      meter.style.width = w + 'px';
-      var over = meter.offsetHeight - avail;
-      if (over > 0 && slope > 0 && w > readableMinimum) {
-        w = Math.max(readableMinimum, Math.floor(w - over / slope) - 2);
-        meter.style.width = w + 'px';
+    var w1=meter.offsetWidth,w=w1;
+    // Fit the complete instrument above the persistent footer, including keys.
+    if(root.innerWidth<=600){
+      var dialSize=Math.max(100,180-Math.max(0,meter.offsetHeight-avail));
+      meter.style.setProperty('--fit-dial-size',dialSize+'px');
+    }else if(meter.offsetHeight>avail){
+      var low=Math.min(FIT_MIN_W,w1),high=w1;
+      for(var pass=0;pass<12;pass++){
+        var mid=(low+high)/2;meter.style.width=mid+'px';
+        if(meter.offsetHeight<=avail)low=mid;else high=mid;
       }
+      w=Math.floor(low);meter.style.width=w+'px';
     }
     document.documentElement.style.setProperty('--meter-w', w + 'px');
 
@@ -11964,7 +11986,15 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
   function wireStudentNav() {
     var nav=el('studentNav'),toggle=el('exploreToggle');if(!nav||!toggle)return;
     function close(focus){nav.hidden=true;toggle.setAttribute('aria-expanded','false');if(focus)toggle.focus();}
-    toggle.addEventListener('click',function(){var open=nav.hidden;nav.hidden=!open;toggle.setAttribute('aria-expanded',String(open));});
+    toggle.addEventListener('click',function(){
+      var open=nav.hidden;nav.hidden=!open;toggle.setAttribute('aria-expanded',String(open));
+      if(open){
+        var r=toggle.getBoundingClientRect(),footer=el('utilityFooter').getBoundingClientRect();
+        var below=footer.top-r.bottom-12,above=r.top-12,up=below<nav.scrollHeight&&above>below;
+        nav.style.top=up?'auto':'calc(100% + 6px)';nav.style.bottom=up?'calc(100% + 6px)':'auto';
+        nav.style.maxHeight=Math.max(44,up?above:below)+'px';
+      }
+    });
     nav.addEventListener('click',function(e){var b=e.target.closest('[data-student-action]');if(b){close(true);studentNavigate(b.dataset.studentAction);}});
     document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!nav.hidden){e.preventDefault();close(true);}});
     document.addEventListener('click',function(e){if(!e.target.closest('.explore-control'))close(false);});

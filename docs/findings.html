@@ -349,7 +349,7 @@ body {
 /* ---- the meter body ------------------------------------------------------ */
 /* The width the fit settles on (meter.js fitToWindow) is echoed here so the
  * drawer can match it. */
-:root { --meter-w: 900px; }
+:root { --meter-w: 900px; --fit-dial-size:180px; }
 .meter { --meter-max: 900px; width: min(100%, var(--meter-max)); }
 .face { min-width: 0; }
 /* The keys size against the face they sit on, not the window. Side by side
@@ -2114,14 +2114,34 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 
 /* Compact navigation stays inside the instrument; dormant lessons reserve no space. */
 .student-controls[hidden], .explore-menu[hidden] { display:none; }
-.explore-control { position:relative; display:inline-flex; }
+.explore-control { position:relative; z-index:12; display:flex; justify-content:center; width:max-content; margin:0 auto 6px; }
 .explore-toggle { min-height:44px; padding:8px 12px; border:1px solid var(--rule); border-radius:6px; background:var(--cell); color:var(--text); font:600 15px var(--f-body); cursor:pointer; }
-.explore-menu { position:absolute; left:0; top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
+.explore-menu { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
 .explore-menu button { min-height:44px; padding:10px 12px; text-align:left; background:var(--cell); border:1px solid var(--rule); color:var(--text); font:500 16px var(--f-body); cursor:pointer; }
 .explore-menu button:hover { border-color:var(--holster); }
 .explore-toggle:focus-visible,.explore-menu button:focus-visible { outline:2px solid var(--holster); outline-offset:2px; }
 .head:has(.explore-control) { position:relative; z-index:10; flex-wrap:wrap; gap:10px; }
 .head-right:has(.explore-control) { flex-wrap:wrap; gap:10px; }
+
+/* Keep the complete stacked instrument in the first phone viewport. */
+@media (max-width:600px) {
+ .shell { padding:10px 12px; }
+ .head { padding-bottom:6px; }
+ .lcd { padding:8px 10px; --price-size:30px; }
+ .lcd-chart { height:100px; aspect-ratio:auto; margin-top:4px; }
+ .lcd-chart:has(.measurement-chart) { height:140px; }
+ .lcd-chart > .chart { height:100%; }
+ .lcd-readout { margin-top:6px; padding-top:6px; }
+ .lcd-foot { margin-top:4px; }
+ .lcd-minmax.is-idle,.lcd-ranges.is-idle { display:none; }
+ .lcd-ranges { margin-top:6px; }
+ .keys { margin-top:8px; }
+ .face-dial .dial { width:min(100%,var(--fit-dial-size,180px)); margin:0 auto; }
+ .face-dial .jacks { padding-top:6px; }
+ .face-dial .status { flex-direction:row; gap:10px; }
+ .dial-caption { margin-top:2px; }
+ .explore-control { margin-bottom:0; }
+}
 
 </style>
 </head>

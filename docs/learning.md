@@ -12,7 +12,7 @@ This is a price-history exercise, not a record of real holdings. There are no de
 
 ## Guided lessons
 
-Choose **Lessons** in the Explore menu in the meter header to open the activity library without changing your selected asset or resetting your active lesson. **Explain this** opens the concept behind your current measurement; **PROBE** answers questions about the available figures.
+Choose **Lessons** in the Explore menu above the dial to open the activity library without changing your selected asset or resetting your active lesson. **Explain this** opens the concept behind your current measurement; **PROBE** answers questions about the available figures.
 
 - **Price versus return:** Start experiment selects Apple, Microsoft, or NVIDIA with at least 253 available closing prices; you can change the company. Compare its 1-month and 1-year chart ranges, then answer what measures performance over a period.
 - **Volatility versus drawdown:** inspect VOL and DD for the same stock, then distinguish variability from a decline below a peak.

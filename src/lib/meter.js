@@ -1238,6 +1238,10 @@
       var layoutObserver = new root.ResizeObserver(queueFit);
       ['studentControls', 'utilityFooter'].forEach(function(id){var node=el(id);if(node)layoutObserver.observe(node);});
     }
+    if(root.MutationObserver){
+      var contentObserver=new root.MutationObserver(queueFit);
+      ['lcd','dialCaption'].forEach(function(id){var node=el(id);if(node)contentObserver.observe(node,{childList:true,subtree:true,characterData:true});});
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToWindow).catch(function () { /* fine */ });
   }
 
@@ -1320,7 +1324,7 @@
   }
 
   /* ---- fitting the window ------------------------------------------------- */
-  var FIT_READABLE_W = 900; /* Keep desktop controls legible; scroll if height is limited. */
+  var FIT_MIN_W = 240;
   var desktopLearning = root.matchMedia('(min-width: 860px) and (min-aspect-ratio: 6/5)');
 
   /* Sizes the meter so the whole instrument, screen and dial, fits the
@@ -1334,6 +1338,7 @@
     var h = root.innerHeight;
     if (!meter || !h) return;
     meter.style.width = '';
+    meter.style.setProperty('--fit-dial-size','180px');
     /* Both paddings, not just the top: counting only the top left the stage's
      * bottom padding hanging past the fold, so the page scrolled by exactly
      * that much on a laptop. */
@@ -1348,22 +1353,18 @@
     document.documentElement.style.setProperty('--utility-footer-height',footerHeight+'px');
     var gap=cs?parseFloat(cs.rowGap)||0:0;
     var avail = h - padTop - Math.max(padBottom, footerHeight+16) - controlsHeight - (controlsHeight ? gap : 0);
-    var w1 = meter.offsetWidth, h1 = meter.offsetHeight, w = w1;
-    var readableMinimum = Math.min(w1, FIT_READABLE_W);
-    /* On phones and zoomed layouts, keep readable width and allow vertical scrolling. */
-    if (desktopLearning.matches && h1 > avail && w1 > readableMinimum) {
-      var w2 = Math.max(readableMinimum, Math.round(w1 * 0.6));
-      meter.style.width = w2 + 'px';
-      var h2 = meter.offsetHeight;
-      var slope = w1 > w2 ? (h1 - h2) / (w1 - w2) : 0;
-      w = slope > 0 ? Math.floor(w2 + (avail - h2) / slope) : w1;
-      w = Math.max(readableMinimum, Math.min(w1, w));
-      meter.style.width = w + 'px';
-      var over = meter.offsetHeight - avail;
-      if (over > 0 && slope > 0 && w > readableMinimum) {
-        w = Math.max(readableMinimum, Math.floor(w - over / slope) - 2);
-        meter.style.width = w + 'px';
+    var w1=meter.offsetWidth,w=w1;
+    // Fit the complete instrument above the persistent footer, including keys.
+    if(root.innerWidth<=600){
+      var dialSize=Math.max(100,180-Math.max(0,meter.offsetHeight-avail));
+      meter.style.setProperty('--fit-dial-size',dialSize+'px');
+    }else if(meter.offsetHeight>avail){
+      var low=Math.min(FIT_MIN_W,w1),high=w1;
+      for(var pass=0;pass<12;pass++){
+        var mid=(low+high)/2;meter.style.width=mid+'px';
+        if(meter.offsetHeight<=avail)low=mid;else high=mid;
       }
+      w=Math.floor(low);meter.style.width=w+'px';
     }
     document.documentElement.style.setProperty('--meter-w', w + 'px');
 

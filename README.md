@@ -25,11 +25,11 @@ Open **Explore → Lessons** for the activity library. Build a hypothetical stoc
   <tr>
     <td align="center" valign="top">
       <img src="docs/screenshot-desktop.png" width="640"
-           alt="Desktop Multimeter with a compact Explore menu, Apple’s one-month price chart, and the clean opening view.">
+           alt="Desktop Multimeter with Explore centered above OFF, a correlation reading, and the complete meter visible.">
     </td>
     <td align="center" valign="top">
       <img src="docs/screenshot-phone.png" width="178"
-           alt="Phone Multimeter with a compact Explore menu, Apple’s one-month price chart, and the persistent bottom utility buttons.">
+           alt="Phone Multimeter with Explore above the dial, a correlation reading, and the complete meter above the bottom utility buttons.">
     </td>
   </tr>
 </table>

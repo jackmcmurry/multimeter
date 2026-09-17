@@ -98,16 +98,6 @@
         <div class="head">
           <span class="brand"><!-- @inject wordmark --></span>
           <span class="head-right">
-            <span class="explore-control">
-              <button type="button" class="explore-toggle" id="exploreToggle" aria-expanded="false" aria-controls="studentNav">Explore</button>
-              <nav class="explore-menu" id="studentNav" aria-label="Explore and learn" hidden>
-                <button type="button" data-student-action="start" id="exploreStart">Start experiment</button>
-                <button type="button" data-student-action="choose">Choose an asset</button>
-                <button type="button" data-student-action="charts">Explore charts</button>
-                <button type="button" data-student-action="explain">Explain this</button>
-                <button type="button" data-student-action="lessons">Lessons</button>
-              </nav>
-            </span>
             <span class="skin-picker">
               <button type="button" class="skin-toggle" id="skinBtn" aria-haspopup="true" aria-expanded="false" aria-controls="skins" aria-label="Skin: Meter Mint. Choose a colour.">
                 <svg viewBox="0 0 24 22" width="24" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.6C5.9 1.6 1.2 5.9 1.2 11.2c0 5.3 4.4 9.6 10 9.6 1.5 0 2.4-.9 2.4-2.1 0-.6-.3-1.1-.6-1.5-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 2-1.8h2.5c3.2 0 5.5-2.3 5.5-5.3C22.5 4.3 17.9 1.6 12 1.6zM6.4 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM8.6 5.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM13.4 4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2zM17.6 6.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z"/></svg>
@@ -258,6 +248,17 @@
 
         </div>
         <div class="face face-dial">
+            <span class="explore-control">
+              <button type="button" class="explore-toggle" id="exploreToggle" aria-expanded="false" aria-controls="studentNav">Explore</button>
+              <nav class="explore-menu" id="studentNav" aria-label="Explore and learn" hidden>
+                <button type="button" data-student-action="start" id="exploreStart">Start experiment</button>
+                <button type="button" data-student-action="choose">Choose an asset</button>
+                <button type="button" data-student-action="charts">Explore charts</button>
+                <button type="button" data-student-action="explain">Explain this</button>
+                <button type="button" data-student-action="lessons">Lessons</button>
+              </nav>
+            </span>
+
 
         <div class="dial" id="dial">
           <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Function" aria-valuemin="0" aria-valuemax="12" aria-valuenow="1"></div>
@@ -470,7 +471,7 @@
     <!-- OFF -->
     <section class="view prose" data-panel="about" hidden>
       <h2>What this is</h2>
-      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. Open Explore in the meter header for these actions: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
+      <p>Explore real market history and learn what the measurements mean. Start experiment opens a five-minute price-versus-return activity. Open Explore above the dial for these actions: Choose an asset opens search; Explore charts opens the current reading’s details; Explain this explains the measurement; Lessons opens the activity library.</p>
       <p>You can also turn the dial by dragging it, using the mouse wheel, or pressing its arrow keys. Coin quotes are requested about once a minute. Stock and index snapshots can be delayed; use the dates shown with a reading to tell what period it describes. Measurements use historical closing prices.</p>
 
       <h2>Dial</h2>

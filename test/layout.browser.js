@@ -20,7 +20,7 @@
     check(prefix+': no horizontal overflow',document.documentElement.scrollWidth<=innerWidth+1);
     check(prefix+': footer remains at viewport bottom',Math.abs(foot.bottom-innerHeight)<=2);
     ['howBtn','feedbackBtn','shareBtn'].forEach(function(id){var r=rect(id);check(prefix+': '+id+' visible and touchable',r.top>=0&&r.bottom<=innerHeight+2&&r.left>=0&&r.right<=innerWidth+1&&r.height>=43);});
-    if(matchMedia('(min-width:860px) and (min-aspect-ratio:6/5)').matches)check(prefix+': meter stays readable',document.querySelector('.meter').getBoundingClientRect().width>=Math.min(900,innerWidth-40)-2);
+    if(!scenario[1]&&!bottom){var m=document.querySelector('.meter').getBoundingClientRect();check(prefix+': complete meter clears footer',m.top>=0&&m.bottom<=foot.top);var x=rect('exploreToggle'),d=rect('dial');check(prefix+': Explore centered above OFF',Math.abs((x.left+x.right-d.left-d.right)/2)<2&&x.bottom<=d.top+1);}
     check(prefix+': footer space reserved',parseFloat(getComputedStyle(document.querySelector('.stage')).paddingBottom)>=foot.height);
    }
   }
