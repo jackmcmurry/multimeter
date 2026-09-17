@@ -934,8 +934,8 @@
   /* What the screen is doing decides the row first. */
   var MODE_KEYS = {
     search: [['cancel', 'CANCEL'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
-    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'Explore charts'], ['hold', 'HOLD']],
-    learn: [['back', 'BACK'], ['deeper', 'MORE DETAIL'], ['none', ''], ['info', 'Full explanation'], ['hold', 'HOLD']],
+    list: [['open', 'OPEN'], ['add', 'ADD'], ['remove', 'REMOVE'], ['info', 'EXPLORE'], ['hold', 'HOLD']],
+    learn: [['back', 'BACK'], ['deeper', 'DETAIL'], ['none', ''], ['info', 'EXPLAIN'], ['hold', 'HOLD']],
     welcome: [['data', 'DATA'], ['none', ''], ['none', ''], ['none', ''], ['hold', 'HOLD']],
     probe: [['back', 'BACK'], ['ask', 'ASK'], ['none', ''], ['source', 'SOURCE'], ['hold', 'HOLD']],
     config: [['back', 'BACK'], ['none', ''], ['reset', 'RESET'], ['save', 'SAVE'], ['hold', 'HOLD']]
@@ -961,7 +961,7 @@
     mover: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     loser: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['probe', 'PROBE'], ['hold', 'HOLD']],
     watch: [['data', 'DATA'], ['learn', 'LEARN'], ['list', 'LIST'], ['remove', 'REMOVE'], ['hold', 'HOLD']],
-    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'Explore charts'], ['hold', 'HOLD']]
+    off: [['data', 'DATA'], ['learn', 'LEARN'], ['none', ''], ['info', 'EXPLORE'], ['hold', 'HOLD']]
   };
 
   function keySet(mode, stop) {

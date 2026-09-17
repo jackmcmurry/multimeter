@@ -2042,7 +2042,7 @@
 
     var deeper = keyOf('deeper');
     if (deeper) {
-      deeper.textContent = learnDeep ? 'LESS DETAIL' : 'MORE DETAIL';
+      deeper.textContent = 'DETAIL';
       deeper.setAttribute('aria-expanded', String(learnDeep));
       deeper.setAttribute('aria-controls', 'lcdLearnRead');
       deeper.classList.toggle('is-on', learnDeep);

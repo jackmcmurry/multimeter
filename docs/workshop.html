@@ -465,7 +465,7 @@ body {
 
 /* the chart has the top of the screen to itself; a fixed aspect keeps the
  * screen the same height whether or not a series has arrived */
-.lcd-chart { display: block; width: 100%; aspect-ratio: 600 / 250; margin: 10px 0 0; }
+.lcd-chart { display: block; width: 100%; height:41.6667cqw; aspect-ratio: 600 / 250; margin: 10px 0 0; overflow:hidden; }
 .lcd-chart .chart { display: block; width: 100%; height: auto; color: inherit; }
 
 /* the readout is its own band beneath a hairline, never over the chart */
@@ -631,6 +631,7 @@ body {
 .key {
   font-family: var(--f-body);
   font-size: clamp(9px, 3.1cqw, 12.5px);
+  line-height:16px;
   font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--key-text);
@@ -2049,7 +2050,6 @@ tr.row-rule th {
 .about-link { white-space:normal; max-width:90px; text-align:center; line-height:1.25; }
 .head-right { flex-shrink:0; }
 .brand { max-width:calc(100% - 150px); }
-.key[data-act="info"] { font-size:clamp(10px, 2.4vw, 12px); white-space:normal; line-height:1.2; }
 
 .view a, dialog a { color:var(--holster); text-decoration:underline; text-underline-offset:3px; }
 
@@ -2083,8 +2083,9 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
 
 /* Compact navigation stays inside the instrument; dormant lessons reserve no space. */
 .student-controls[hidden], .explore-menu[hidden] { display:none; }
-.explore-control { position:relative; z-index:12; display:flex; justify-content:center; width:max-content; margin:0 auto 6px; }
-.explore-toggle { min-height:44px; padding:8px 12px; border:1px solid var(--rule); border-radius:6px; background:var(--cell); color:var(--text); font:600 15px var(--f-body); cursor:pointer; }
+.explore-control { position:relative; z-index:12; display:flex; justify-content:center; width:max-content; margin:0 auto 6px; transform:translateY(-10px); }
+.explore-toggle { min-height:32px; padding:5px 10px; border:1px solid var(--meter-mint); border-radius:5px; background:var(--meter-mint); color:var(--lcd-dk); font:700 11px var(--f-body); letter-spacing:.08em; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 8px rgba(0,0,0,.28); }
+.explore-toggle:hover { filter:brightness(1.06); }
 .explore-menu { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 6px); z-index:60; width:230px; max-height:calc(100dvh - var(--utility-footer-height) - 150px); overflow-y:auto; max-width:calc(100vw - 48px); padding:6px; display:grid; gap:4px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 8px 24px #0008; }
 .explore-menu button { min-height:44px; padding:10px 12px; text-align:left; background:var(--cell); border:1px solid var(--rule); color:var(--text); font:500 16px var(--f-body); cursor:pointer; }
 .explore-menu button:hover { border-color:var(--holster); }
@@ -2097,19 +2098,19 @@ html:has(.student-controls) { scroll-padding-top:calc(var(--student-controls-hei
  .shell { padding:10px 12px; }
  .head { padding-bottom:6px; }
  .lcd { padding:8px 10px; --price-size:30px; }
- .lcd-chart { height:100px; aspect-ratio:auto; margin-top:4px; }
- .lcd-chart:has(.measurement-chart) { height:140px; }
+ /* Every stop owns the same chart and control space. Keeping these rows in
+  * the layout prevents the shell from changing height when the dial moves. */
+ .lcd-chart { height:140px; aspect-ratio:auto; margin-top:4px; }
  .lcd-chart > .chart { height:100%; }
  .lcd-readout { margin-top:6px; padding-top:6px; }
  .lcd-foot { margin-top:4px; }
- .lcd-minmax.is-idle,.lcd-ranges.is-idle { display:none; }
  .lcd-ranges { margin-top:6px; }
  .keys { margin-top:8px; }
  .face-dial .dial { width:min(100%,var(--fit-dial-size,180px)); margin:0 auto; }
  .face-dial .jacks { padding-top:6px; }
  .face-dial .status { flex-direction:row; gap:10px; }
  .dial-caption { margin-top:2px; }
- .explore-control { margin-bottom:0; }
+ .explore-control { margin:6px auto 0; transform:none; }
 }
 
 </style>
@@ -2191,7 +2192,7 @@ body.workshop{display:block;background:#13171d;color:#edf2f7;font:17px/1.65 syst
 <p>What does comparing these readings show? Mention the period in your explanation.</p><div class="write-line"></div>
 <p><b>1.</b> A hypothetical share rises from $50 to $55. What is its percentage price return? Explain how you know.</p><div class="write-line"></div>
 <p><b>2.</b> Another share costs $200. Does that alone prove it performed better? What information would you need?</p><div class="write-line"></div>
-<p><b>Testing version:</b> student-deea7d43ee07<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
+<p><b>Testing version:</b> student-da9c2dfacdb2<br><b>Reflection:</b> What became clearer? What was confusing?</p><div class="write-line"></div>
 <p>Session status: □ Live activity completed &nbsp; □ Live activity could not be completed</p>
 <p>Multimeter: multimtr.com · Historical price changes are not predictions.</p></section>
 <section class="answers" id="answers" aria-labelledby="answers-title"><p class="eyebrow">FACILITATOR ONLY · DISCUSS AFTER INDEPENDENT ANSWERS</p><h2 id="answers-title">Answers and observation notes</h2>
